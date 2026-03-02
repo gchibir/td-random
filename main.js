@@ -662,6 +662,7 @@ const state = {
   itemMenuOpen: false,
   pendingItemTransfer: null,
   pendingBagTowerDef: null,
+  pendingBagUpgrade: false,
   bagPlacementHint: "",
   towerAnnouncement: null,
   infoScroll: 0,
@@ -1528,6 +1529,16 @@ function grantRandomTowerFromBag() {
   return true;
 }
 
+function startBagUpgradeSelection() {
+  const hasUpgradeableTower = state.towers.some(
+    (tower) => tower.kind === "tower" && tower.level < 6
+  );
+  if (!hasUpgradeableTower) return false;
+  state.pendingBagUpgrade = true;
+  state.bagPlacementHint = "Выберите башню для повышения";
+  return true;
+}
+
 function placePendingBagTower(slot) {
   if (!state.pendingBagTowerDef) return false;
   const tower = createTower(slot.c, slot.r, state.pendingBagTowerDef);
@@ -1539,6 +1550,25 @@ function placePendingBagTower(slot) {
   state.infoScroll = 0;
   showTowerAnnouncement(tower.level);
   state.pendingBagTowerDef = null;
+  state.bagPlacementHint = "";
+  return true;
+}
+
+function applyBagUpgradeToTower(targetTower) {
+  if (!targetTower || targetTower.kind !== "tower" || targetTower.level >= 6) return false;
+  const nextPool = getPoolForLevel(targetTower.level + 1);
+  if (!nextPool?.length) return false;
+  const nextDef = rollRandomFrom(nextPool);
+  const upgraded = createTower(targetTower.cellC, targetTower.cellR, nextDef);
+  removeStructure(targetTower);
+  state.towers.push(upgraded);
+  state.selectedCell = { c: upgraded.cellC, r: upgraded.cellR };
+  state.selectedEnemyId = null;
+  state.selectedAuraSourceId = null;
+  state.infoScroll = 0;
+  state.lastRoll = `${upgraded.name} (${upgraded.tier}) • мешок`;
+  showTowerAnnouncement(upgraded.level);
+  state.pendingBagUpgrade = false;
   state.bagPlacementHint = "";
   return true;
 }
@@ -1556,6 +1586,8 @@ function activateMysteryBagChoice(choiceId) {
   let consumed = false;
   if (choiceId === "bag_tower") {
     consumed = grantRandomTowerFromBag();
+  } else if (choiceId === "bag_upgrade") {
+    consumed = startBagUpgradeSelection();
   } else if (choiceId === "bag_damage") {
     state.globalDamageBoost += 0.2;
     consumed = true;
@@ -3174,7 +3206,7 @@ function drawStartOverlay() {
 }
 
 function drawPendingBagHint() {
-  if (!state.pendingBagTowerDef) return;
+  if (!state.pendingBagTowerDef && !state.pendingBagUpgrade) return;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = "bold 22px Avenir Next";
@@ -3630,8 +3662,9 @@ function getItemMenuButtons() {
   }
   return [
     { id: "bag_tower", label: "Случайная башня", sub: "4/3/5/6 ур.", x: popupX + 10, y: popupY + 42, w: popupW - 20, h: 32 },
-    { id: "bag_damage", label: "Урон всех башен", sub: `+${Math.round((state.globalDamageBoost + 0.2) * 100)}%`, x: popupX + 10, y: popupY + 80, w: popupW - 20, h: 32 },
-    { id: "bag_nuggets", label: "Цена слитков", sub: `+${Math.round((state.nuggetSaleBonus + 0.3) * 100)}%`, x: popupX + 10, y: popupY + 118, w: popupW - 20, h: 32 }
+    { id: "bag_upgrade", label: "Поднять уровень", sub: "1 башня", x: popupX + 10, y: popupY + 80, w: popupW - 20, h: 32 },
+    { id: "bag_damage", label: "Урон всех башен", sub: `+${Math.round((state.globalDamageBoost + 0.2) * 100)}%`, x: popupX + 10, y: popupY + 118, w: popupW - 20, h: 32 },
+    { id: "bag_nuggets", label: "Цена слитков", sub: `+${Math.round((state.nuggetSaleBonus + 0.3) * 100)}%`, x: popupX + 10, y: popupY + 156, w: popupW - 20, h: 32 }
   ];
 }
 
@@ -3642,7 +3675,7 @@ function drawItemMenu() {
   const popupY = CONTROL_Y - 156;
   const popupW = CONTROL_W;
   const itemDef = getSelectedTransferItemDef();
-  const popupH = itemDef?.id === "mystery_bag" ? 154 : 90;
+  const popupH = itemDef?.id === "mystery_bag" ? 192 : 90;
   fillRoundedRect(popupX, popupY, popupW, popupH, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
@@ -4196,6 +4229,18 @@ function tryPlaceOnSlot(slot) {
     return;
   }
 
+  if (state.pendingBagUpgrade) {
+    if (existing?.kind === "tower" && existing.level < 6) {
+      applyBagUpgradeToTower(existing);
+    } else if (existing) {
+      state.selectedCell = { c: slot.c, r: slot.r };
+      state.selectedEnemyId = null;
+      state.selectedAuraSourceId = null;
+      state.infoScroll = 0;
+    }
+    return;
+  }
+
   if (existing) {
     state.selectedCell = { c: slot.c, r: slot.r };
     state.selectedEnemyId = null;
@@ -4709,6 +4754,7 @@ function renderGameToText() {
       pendingBagTower: state.pendingBagTowerDef
         ? { id: state.pendingBagTowerDef.id, level: state.pendingBagTowerDef.level, name: state.pendingBagTowerDef.name }
         : null,
+      pendingBagUpgrade: state.pendingBagUpgrade,
       damagePanelOpen: state.damagePanelOpen,
       infoScroll: state.infoScroll,
       bossShop: state.bossShop,
