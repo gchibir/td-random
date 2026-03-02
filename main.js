@@ -3574,6 +3574,10 @@ function getPauseMenuButtons() {
 
 function drawPauseMenu() {
   if (!state.paused) return;
+  if (state.pausePanel === "leaders") {
+    syncLeaderboardEntry();
+    state.leaderboard = loadLeaderboard();
+  }
   ctx.fillStyle = "rgba(6, 12, 19, 0.68)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -4056,6 +4060,10 @@ function handleTap(event) {
     } else if (pauseAction === "nickname") {
       ensureNickname(true);
       state.pausePanel = "nickname";
+    } else if (pauseAction === "leaders") {
+      syncLeaderboardEntry();
+      state.leaderboard = loadLeaderboard();
+      state.pausePanel = "leaders";
     } else {
       state.pausePanel = pauseAction;
     }
