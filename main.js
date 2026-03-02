@@ -405,6 +405,211 @@ const ITEM_DEFS = {
     description: "Редкий мешок с одной из трех наград на выбор."
   }
 };
+const SHOP_ITEM_GROUPS = [
+  [
+    {
+      id: "time_pendulum_1",
+      baseId: "time_pendulum",
+      level: 1,
+      name: "Маятник времени",
+      short: "Мв",
+      description: "20% шанс нанести 500 + атрибут*10 физического урона и оглушить на 1 сек.",
+      pendulumChance: 0.2,
+      pendulumDamage: 500,
+      pendulumAttrScale: 10,
+      pendulumStun: 1,
+      sellValue: 100
+    },
+    {
+      id: "time_pendulum_2",
+      baseId: "time_pendulum",
+      level: 2,
+      name: "Продвинутый маятник",
+      short: "Пм",
+      description: "25% шанс нанести 1000 + атрибут*12 физического урона и оглушить на 1.2 сек.",
+      pendulumChance: 0.25,
+      pendulumDamage: 1000,
+      pendulumAttrScale: 12,
+      pendulumStun: 1.2,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "cursed_shard_1",
+      baseId: "cursed_shard",
+      level: 1,
+      name: "Проклятый осколок",
+      short: "По",
+      description: "Снижает броню цели на 20% на 5 секунд.",
+      armorDebuffPercent: 0.2,
+      armorDebuffDuration: 5,
+      sellValue: 100
+    },
+    {
+      id: "cursed_shard_2",
+      baseId: "cursed_shard",
+      level: 2,
+      name: "Продвинутый проклятый осколок",
+      short: "ПО",
+      description: "Снижает броню цели на 45% на 7 секунд.",
+      armorDebuffPercent: 0.45,
+      armorDebuffDuration: 7,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "speed_diamond_1",
+      baseId: "speed_diamond",
+      level: 1,
+      name: "Алмаз скорости",
+      short: "Ас",
+      description: "Дает носителю +15% к скорости атаки.",
+      selfAttackSpeedBoost: 0.15,
+      sellValue: 100
+    },
+    {
+      id: "speed_diamond_2",
+      baseId: "speed_diamond",
+      level: 2,
+      name: "Продвинутый алмаз скорости",
+      short: "АС",
+      description: "Дает носителю +30% к скорости атаки.",
+      selfAttackSpeedBoost: 0.3,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "energy_emitter_1",
+      baseId: "energy_emitter",
+      level: 1,
+      name: "Излучатель энергии",
+      short: "Иэ",
+      description: "В радиусе 4 клеток увеличивает скорость атаки союзников на 10%.",
+      auraRangeCells: 4,
+      auraAttackSpeedBoost: 0.1,
+      sellValue: 100
+    },
+    {
+      id: "energy_emitter_2",
+      baseId: "energy_emitter",
+      level: 2,
+      name: "Продвинутый излучатель энергии",
+      short: "ИЭ",
+      description: "В радиусе 4 клеток увеличивает скорость атаки союзников на 20%.",
+      auraRangeCells: 4,
+      auraAttackSpeedBoost: 0.2,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "chaos_artifact_1",
+      baseId: "chaos_artifact",
+      level: 1,
+      name: "Артефакт хаоса",
+      short: "Ах",
+      description: "10% шанс нанести всем врагам в радиусе 5 клеток магический урон 3% + атрибут*0.5% от макс HP.",
+      chaosChance: 0.1,
+      chaosRangeCells: 5,
+      chaosBasePercent: 0.03,
+      chaosAttrPercent: 0.005,
+      sellValue: 100
+    },
+    {
+      id: "chaos_artifact_2",
+      baseId: "chaos_artifact",
+      level: 2,
+      name: "Проклятый артефакт хаоса",
+      short: "АХ",
+      description: "12% шанс нанести всем врагам в радиусе 5 клеток магический урон 4% + атрибут*0.6% от макс HP.",
+      chaosChance: 0.12,
+      chaosRangeCells: 5,
+      chaosBasePercent: 0.04,
+      chaosAttrPercent: 0.006,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "corruption_sphere_1",
+      baseId: "corruption_sphere",
+      level: 1,
+      name: "Сфера порчи",
+      short: "Сп",
+      description: "В радиусе 4.5 клетки увеличивает весь урон союзных башен на 10%.",
+      auraRangeCells: 4.5,
+      auraDamageBoost: 0.1,
+      sellValue: 100
+    },
+    {
+      id: "corruption_sphere_2",
+      baseId: "corruption_sphere",
+      level: 2,
+      name: "Разлагающаяся сфера порчи",
+      short: "СП",
+      description: "В радиусе 4.5 клетки увеличивает весь урон союзных башен на 20%.",
+      auraRangeCells: 4.5,
+      auraDamageBoost: 0.2,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "power_ring_1",
+      baseId: "power_ring",
+      level: 1,
+      name: "Кольцо силы",
+      short: "Кс",
+      description: "В радиусе 4.5 клетки увеличивает магический урон союзных башен на 15%.",
+      auraRangeCells: 4.5,
+      auraMagicDamageBoost: 0.15,
+      sellValue: 100
+    },
+    {
+      id: "power_ring_2",
+      baseId: "power_ring",
+      level: 2,
+      name: "Закаленное кольцо силы",
+      short: "КС",
+      description: "В радиусе 4.5 клетки увеличивает магический урон союзных башен на 30%.",
+      auraRangeCells: 4.5,
+      auraMagicDamageBoost: 0.3,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "royal_armor_1",
+      baseId: "royal_armor",
+      level: 1,
+      name: "Доспех принца",
+      short: "Дп",
+      description: "20% шанс нанести двойной урон.",
+      critProcChance: 0.2,
+      critProcMultiplier: 2,
+      sellValue: 100
+    },
+    {
+      id: "royal_armor_2",
+      baseId: "royal_armor",
+      level: 2,
+      name: "Доспех короля",
+      short: "ДК",
+      description: "20% шанс нанести тройной урон.",
+      critProcChance: 0.2,
+      critProcMultiplier: 3,
+      sellValue: 200
+    }
+  ]
+];
+const ALL_SHOP_ITEMS = SHOP_ITEM_GROUPS.flat();
+const ITEM_BY_ID = Object.fromEntries([
+  ...Object.values(ITEM_DEFS).map((item) => [item.id, item]),
+  ...ALL_SHOP_ITEMS.map((item) => [item.id, item])
+]);
 
 const state = {
   mode: "running",
@@ -446,7 +651,9 @@ const state = {
   damagePanelOpen: false,
   inventory: Array.from({ length: INVENTORY_SLOT_COUNT }, () => null),
   selectedItemSlot: null,
+  selectedTowerItemTowerId: null,
   itemMenuOpen: false,
+  pendingItemTransfer: null,
   pendingBagTowerDef: null,
   bagPlacementHint: "",
   towerAnnouncement: null,
@@ -463,6 +670,7 @@ const state = {
   nickname: "",
   bestWave: 1,
   leaderboard: [],
+  nextTowerInstanceId: 1,
   nextEnemyId: 1,
   time: 0,
   hoveredSlot: null,
@@ -744,6 +952,7 @@ function createTower(cellC, cellR, towerDef) {
   const y = base.y + TILE * 0.5;
   return {
     kind: "tower",
+    instanceId: state.nextTowerInstanceId++,
     cellC,
     cellR,
     x,
@@ -836,6 +1045,7 @@ function createTower(cellC, cellR, towerDef) {
     visual: towerDef.visual,
     talent: towerDef.talent,
     description: towerDef.description,
+    equippedItem: null,
     waveDamage: 0
   };
 }
@@ -899,14 +1109,14 @@ function getTowerIntellectBonus(tower) {
   return getAttributeExtra(tower, "Интеллект") * 0.02;
 }
 
-function auraTouchesTowerCell(sourceTower, targetTower) {
+function auraTouchesTowerCell(sourceTower, targetTower, radiusOverride = null) {
   if (!sourceTower || !targetTower || sourceTower === targetTower) return false;
   const base = cellToPixel(targetTower.cellC, targetTower.cellR);
   const rectLeft = base.x;
   const rectTop = base.y;
   const rectRight = base.x + TILE;
   const rectBottom = base.y + TILE;
-  const radius = sourceTower.auraRange || sourceTower.range || 0;
+  const radius = radiusOverride ?? sourceTower.auraRange ?? sourceTower.range ?? 0;
 
   const closestX = Math.max(rectLeft, Math.min(sourceTower.x, rectRight));
   const closestY = Math.max(rectTop, Math.min(sourceTower.y, rectBottom));
@@ -919,27 +1129,35 @@ function getAppliedAuras(tower) {
   if (!tower || tower.kind !== "tower") return [];
   const applied = [];
   for (const ally of state.towers) {
-    if (
-      ally === tower ||
-      ally.kind !== "tower" ||
-      (!ally.auraDamageBoost && !ally.auraAttackSpeedBoost && !ally.auraFlatDamage && !ally.auraCritChanceBoost)
-    ) {
+    if (ally === tower || ally.kind !== "tower") {
       continue;
     }
-    if (!auraTouchesTowerCell(ally, tower)) continue;
+    const itemDef = getItemDefById(ally.equippedItem?.itemId);
+    const auraDamageBoost = (ally.auraDamageBoost || 0) + (itemDef?.auraDamageBoost || 0);
+    const auraFlatDamage = (ally.auraFlatDamage || 0);
+    const auraAttackSpeedBoost = (ally.auraAttackSpeedBoost || 0) + (itemDef?.auraAttackSpeedBoost || 0);
+    const auraCritChanceBoost = (ally.auraCritChanceBoost || 0);
+    const auraMagicDamageBoost = itemDef?.auraMagicDamageBoost || 0;
+    if (!auraDamageBoost && !auraAttackSpeedBoost && !auraFlatDamage && !auraCritChanceBoost && !auraMagicDamageBoost) {
+      continue;
+    }
+    const auraRange = itemDef?.auraRangeCells ? itemDef.auraRangeCells * TILE : null;
+    if (!auraTouchesTowerCell(ally, tower, auraRange)) continue;
     const parts = [];
-    if (ally.auraDamageBoost) parts.push(`Урон +${Math.round(ally.auraDamageBoost * 100)}%`);
-    if (ally.auraFlatDamage) parts.push(`Урон +${Math.round(ally.auraFlatDamage)}`);
-    if (ally.auraAttackSpeedBoost) parts.push(`Скорость +${Math.round(ally.auraAttackSpeedBoost * 100)}%`);
-    if (ally.auraCritChanceBoost) parts.push(`Крит +${Math.round(ally.auraCritChanceBoost * 100)}%`);
+    if (auraDamageBoost) parts.push(`Урон +${Math.round(auraDamageBoost * 100)}%`);
+    if (auraFlatDamage) parts.push(`Урон +${Math.round(auraFlatDamage)}`);
+    if (auraAttackSpeedBoost) parts.push(`Скорость +${Math.round(auraAttackSpeedBoost * 100)}%`);
+    if (auraCritChanceBoost) parts.push(`Крит +${Math.round(auraCritChanceBoost * 100)}%`);
+    if (auraMagicDamageBoost) parts.push(`Магия +${Math.round(auraMagicDamageBoost * 100)}%`);
     applied.push({
-      sourceId: ally.towerId,
+      sourceId: ally.instanceId,
       sourceName: ally.name,
       sourceTier: ally.tier,
-      damageBoost: ally.auraDamageBoost,
-      flatDamage: ally.auraFlatDamage,
-      speedBoost: ally.auraAttackSpeedBoost,
-      critChanceBoost: ally.auraCritChanceBoost,
+      damageBoost: auraDamageBoost,
+      flatDamage: auraFlatDamage,
+      speedBoost: auraAttackSpeedBoost,
+      critChanceBoost: auraCritChanceBoost,
+      magicDamageBoost: auraMagicDamageBoost,
       summary: parts.join(", ") || "Аура поддержки"
     });
   }
@@ -1093,11 +1311,53 @@ function getAdjustedNuggetPrice() {
   return Math.round(state.currentNuggetPrice * (1 + state.nuggetSaleBonus));
 }
 
+function getItemDefById(itemId) {
+  return itemId ? ITEM_BY_ID[itemId] || null : null;
+}
+
+function canTowerHoldItems(tower) {
+  return !!(tower && tower.kind === "tower" && tower.level === 6);
+}
+
+function getTowerById(towerId) {
+  return state.towers.find((tower) => tower.kind === "tower" && tower.instanceId === towerId) || null;
+}
+
+function getSelectedTransferItem() {
+  if (!state.pendingItemTransfer) return null;
+  if (state.pendingItemTransfer.source === "inventory") {
+    return state.inventory[state.pendingItemTransfer.slotIndex] || null;
+  }
+  if (state.pendingItemTransfer.source === "tower") {
+    const tower = getTowerById(state.pendingItemTransfer.towerInstanceId);
+    return tower?.equippedItem || null;
+  }
+  return null;
+}
+
+function getSelectedTransferItemDef() {
+  const item = getSelectedTransferItem();
+  return item ? getItemDefById(item.itemId) : null;
+}
+
+function clearItemSelection() {
+  state.selectedItemSlot = null;
+  state.selectedTowerItemTowerId = null;
+  state.pendingItemTransfer = null;
+  state.itemMenuOpen = false;
+}
+
 function addItemToInventory(itemId) {
   const slotIndex = state.inventory.findIndex((slot) => slot === null);
   if (slotIndex < 0) return false;
   state.inventory[slotIndex] = { itemId };
   return true;
+}
+
+function rollRandomShopItemId() {
+  const group = rollRandomFrom(SHOP_ITEM_GROUPS);
+  const upgraded = Math.random() < 0.2;
+  return group[upgraded ? 1 : 0].id;
 }
 
 function maybeAwardMysteryBag(nextWave) {
@@ -1176,8 +1436,7 @@ function placePendingBagTower(slot) {
 function consumeInventoryItem(slotIndex) {
   if (slotIndex < 0 || slotIndex >= state.inventory.length) return;
   state.inventory[slotIndex] = null;
-  state.selectedItemSlot = null;
-  state.itemMenuOpen = false;
+  clearItemSelection();
 }
 
 function activateMysteryBagChoice(choiceId) {
@@ -1199,9 +1458,98 @@ function activateMysteryBagChoice(choiceId) {
   return consumed;
 }
 
+function buyRandomItem() {
+  const slotIndex = state.inventory.findIndex((slot) => slot === null);
+  if (slotIndex < 0) return false;
+  const itemId = rollRandomShopItemId();
+  state.inventory[slotIndex] = { itemId };
+  state.selectedTowerItemTowerId = null;
+  state.selectedItemSlot = slotIndex;
+  state.pendingItemTransfer = { source: "inventory", slotIndex };
+  state.itemMenuOpen = true;
+  return true;
+}
+
+function getItemSellValue(itemDef) {
+  return itemDef?.sellValue || 0;
+}
+
+function sellSelectedItem() {
+  const itemDef = getSelectedTransferItemDef();
+  const item = getSelectedTransferItem();
+  if (!item || !itemDef) return false;
+  state.silver += getItemSellValue(itemDef);
+  if (state.pendingItemTransfer?.source === "inventory") {
+    state.inventory[state.pendingItemTransfer.slotIndex] = null;
+  } else if (state.pendingItemTransfer?.source === "tower") {
+    const tower = getTowerById(state.pendingItemTransfer.towerInstanceId);
+    if (tower) tower.equippedItem = null;
+  }
+  clearItemSelection();
+  return true;
+}
+
+function equipItemOnTower(targetTower) {
+  const item = getSelectedTransferItem();
+  const itemDef = getSelectedTransferItemDef();
+  if (!item || !itemDef || !canTowerHoldItems(targetTower)) return false;
+  if (
+    state.pendingItemTransfer?.source === "tower" &&
+    state.pendingItemTransfer.towerInstanceId === targetTower.instanceId
+  ) {
+    return false;
+  }
+  const current = targetTower.equippedItem;
+  const currentDef = current ? getItemDefById(current.itemId) : null;
+
+  if (current) {
+    if (
+      currentDef &&
+      currentDef.baseId === itemDef.baseId &&
+      currentDef.level === 1 &&
+      itemDef.level === 1
+    ) {
+      targetTower.equippedItem = { itemId: `${itemDef.baseId}_2` };
+      if (state.pendingItemTransfer.source === "inventory") {
+        state.inventory[state.pendingItemTransfer.slotIndex] = null;
+      } else {
+        const sourceTower = getTowerById(state.pendingItemTransfer.towerInstanceId);
+        if (sourceTower) sourceTower.equippedItem = null;
+      }
+      clearItemSelection();
+      return true;
+    }
+    return false;
+  }
+
+  targetTower.equippedItem = { itemId: item.itemId };
+  if (state.pendingItemTransfer.source === "inventory") {
+    state.inventory[state.pendingItemTransfer.slotIndex] = null;
+  } else {
+    const sourceTower = getTowerById(state.pendingItemTransfer.towerInstanceId);
+    if (sourceTower) sourceTower.equippedItem = null;
+  }
+  clearItemSelection();
+  return true;
+}
+
 function removeStructure(structure) {
+  if (structure?.kind === "tower") {
+    if (state.selectedTowerItemTowerId === structure.instanceId) {
+      clearItemSelection();
+    } else if (
+      state.pendingItemTransfer?.source === "tower" &&
+      state.pendingItemTransfer.towerInstanceId === structure.instanceId
+    ) {
+      clearItemSelection();
+    }
+  }
   const idx = state.towers.findIndex(
-    (tower) => tower.cellC === structure.cellC && tower.cellR === structure.cellR && tower.kind === structure.kind
+    (tower) =>
+      tower.cellC === structure.cellC &&
+      tower.cellR === structure.cellR &&
+      tower.kind === structure.kind &&
+      (tower.kind !== "tower" || tower.instanceId === structure.instanceId)
   );
   if (idx >= 0) state.towers.splice(idx, 1);
 }
@@ -1400,6 +1748,12 @@ function applyArmorBreak(enemy, tower) {
   enemy.armorBreakUntil = Math.max(enemy.armorBreakUntil, state.time + tower.armorBreakDuration);
 }
 
+function applyArmorDebuffPercent(enemy, percent, duration) {
+  if (!percent || enemy.dead) return;
+  enemy.armorDebuffPercent = Math.max(enemy.armorDebuffPercent, percent);
+  enemy.armorDebuffUntil = Math.max(enemy.armorDebuffUntil, state.time + duration);
+}
+
 function applyMagicShred(enemy, tower) {
   if (!tower.magicShredPercent || enemy.dead) return;
   enemy.magicResistDebuffPercent = Math.max(enemy.magicResistDebuffPercent, tower.magicShredPercent);
@@ -1417,13 +1771,15 @@ function getAuraBonuses(tower) {
   let flatDamage = 0;
   let speedBoost = 0;
   let critChanceBoost = 0;
+  let magicDamageBoost = 0;
   for (const aura of getAppliedAuras(tower)) {
     damageBoost += aura.damageBoost;
     flatDamage += aura.flatDamage;
     speedBoost += aura.speedBoost;
     critChanceBoost += aura.critChanceBoost;
+    magicDamageBoost += aura.magicDamageBoost || 0;
   }
-  return { damageBoost, flatDamage, speedBoost, critChanceBoost };
+  return { damageBoost, flatDamage, speedBoost, critChanceBoost, magicDamageBoost };
 }
 
 function getTowerAttackDamage(tower, aura = getAuraBonuses(tower)) {
@@ -1433,19 +1789,35 @@ function getTowerAttackDamage(tower, aura = getAuraBonuses(tower)) {
   }
   if (tower.attributeType === "Интеллект" && isMagicTower(tower)) {
     damage *= 1 + getTowerIntellectBonus(tower);
+    damage *= 1 + (aura.magicDamageBoost || 0);
   }
   damage *= 1 + state.globalDamageBoost;
   damage *= 1 + (aura.damageBoost || 0);
   return damage;
 }
 
-function getTowerAbilityMultiplier(tower) {
-  return 1 + (tower.attributeType === "Интеллект" ? getTowerIntellectBonus(tower) : 0);
+function getTowerAbilityMultiplier(
+  tower,
+  aura = getAuraBonuses(tower),
+  options = { magical: isMagicTower(tower) }
+) {
+  let multiplier = 1;
+  if (tower.attributeType === "Интеллект") {
+    multiplier *= 1 + getTowerIntellectBonus(tower);
+  }
+  multiplier *= 1 + state.globalDamageBoost;
+  multiplier *= 1 + (aura.damageBoost || 0);
+  if (options.magical) {
+    multiplier *= 1 + (aura.magicDamageBoost || 0);
+  }
+  return multiplier;
 }
 
 function getTowerEffectiveCooldown(tower, aura = getAuraBonuses(tower)) {
   const hasteBoost = state.time < (tower.speedBurstUntil || 0) ? tower.speedBurstBoost || 0 : 0;
-  const totalSpeedBonus = getTowerAgilityBonus(tower) + (aura.speedBoost || 0) + hasteBoost;
+  const itemDef = getItemDefById(tower.equippedItem?.itemId);
+  const totalSpeedBonus =
+    getTowerAgilityBonus(tower) + (aura.speedBoost || 0) + hasteBoost + (itemDef?.selfAttackSpeedBoost || 0);
   return tower.cooldown / (1 + totalSpeedBonus);
 }
 
@@ -1683,6 +2055,7 @@ function updateTowers() {
   for (const tower of state.towers) {
     if (tower.kind === "mine") continue;
     const aura = getAuraBonuses(tower);
+    const itemDef = getItemDefById(tower.equippedItem?.itemId);
     const effectiveCooldown = getTowerEffectiveCooldown(tower, aura);
     if (state.time < tower.nextShotAt) continue;
     const targets = getSortedTargetsInRange(tower);
@@ -1704,6 +2077,9 @@ function updateTowers() {
     }
     if (tower.tripleShotEvery && tower.attackCounter % tower.tripleShotEvery === 0) {
       damageMultiplier *= 3;
+    }
+    if (itemDef?.critProcChance && Math.random() < itemDef.critProcChance) {
+      damageMultiplier *= itemDef.critProcMultiplier || 1;
     }
 
     const baseDamage = getTowerAttackDamage(tower, aura) * damageMultiplier;
@@ -1833,6 +2209,30 @@ function updateTowers() {
         addShot(tower.x, tower.y, entry.pos.x, entry.pos.y, "#ffd66d", tower.shotWidth, false);
       }
       state.silver += splashTargets.length * (tower.silverSplashSilverPerTarget || 0);
+    }
+
+    const primaryTarget = targets[0]?.enemy || null;
+    if (primaryTarget && itemDef?.armorDebuffPercent) {
+      applyArmorDebuffPercent(primaryTarget, itemDef.armorDebuffPercent, itemDef.armorDebuffDuration || 5);
+    }
+    if (primaryTarget && itemDef?.pendulumChance && Math.random() < itemDef.pendulumChance) {
+      const attrLevel = tower.attributeLevel || 1;
+      const pendulumTower = { ...tower, attackType: "Физическая", critChance: 0 };
+      dealTowerHit(primaryTarget, pendulumTower, itemDef.pendulumDamage + attrLevel * itemDef.pendulumAttrScale, { critChanceBonus: 0 });
+      applyStun(primaryTarget, itemDef.pendulumStun || 0);
+    }
+    if (itemDef?.chaosChance && Math.random() < itemDef.chaosChance) {
+      const attrLevel = tower.attributeLevel || 1;
+      const chaosTower = { ...tower, attackType: "Магическая", critChance: 0 };
+      const chaosRange = (itemDef.chaosRangeCells || 0) * TILE;
+      for (const enemy of state.enemies) {
+        if (enemy.dead) continue;
+        const pos = enemyPixel(enemy);
+        if (Math.hypot(pos.x - tower.x, pos.y - tower.y) > chaosRange) continue;
+        const chaosDamage =
+          enemy.maxHp * (itemDef.chaosBasePercent + attrLevel * itemDef.chaosAttrPercent) * getTowerAbilityMultiplier(tower);
+        dealTowerHit(enemy, chaosTower, chaosDamage, { critChanceBonus: 0 });
+      }
     }
   }
 }
@@ -2265,6 +2665,17 @@ function getInfoBodyRect() {
   };
 }
 
+function getSelectedTowerItemRect() {
+  const selected = getSelectedStructure();
+  if (!selected || selected.kind !== "tower" || !canTowerHoldItems(selected)) return null;
+  return {
+    x: CONTROL_X + INFO_W - 58,
+    y: CONTROL_Y + 10,
+    w: 34,
+    h: 34
+  };
+}
+
 function drawStatsStrip() {
   fillRoundedRect(TOP_HUD_X, TOP_HUD_Y, TOP_HUD_W, LAYOUT.statsH, 16, COLORS.statsPanel, "rgba(255,255,255,0.12)");
   drawPauseButton();
@@ -2358,7 +2769,7 @@ function drawInventoryStrip() {
       selected ? "#ffe7a2" : "rgba(255,255,255,0.1)"
     );
     if (!item) continue;
-    const def = ITEM_DEFS[item.itemId];
+    const def = getItemDefById(item.itemId);
     ctx.fillStyle = selected ? "#1f1702" : "#ffffff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -2557,6 +2968,7 @@ function drawInfoPanel() {
 
   const selected = getSelectedStructure();
   const selectedEnemy = getSelectedEnemy();
+  const selectedItemDef = getSelectedTransferItemDef();
   const innerX = CONTROL_X + 16;
   const headerY = CONTROL_Y + 14;
   const body = getInfoBodyRect();
@@ -2565,6 +2977,35 @@ function drawInfoPanel() {
 
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
+
+  if (selectedItemDef) {
+    ctx.fillStyle = COLORS.darkText;
+    ctx.font = "bold 20px Avenir Next";
+    ctx.fillText(selectedItemDef.name, innerX, headerY);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(body.x, body.y, body.w, body.h);
+    ctx.clip();
+    ctx.fillStyle = COLORS.mutedText;
+    ctx.font = "bold 13px Avenir Next";
+    ctx.fillText(`Предмет • Уровень ${selectedItemDef.level || 0}`, bodyX, y);
+    y += 24;
+    ctx.font = "14px Avenir Next";
+    const sourceText =
+      state.pendingItemTransfer?.source === "tower"
+        ? "Источник: башня"
+        : state.pendingItemTransfer?.source === "inventory"
+          ? "Источник: инвентарь"
+          : "Источник: неизвестно";
+    ctx.fillText(sourceText, bodyX, y);
+    y += 28;
+    y += drawWrappedText(selectedItemDef.description, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 8) * 20;
+    ctx.restore();
+    state.infoScrollMax = Math.max(0, y - (body.y + body.h));
+    state.infoScroll = Math.min(state.infoScroll, state.infoScrollMax);
+    return;
+  }
 
   if (!selected && !selectedEnemy) {
     ctx.fillStyle = COLORS.darkText;
@@ -2643,6 +3084,29 @@ function drawInfoPanel() {
   ctx.fillStyle = COLORS.darkText;
   ctx.font = "bold 20px Avenir Next";
   ctx.fillText(selected.name, innerX, headerY);
+  const equippedItemDef = getItemDefById(selected.equippedItem?.itemId);
+  const itemRect = getSelectedTowerItemRect();
+  if (itemRect) {
+    const itemSelected =
+      state.pendingItemTransfer?.source === "tower" &&
+      state.pendingItemTransfer?.towerInstanceId === selected.instanceId;
+    fillRoundedRect(
+      itemRect.x,
+      itemRect.y,
+      itemRect.w,
+      itemRect.h,
+      10,
+      itemSelected ? "#d4a93d" : "#36536a",
+      itemSelected ? "#ffe7a2" : "rgba(255,255,255,0.08)"
+    );
+    ctx.fillStyle = itemSelected ? "#1f1702" : "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 11px Avenir Next";
+    ctx.fillText(equippedItemDef?.short || "+", itemRect.x + itemRect.w / 2, itemRect.y + itemRect.h / 2 + 0.5);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+  }
 
   ctx.save();
   ctx.beginPath();
@@ -2709,6 +3173,10 @@ function drawInfoPanel() {
     y += 24;
   } else if (auraParts.length) {
     ctx.fillText(`Радиус: ${(selected.rangeCellsAura || selected.rangeCells).toFixed(1)} клетки`, bodyX, y);
+    y += 24;
+  }
+  if (canTowerHoldItems(selected)) {
+    ctx.fillText(`Слот предмета: ${equippedItemDef ? equippedItemDef.name : "пусто"}`, bodyX, y);
     y += 24;
   }
 
@@ -2901,13 +3369,16 @@ function drawBuildPicker() {
 }
 
 function getItemMenuButtons() {
-  const slotIndex = state.selectedItemSlot;
-  if (!state.itemMenuOpen || slotIndex == null) return [];
-  const item = state.inventory[slotIndex];
-  if (!item || item.itemId !== "mystery_bag") return [];
+  const itemDef = getSelectedTransferItemDef();
+  if (!state.itemMenuOpen || !itemDef) return [];
   const popupX = CONTROL_X;
   const popupY = CONTROL_Y - 156;
   const popupW = CONTROL_W;
+  if (itemDef.id !== "mystery_bag") {
+    return [
+      { id: "sell_item", label: "Продать", sub: `${getItemSellValue(itemDef)}`, x: popupX + 10, y: popupY + 42, w: popupW - 20, h: 36 }
+    ];
+  }
   return [
     { id: "bag_tower", label: "Случайная башня", sub: "4/3/5/6 ур.", x: popupX + 10, y: popupY + 42, w: popupW - 20, h: 32 },
     { id: "bag_damage", label: "Урон всех башен", sub: `+${Math.round((state.globalDamageBoost + 0.2) * 100)}%`, x: popupX + 10, y: popupY + 80, w: popupW - 20, h: 32 },
@@ -2921,12 +3392,14 @@ function drawItemMenu() {
   const popupX = CONTROL_X;
   const popupY = CONTROL_Y - 156;
   const popupW = CONTROL_W;
-  fillRoundedRect(popupX, popupY, popupW, 154, 18, "#173246", "rgba(255,255,255,0.12)");
+  const itemDef = getSelectedTransferItemDef();
+  const popupH = itemDef?.id === "mystery_bag" ? 154 : 90;
+  fillRoundedRect(popupX, popupY, popupW, popupH, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.font = "bold 15px Avenir Next";
-  ctx.fillText("Таинственный мешок", popupX + 12, popupY + 10);
+  ctx.fillText(itemDef?.name || "Предмет", popupX + 12, popupY + 10);
 
   for (const button of buttons) {
     fillRoundedRect(button.x, button.y, button.w, button.h, 12, "#284a63", "rgba(255,255,255,0.08)");
@@ -2941,14 +3414,26 @@ function drawItemMenu() {
 }
 
 function getShopButtons() {
-  return BOSS_DEFS.map((boss, index) => {
+  const buttons = [
+    {
+      id: "buy_item",
+      x: SHOP_X + 12,
+      y: SHOP_Y + 40,
+      w: SHOP_W - 24,
+      h: 34,
+      label: "Купить предмет",
+      sublabel: state.inventory.some((slot) => slot === null) ? "рандом" : "нет места",
+      ready: state.inventory.some((slot) => slot === null)
+    }
+  ];
+  return buttons.concat(BOSS_DEFS.map((boss, index) => {
     const status = getBossShopStatus(boss.id);
     const cooldownLeft = getBossCooldownLeft(boss.id);
     const ready = cooldownLeft <= 0 && status.bought < boss.maxBuys && state.silver >= boss.cost;
     return {
       id: boss.id,
       x: SHOP_X + 12,
-      y: SHOP_Y + 40 + index * 40,
+      y: SHOP_Y + 80 + index * 40,
       w: SHOP_W - 24,
       h: 34,
       label: `${boss.name} ${boss.cost}`,
@@ -2960,7 +3445,7 @@ function getShopButtons() {
             : `шахты +${boss.rewardMines}`,
       ready
     };
-  });
+  }));
 }
 
 function drawShopPopup() {
@@ -3353,6 +3838,18 @@ function findItemMenuActionAt(clientX, clientY) {
   return null;
 }
 
+function findSelectedTowerItemAt(clientX, clientY) {
+  const point = getCanvasPoint(clientX, clientY);
+  const rect = getSelectedTowerItemRect();
+  if (!rect) return false;
+  return (
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.w &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.h
+  );
+}
+
 function isPointInInfoPanel(point) {
   return (
     point.x >= CONTROL_X &&
@@ -3565,7 +4062,11 @@ function handleTap(event) {
 
   const itemMenuAction = findItemMenuActionAt(event.clientX, event.clientY);
   if (itemMenuAction) {
-    activateMysteryBagChoice(itemMenuAction);
+    if (itemMenuAction === "sell_item") {
+      sellSelectedItem();
+    } else {
+      activateMysteryBagChoice(itemMenuAction);
+    }
     draw();
     return;
   }
@@ -3581,21 +4082,45 @@ function handleTap(event) {
       return;
     }
     if (state.selectedItemSlot === inventorySlot && state.itemMenuOpen) {
-      state.selectedItemSlot = null;
-      state.itemMenuOpen = false;
+      clearItemSelection();
     } else {
+      state.selectedTowerItemTowerId = null;
       state.selectedItemSlot = inventorySlot;
       state.itemMenuOpen = true;
+      state.pendingItemTransfer = { source: "inventory", slotIndex: inventorySlot };
     }
     draw();
     return;
   }
 
+  if (findSelectedTowerItemAt(event.clientX, event.clientY)) {
+    const selectedTower = getSelectedStructure();
+    if (selectedTower?.equippedItem) {
+      const sameSelected =
+        state.pendingItemTransfer?.source === "tower" &&
+        state.pendingItemTransfer?.towerInstanceId === selectedTower.instanceId;
+      if (sameSelected && state.itemMenuOpen) {
+        clearItemSelection();
+      } else {
+        state.selectedTowerItemTowerId = selectedTower.instanceId;
+        state.selectedItemSlot = null;
+        state.pendingItemTransfer = { source: "tower", towerInstanceId: selectedTower.instanceId };
+        state.itemMenuOpen = true;
+      }
+      draw();
+      return;
+    }
+  }
+
   const shopAction = findShopActionAt(event.clientX, event.clientY);
   if (shopAction) {
     state.selectedShopItem = shopAction;
-    const bossDef = BOSS_DEFS.find((boss) => boss.id === shopAction);
-    if (bossDef) buyBoss(bossDef);
+    if (shopAction === "buy_item") {
+      buyRandomItem();
+    } else {
+      const bossDef = BOSS_DEFS.find((boss) => boss.id === shopAction);
+      if (bossDef) buyBoss(bossDef);
+    }
     draw();
     return;
   }
@@ -3678,6 +4203,12 @@ function handleTap(event) {
       return;
     }
     if (isBuildCell(boardCell.c, boardCell.r)) {
+      const existingStructure = getStructureAt(boardCell.c, boardCell.r);
+      if (existingStructure?.kind === "tower" && state.pendingItemTransfer) {
+        equipItemOnTower(existingStructure);
+        draw();
+        return;
+      }
       tryPlaceOnSlot(boardCell);
     } else {
       state.selectedCell = null;
@@ -3862,6 +4393,7 @@ window.addEventListener("keydown", (event) => {
 function renderGameToText() {
   const selected = getSelectedStructure();
   const selectedEnemy = getSelectedEnemy();
+  const selectedItemDef = getSelectedTransferItemDef();
   const remaining = Math.max(0, ENEMIES_PER_WAVE - state.waveKilled - state.waveEscaped);
 
   const payload = {
@@ -3907,7 +4439,9 @@ function renderGameToText() {
       selectedShopItem: state.selectedShopItem,
       selectedToolAction: state.selectedToolAction,
       selectedItemSlot: state.selectedItemSlot,
+      selectedTowerItemTowerId: state.selectedTowerItemTowerId,
       itemMenuOpen: state.itemMenuOpen,
+      pendingItemTransfer: state.pendingItemTransfer,
       pendingBagTower: state.pendingBagTowerDef
         ? { id: state.pendingBagTowerDef.id, level: state.pendingBagTowerDef.level, name: state.pendingBagTowerDef.name }
         : null,
@@ -3930,6 +4464,7 @@ function renderGameToText() {
     },
     towerAnnouncement: state.towerAnnouncement,
     inventory: state.inventory,
+    selectedItem: selectedItemDef ? { id: selectedItemDef.id, name: selectedItemDef.name, level: selectedItemDef.level || 0 } : null,
     topDamage: getDisplayedTopDamageEntries(),
     selectedEnemy: selectedEnemy
       ? {
@@ -3963,10 +4498,12 @@ function renderGameToText() {
           }
         : {
             kind: "tower",
+            instanceId: selected.instanceId,
             cell: { c: selected.cellC, r: selected.cellR },
             type: selected.name,
             tier: selected.tier,
             level: selected.level,
+            equippedItem: selected.equippedItem,
             attackType: selected.attackType,
             cooldown: selected.cooldown,
             rangeCells: selected.rangeCells,
@@ -3984,11 +4521,13 @@ function renderGameToText() {
       }
       return {
         kind: "tower",
+        instanceId: tower.instanceId,
         cell: { c: tower.cellC, r: tower.cellR },
         type: tower.name,
         tier: tower.tier,
         level: tower.level,
         towerId: tower.towerId,
+        equippedItem: tower.equippedItem,
         damage: tower.damage,
         attackType: tower.attackType,
         rangeCells: tower.rangeCells,

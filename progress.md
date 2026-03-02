@@ -148,3 +148,13 @@ Update:
 - Added `extraKills` tracking; endless kills now update the local leaderboard and the leaderboard sorts by extra kills first, then best wave.
 - New mine stock no longer increases after wave 30.
 - Top HUD now switches its first stat slot to the extra-kill counter in endless mode.
+
+Update:
+- Started the level-6 item system patch: added a random item purchase flow, inventory-backed items, level-6 tower item slots, item transfer, item selling, and item-based combat effects/aura effects.
+- Fixed critical runtime issues in that patch: tower items now reference unique tower instance IDs instead of shared tower-family IDs, so transfers between duplicate tower types no longer target the wrong tower.
+- Fixed the inventory renderer to resolve all item definitions through the shared item registry (`ITEM_BY_ID`) instead of the old mystery-bag-only map.
+- Fixed `render_game_to_text` by restoring the missing `selectedItemDef` binding and exposing tower `instanceId` in the text payload.
+- Hardened item transfer so selecting a tower's own equipped item and tapping that same tower no longer destroys or falsely upgrades the item.
+- Extended ability scaling so all-damage and magic-damage auras/items also affect ability damage, not just the base attack hit.
+- `node --check` passes after the fixes; required Playwright client was run again but still fails in this environment because Chromium cannot launch (`MachPortRendezvousServer ... Permission denied`).
+- Next: manual device validation for the new item flow (buy item -> inspect item -> equip on level-6 tower -> merge two level-1 identical items -> sell item from inventory/tower).
