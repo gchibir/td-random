@@ -21,6 +21,7 @@ const LAYOUT = {
 const NICK_STORAGE_KEY = "td_random_nick";
 const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
 const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
+const LEADERBOARD_API_PATH = "/.netlify/functions/leaderboard";
 
 let TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
 let STACK_TOP = 0;
@@ -676,6 +677,7 @@ const state = {
   nickname: "",
   bestWave: 1,
   leaderboard: [],
+  leaderboardLoading: false,
   nextTowerInstanceId: 1,
   nextEnemyId: 1,
   time: 0,
@@ -834,22 +836,30 @@ function storeBestWave(bestWave) {
   } catch {}
 }
 
+function normalizeLeaderboardEntries(rawEntries) {
+  if (!Array.isArray(rawEntries)) return [];
+  return rawEntries
+    .filter((entry) => entry && typeof entry.name === "string" && Number.isFinite(Number(entry.bestWave)))
+    .map((entry) => ({
+      playerKey:
+        typeof entry.playerKey === "string" && entry.playerKey
+          ? entry.playerKey
+          : `legacy:${String(entry.name).trim().toLowerCase().slice(0, 40)}`,
+      name: String(entry.name).slice(0, 20),
+      bestWave: Math.max(1, Number(entry.bestWave) || 1),
+      bestExtraKills: Math.max(0, Number(entry.bestExtraKills) || 0),
+      updatedAt: Number(entry.updatedAt) || 0
+    }))
+    .sort((a, b) => b.bestExtraKills - a.bestExtraKills || b.bestWave - a.bestWave || b.updatedAt - a.updatedAt)
+    .slice(0, 10);
+}
+
 function loadLeaderboard() {
   try {
     const raw = window.localStorage.getItem(LEADERBOARD_STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter((entry) => entry && typeof entry.name === "string" && Number.isFinite(Number(entry.bestWave)))
-      .map((entry) => ({
-        name: String(entry.name).slice(0, 20),
-        bestWave: Math.max(1, Number(entry.bestWave) || 1),
-        bestExtraKills: Math.max(0, Number(entry.bestExtraKills) || 0),
-        updatedAt: Number(entry.updatedAt) || 0
-      }))
-      .sort((a, b) => b.bestExtraKills - a.bestExtraKills || b.bestWave - a.bestWave || b.updatedAt - a.updatedAt)
-      .slice(0, 10);
+    return normalizeLeaderboardEntries(parsed);
   } catch {
     return [];
   }
@@ -857,21 +867,109 @@ function loadLeaderboard() {
 
 function storeLeaderboard(entries) {
   try {
-    window.localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(entries.slice(0, 10)));
+    window.localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(normalizeLeaderboardEntries(entries)));
   } catch {}
+}
+
+function getLeaderboardPlayerKey() {
+  const telegramUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  if (telegramUserId) return `tg:${telegramUserId}`;
+  const name = (state.nickname || "").trim().toLowerCase();
+  return name ? `nick:${name}` : "";
+}
+
+function canUseRemoteLeaderboard() {
+  if (typeof window.fetch !== "function" || !/^https?:$/.test(window.location.protocol)) return false;
+  const host = window.location.hostname || "";
+  if (!host || host === "localhost" || host === "127.0.0.1" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+    return false;
+  }
+  return true;
+}
+
+let leaderboardSubmitTimer = null;
+
+async function refreshLeaderboardFromServer() {
+  if (!canUseRemoteLeaderboard()) return false;
+  state.leaderboardLoading = true;
+  try {
+    const response = await fetch(LEADERBOARD_API_PATH, {
+      method: "GET",
+      cache: "no-store",
+      headers: { Accept: "application/json" }
+    });
+    if (!response.ok) throw new Error(`Leaderboard GET failed: ${response.status}`);
+    const payload = await response.json();
+    const entries = normalizeLeaderboardEntries(Array.isArray(payload) ? payload : payload?.entries);
+    if (entries.length) {
+      state.leaderboard = entries;
+      storeLeaderboard(entries);
+    }
+    return true;
+  } catch {
+    return false;
+  } finally {
+    state.leaderboardLoading = false;
+    draw();
+  }
+}
+
+async function submitLeaderboardEntry() {
+  const name = (state.nickname || "").trim();
+  const playerKey = getLeaderboardPlayerKey();
+  if (!name || !playerKey || !canUseRemoteLeaderboard()) return false;
+  try {
+    const response = await fetch(LEADERBOARD_API_PATH, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({
+        playerKey,
+        name,
+        bestWave: state.bestWave,
+        bestExtraKills: state.extraKills || 0
+      })
+    });
+    if (!response.ok) throw new Error(`Leaderboard POST failed: ${response.status}`);
+    const payload = await response.json();
+    const entries = normalizeLeaderboardEntries(Array.isArray(payload) ? payload : payload?.entries);
+    if (entries.length) {
+      state.leaderboard = entries;
+      storeLeaderboard(entries);
+      draw();
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function scheduleLeaderboardSubmit() {
+  if (!canUseRemoteLeaderboard()) return;
+  if (leaderboardSubmitTimer) window.clearTimeout(leaderboardSubmitTimer);
+  leaderboardSubmitTimer = window.setTimeout(() => {
+    leaderboardSubmitTimer = null;
+    void submitLeaderboardEntry();
+  }, 250);
 }
 
 function syncLeaderboardEntry() {
   const name = (state.nickname || "").trim();
-  if (!name) return;
+  const playerKey = getLeaderboardPlayerKey();
+  if (!name || !playerKey) return;
   const entries = loadLeaderboard();
-  const existing = entries.find((entry) => entry.name === name);
+  const existing = entries.find((entry) => entry.playerKey === playerKey);
   if (existing) {
+    existing.name = name;
     existing.bestWave = Math.max(existing.bestWave, state.bestWave);
     existing.bestExtraKills = Math.max(existing.bestExtraKills || 0, state.extraKills || 0);
     existing.updatedAt = Date.now();
   } else {
     entries.push({
+      playerKey,
       name,
       bestWave: state.bestWave,
       bestExtraKills: state.extraKills || 0,
@@ -881,6 +979,7 @@ function syncLeaderboardEntry() {
   entries.sort((a, b) => b.bestExtraKills - a.bestExtraKills || b.bestWave - a.bestWave || b.updatedAt - a.updatedAt);
   state.leaderboard = entries.slice(0, 10);
   storeLeaderboard(state.leaderboard);
+  scheduleLeaderboardSubmit();
 }
 
 function rollRandomFrom(list) {
@@ -3574,10 +3673,6 @@ function getPauseMenuButtons() {
 
 function drawPauseMenu() {
   if (!state.paused) return;
-  if (state.pausePanel === "leaders") {
-    syncLeaderboardEntry();
-    state.leaderboard = loadLeaderboard();
-  }
   ctx.fillStyle = "rgba(6, 12, 19, 0.68)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -3617,9 +3712,20 @@ function drawPauseMenu() {
   if (state.pausePanel === "leaders") {
     ctx.font = "bold 18px Avenir Next";
     ctx.fillText("Таблица лидеров", menuX + 28, infoY + 14);
+    if (state.leaderboardLoading) {
+      ctx.font = "15px Avenir Next";
+      ctx.fillStyle = "#d6e6f4";
+      ctx.fillText("Загрузка...", menuX + 28, infoY + 48);
+      return;
+    }
     const entries = state.leaderboard.length
       ? state.leaderboard
-      : [{ name: state.nickname || "Player", bestWave: state.bestWave, bestExtraKills: state.extraKills }];
+      : [{
+          playerKey: getLeaderboardPlayerKey(),
+          name: state.nickname || "Player",
+          bestWave: state.bestWave,
+          bestExtraKills: state.extraKills
+        }];
     let y = infoY + 46;
     for (let i = 0; i < Math.min(5, entries.length); i += 1) {
       const entry = entries[i];
@@ -4062,8 +4168,8 @@ function handleTap(event) {
       state.pausePanel = "nickname";
     } else if (pauseAction === "leaders") {
       syncLeaderboardEntry();
-      state.leaderboard = loadLeaderboard();
       state.pausePanel = "leaders";
+      void refreshLeaderboardFromServer();
     } else {
       state.pausePanel = pauseAction;
     }
@@ -4613,6 +4719,7 @@ state.nickname = loadStoredNickname();
 state.bestWave = loadBestWave();
 state.leaderboard = loadLeaderboard();
 syncLeaderboardEntry();
+void refreshLeaderboardFromServer();
 initTelegramWebApp();
 
 draw();

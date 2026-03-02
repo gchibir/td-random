@@ -158,3 +158,11 @@ Update:
 - Extended ability scaling so all-damage and magic-damage auras/items also affect ability damage, not just the base attack hit.
 - `node --check` passes after the fixes; required Playwright client was run again but still fails in this environment because Chromium cannot launch (`MachPortRendezvousServer ... Permission denied`).
 - Next: manual device validation for the new item flow (buy item -> inspect item -> equip on level-6 tower -> merge two level-1 identical items -> sell item from inventory/tower).
+
+Update:
+- Replaced the purely local leaderboard behavior with a hybrid model: local cache + Netlify-backed shared leaderboard.
+- Added `netlify/functions/leaderboard.js` using Netlify Blobs as the shared storage layer.
+- Added `package.json` with `@netlify/blobs` dependency so Netlify can bundle the function.
+- Frontend now uses a stable `playerKey` (Telegram user id when available, nickname fallback), submits updates to the Netlify function, and fetches the shared top list when the leaderboard screen opens and on startup.
+- Local storage remains as a fallback cache when the remote endpoint is unavailable.
+- `node --check` passes for both `main.js` and `netlify/functions/leaderboard.js`.
