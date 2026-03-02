@@ -410,6 +410,9 @@ const ITEM_DEFS = {
 const state = {
   mode: "running",
   wave: 1,
+  endlessMode: false,
+  extraWave: 0,
+  extraKills: 0,
   waveActive: false,
   intermission: 0,
   waveSpawned: 0,
@@ -524,9 +527,15 @@ const PATH_CELLS = buildExpandedPath(PATH_TURNS);
 const PATH_POINTS = PATH_CELLS.map((cell) => cellCenter(cell.c, cell.r));
 
 function getWaveStats(wave) {
+  if (wave <= 5) {
+    return {
+      hp: 90 + (wave - 1) * 32,
+      armor: 4 + Math.floor((wave - 1) * 1.6)
+    };
+  }
   return {
-    hp: 90 + (wave - 1) * 32,
-    armor: 4 + Math.floor((wave - 1) * 1.6)
+    hp: 90 + 4 * 32 + (wave - 5) * 56,
+    armor: 4 + Math.floor(4 * 1.6) + Math.floor((wave - 5) * 2.6)
   };
 }
 
@@ -540,9 +549,11 @@ function getWaveMagicResist(wave) {
 }
 
 function getNuggetPriceRange(wave) {
+  const min = Math.min(160, 50 + wave * 2);
+  const max = Math.min(160, 100 + wave * 2);
   return {
-    min: 50 + wave * 2,
-    max: 100 + wave * 2
+    min,
+    max: Math.max(min, max)
   };
 }
 
@@ -616,9 +627,10 @@ function loadLeaderboard() {
       .map((entry) => ({
         name: String(entry.name).slice(0, 20),
         bestWave: Math.max(1, Number(entry.bestWave) || 1),
+        bestExtraKills: Math.max(0, Number(entry.bestExtraKills) || 0),
         updatedAt: Number(entry.updatedAt) || 0
       }))
-      .sort((a, b) => b.bestWave - a.bestWave || b.updatedAt - a.updatedAt)
+      .sort((a, b) => b.bestExtraKills - a.bestExtraKills || b.bestWave - a.bestWave || b.updatedAt - a.updatedAt)
       .slice(0, 10);
   } catch {
     return [];
@@ -638,15 +650,17 @@ function syncLeaderboardEntry() {
   const existing = entries.find((entry) => entry.name === name);
   if (existing) {
     existing.bestWave = Math.max(existing.bestWave, state.bestWave);
+    existing.bestExtraKills = Math.max(existing.bestExtraKills || 0, state.extraKills || 0);
     existing.updatedAt = Date.now();
   } else {
     entries.push({
       name,
       bestWave: state.bestWave,
+      bestExtraKills: state.extraKills || 0,
       updatedAt: Date.now()
     });
   }
-  entries.sort((a, b) => b.bestWave - a.bestWave || b.updatedAt - a.updatedAt);
+  entries.sort((a, b) => b.bestExtraKills - a.bestExtraKills || b.bestWave - a.bestWave || b.updatedAt - a.updatedAt);
   state.leaderboard = entries.slice(0, 10);
   storeLeaderboard(state.leaderboard);
 }
@@ -941,19 +955,23 @@ function clearMenus() {
 }
 
 function spawnEnemy() {
-  const stats = getWaveStats(state.wave);
+  const progressionWave = state.endlessMode ? 30 + state.extraWave + 1 : state.wave;
+  const stats = getWaveStats(progressionWave);
   const spawnIndex = state.waveSpawned + 1;
-  const isBonus = spawnIndex === 3;
+  const isBonus = !state.endlessMode && spawnIndex === 3;
   state.enemies.push(
     createEnemy({
       hp: stats.hp,
       armor: stats.armor,
-      magicResist: getWaveMagicResist(state.wave),
+      magicResist: getWaveMagicResist(progressionWave),
       isBonus,
-      rewardSilver: isBonus ? 75 + state.wave * 2 : state.wave
+      rewardSilver: isBonus ? 75 + Math.min(30, progressionWave) * 2 : Math.min(30, progressionWave)
     })
   );
   state.waveSpawned += 1;
+  if (state.endlessMode) {
+    state.extraWave += 1;
+  }
 }
 
 function pointLerp(a, b, t) {
@@ -1016,7 +1034,13 @@ function killEnemy(enemy, killer = null) {
   enemy.dead = true;
   if (state.selectedEnemyId === enemy.id) state.selectedEnemyId = null;
   removeEnemyById(enemy.id);
-  if (!enemy.isBoss) state.waveKilled += 1;
+  if (!enemy.isBoss) {
+    state.waveKilled += 1;
+    if (state.endlessMode) {
+      state.extraKills += 1;
+      syncLeaderboardEntry();
+    }
+  }
   state.totalKills += 1;
   state.silver += enemy.rewardSilver;
   state.mineStock += enemy.rewardMines || 0;
@@ -1318,11 +1342,10 @@ function dealTowerHit(enemy, tower, baseDamageOverride, options = {}) {
     const effectiveMagicResist = Math.max(0, enemy.magicResist - enemy.magicResistDebuffPercent);
     dealt = Math.max(1, raw * (1 - effectiveMagicResist));
   } else {
-    const effectiveArmor = Math.max(
-      0,
-      enemy.armor * (1 - tower.armorPenPercent) * (1 - enemy.armorDebuffPercent) - enemy.armorBreakFlat
-    );
-    dealt = Math.max(1, raw - effectiveArmor);
+    const effectiveArmor =
+      enemy.armor * (1 - tower.armorPenPercent) * (1 - enemy.armorDebuffPercent) - enemy.armorBreakFlat;
+    const armorMultiplier = 1 - (0.06 * effectiveArmor) / (1 + 0.06 * Math.abs(effectiveArmor));
+    dealt = Math.max(1, raw * armorMultiplier);
   }
   if (tower.executeChance && Math.random() < tower.executeChance) {
     const thresholdHp = enemy.maxHp * tower.executeThreshold;
@@ -1562,6 +1585,15 @@ function updateEnemyEffects(dt) {
 
 function updateWave(dt) {
   if (!state.started) return;
+  if (state.endlessMode) {
+    state.waveActive = true;
+    state.spawnTimer -= dt;
+    while (state.spawnTimer <= 0) {
+      spawnEnemy();
+      state.spawnTimer += SPAWN_INTERVAL;
+    }
+    return;
+  }
   if (!state.waveActive) {
     state.intermission -= dt;
     if (state.intermission <= 0) {
@@ -1589,11 +1621,23 @@ function updateWave(dt) {
     state.bestWave = Math.max(state.bestWave, state.wave);
     storeBestWave(state.bestWave);
     syncLeaderboardEntry();
+    if (state.wave >= 30) {
+      state.endlessMode = true;
+      state.waveActive = true;
+      state.waveSpawned = 0;
+      state.waveKilled = 0;
+      state.waveEscaped = 0;
+      state.spawnTimer = SPAWN_INTERVAL;
+      resetWaveDamage();
+      return;
+    }
     state.wave += 1;
     maybeAwardMysteryBag(state.wave);
     state.waveActive = false;
     state.intermission = WAVE_BREAK;
-    state.mineStock += 2;
+    if (state.wave <= 30) {
+      state.mineStock += 2;
+    }
   }
 }
 
@@ -2228,7 +2272,7 @@ function drawStatsStrip() {
   drawBaseLives();
 
   const items = [
-    { type: "text", label: `Волна ${state.wave}` },
+    { type: "text", label: state.endlessMode ? `Экстра ${state.extraKills}` : `Волна ${state.wave}` },
     { type: "silver", value: state.silver },
     { type: "nuggets", value: state.goldNuggets },
     { type: "text", label: `Цена ${getAdjustedNuggetPrice()}` }
@@ -3074,7 +3118,7 @@ function drawPauseMenu() {
     ctx.fillText("Таблица лидеров", menuX + 28, infoY + 14);
     const entries = state.leaderboard.length
       ? state.leaderboard
-      : [{ name: state.nickname || "Player", bestWave: state.bestWave }];
+      : [{ name: state.nickname || "Player", bestWave: state.bestWave, bestExtraKills: state.extraKills }];
     let y = infoY + 46;
     for (let i = 0; i < Math.min(5, entries.length); i += 1) {
       const entry = entries[i];
@@ -3082,7 +3126,11 @@ function drawPauseMenu() {
       ctx.fillStyle = i === 0 ? "#ffe8a3" : "#d6e6f4";
       ctx.fillText(`${i + 1}. ${entry.name}`, menuX + 28, y);
       ctx.textAlign = "right";
-      ctx.fillText(`${entry.bestWave} волн`, menuX + menuW - 28, y);
+      ctx.fillText(
+        entry.bestExtraKills > 0 ? `${entry.bestExtraKills} экстра` : `${entry.bestWave} волн`,
+        menuX + menuW - 28,
+        y
+      );
       ctx.textAlign = "left";
       y += 28;
     }
@@ -3827,6 +3875,9 @@ function renderGameToText() {
     },
     wave: {
       current: state.wave,
+      endlessMode: state.endlessMode,
+      extraWave: state.extraWave,
+      extraKills: state.extraKills,
       active: state.waveActive,
       spawned: state.waveSpawned,
       remaining,

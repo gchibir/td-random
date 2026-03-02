@@ -139,3 +139,12 @@ Update:
 - Removed the old `Рейтинг по раундам` pause-menu entry.
 - Replaced the previous placeholder leaderboard copy with a real rendered top list in the pause menu.
 - Increased pause-menu button heights and enlarged title, button, and panel text for better mobile readability.
+
+Update:
+- Increased late-game difficulty: enemy HP and armor now ramp faster after wave 5.
+- Nugget price is now hard-capped at 160 silver.
+- Normal creep reward now caps at 30 silver.
+- Added endless mode after wave 30: waves no longer break, enemies spawn continuously, and each spawned endless creep increments an `extraWave` progression counter used for scaling stats.
+- Added `extraKills` tracking; endless kills now update the local leaderboard and the leaderboard sorts by extra kills first, then best wave.
+- New mine stock no longer increases after wave 30.
+- Top HUD now switches its first stat slot to the extra-kill counter in endless mode.
