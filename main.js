@@ -1748,6 +1748,130 @@ function getDisplayedTopDamageEntries() {
   return state.waveActive ? getTopDamageEntries(5) : state.lastWaveTopDamage;
 }
 
+function getTowerAbilityDescriptions(tower) {
+  if (!tower || tower.kind !== "tower") return [];
+  const parts = [];
+
+  if (tower.pattern === "splash" && tower.splashRadius > 0) {
+    parts.push(`Урон по области: радиус ${((tower.splashRadius || 0) / TILE).toFixed(1)} клетки.`);
+  }
+  if (tower.pattern === "chain" && tower.multiTargets > 1) {
+    parts.push(
+      `Цепная атака: до ${tower.multiTargets} целей, снижение урона ${Math.round((tower.chainFalloff || 0) * 100)}% за прыжок.`
+    );
+  }
+  if (tower.pattern === "multi" && tower.multiTargets > 1) {
+    parts.push(`Мультивыстрел: одновременно бьет до ${tower.multiTargets} целей.`);
+  }
+  if (tower.pattern === "all") {
+    parts.push("Массовая атака: поражает всех врагов в радиусе действия.");
+  }
+  if (tower.critChance) {
+    parts.push(`Критический удар: ${Math.round(tower.critChance * 100)}% шанс на x${tower.critMultiplier}.`);
+  }
+  if (tower.slowDuration && tower.slowFactor < 1) {
+    parts.push(
+      `Замедление: ${Math.round((1 - tower.slowFactor) * 100)}% на ${tower.slowDuration.toFixed(1)} сек.`
+    );
+  }
+  if (tower.poisonDamage && tower.poisonDuration) {
+    parts.push(`Яд: ${Math.round(tower.poisonDamage)}/сек на ${tower.poisonDuration.toFixed(1)} сек.`);
+  }
+  if (tower.burnDamage && tower.burnDuration) {
+    parts.push(`Горение: ${Math.round(tower.burnDamage)}/сек на ${tower.burnDuration.toFixed(1)} сек.`);
+  }
+  if (tower.stackingBurnDamage) {
+    parts.push(`Стакающееся горение: +${Math.round(tower.stackingBurnDamage)}/сек за попадание.`);
+  }
+  if (tower.armorPenPercent) {
+    parts.push(`Игнорирует ${Math.round(tower.armorPenPercent * 100)}% брони цели.`);
+  }
+  if (tower.armorBreakFlat && tower.armorBreakDuration) {
+    parts.push(`Ломает броню: -${tower.armorBreakFlat} на ${tower.armorBreakDuration.toFixed(1)} сек.`);
+  }
+  if (tower.magicShredPercent) {
+    parts.push(`Снижает магрезист на ${Math.round(tower.magicShredPercent * 100)}% на 4 сек.`);
+  }
+  if (tower.percentCurrentHpDamage && tower.percentCurrentHpChance) {
+    parts.push(
+      `Добивающий урон: ${Math.round(tower.percentCurrentHpDamage * 100)}% от текущего HP с шансом ${Math.round(
+        tower.percentCurrentHpChance * 100
+      )}%.`
+    );
+  }
+  if (tower.percentMaxHpDamage && tower.percentMaxHpChance) {
+    parts.push(
+      `Урон по максимуму: ${Math.round(tower.percentMaxHpDamage * 100)}% от максимального HP с шансом ${Math.round(
+        tower.percentMaxHpChance * 100
+      )}%.`
+    );
+  }
+  if (tower.stunChance && tower.stunDuration) {
+    parts.push(`Оглушение: ${Math.round(tower.stunChance * 100)}% шанс на ${tower.stunDuration.toFixed(1)} сек.`);
+  }
+  if (tower.freezeChance && tower.freezeDuration) {
+    parts.push(`Заморозка: ${Math.round(tower.freezeChance * 100)}% шанс на ${tower.freezeDuration.toFixed(1)} сек.`);
+  }
+  if (tower.auraDamageBoost || tower.auraFlatDamage || tower.auraAttackSpeedBoost || tower.auraCritChanceBoost) {
+    const auraParts = [];
+    if (tower.auraDamageBoost) auraParts.push(`урон +${Math.round(tower.auraDamageBoost * 100)}%`);
+    if (tower.auraFlatDamage) auraParts.push(`урон +${Math.round(tower.auraFlatDamage)}`);
+    if (tower.auraAttackSpeedBoost) auraParts.push(`скорость +${Math.round(tower.auraAttackSpeedBoost * 100)}%`);
+    if (tower.auraCritChanceBoost) auraParts.push(`крит +${Math.round(tower.auraCritChanceBoost * 100)}%`);
+    parts.push(
+      `Аура поддержки: ${auraParts.join(", ")} в радиусе ${((tower.rangeCellsAura || tower.rangeCells || 0)).toFixed(1)} клетки.`
+    );
+  }
+  if (tower.executeChance && tower.executeThreshold) {
+    parts.push(
+      `Казнь: ${Math.round(tower.executeChance * 100)}% шанс добить цель ниже ${Math.round(tower.executeThreshold * 100)}% HP.`
+    );
+  }
+  if (tower.beamChance && tower.beamMultiplier > 1) {
+    parts.push(`Луч: ${Math.round(tower.beamChance * 100)}% шанс на залп с уроном x${tower.beamMultiplier}.`);
+  }
+  if (tower.globalStunChance && tower.globalStunDuration) {
+    parts.push(
+      `Массовый стан: ${Math.round(tower.globalStunChance * 100)}% шанс оглушить всех в радиусе на ${tower.globalStunDuration.toFixed(1)} сек.`
+    );
+  }
+  if (tower.speedBurstChance && tower.speedBurstBoost && tower.speedBurstDuration) {
+    parts.push(
+      `Разгон: ${Math.round(tower.speedBurstChance * 100)}% шанс ускориться на ${Math.round(
+        tower.speedBurstBoost * 100
+      )}% на ${tower.speedBurstDuration.toFixed(1)} сек.`
+    );
+  }
+  if (tower.specialShotEvery && tower.specialShotMultiplier > 1) {
+    parts.push(`Особый выстрел: каждый ${tower.specialShotEvery}-й наносит x${tower.specialShotMultiplier}.`);
+  }
+  if (tower.mapProcChance && (tower.mapProcDamage || tower.mapProcPercentMaxHp)) {
+    const mapProcText = tower.mapProcDamage
+      ? `${Math.round(tower.mapProcDamage)} доп. урона`
+      : `${(tower.mapProcPercentMaxHp * 100).toFixed(1)}% от макс HP`;
+    parts.push(`Редкий прок: ${Math.round(tower.mapProcChance * 100)}% шанс на ${mapProcText}.`);
+  }
+  if (tower.mapBlastEvery && tower.mapBlastDamage) {
+    parts.push(`Глобальный взрыв: каждая ${tower.mapBlastEvery}-я атака бьет всю карту на ${Math.round(tower.mapBlastDamage)}.`);
+  }
+  if (tower.cannotKill) {
+    parts.push("Не может убить цель: всегда оставляет минимум 1 HP.");
+  }
+  if (tower.silverSplashChance && tower.silverSplashSilverPerTarget) {
+    parts.push(
+      `Серебряный прок: ${Math.round(tower.silverSplashChance * 100)}% шанс задеть несколько целей и дать серебро.`
+    );
+  }
+  if (tower.tripleShotEvery) {
+    parts.push(`Ритм силы: каждая ${tower.tripleShotEvery}-я атака наносит x3 урон.`);
+  }
+  if (tower.killGainDamage) {
+    parts.push(`Пожирание: за убийство получает +${tower.killGainDamage} постоянного урона.`);
+  }
+
+  return parts;
+}
+
 function getSortedTargetsInRange(tower) {
   return state.enemies
     .filter((enemy) => !enemy.dead)
@@ -3294,6 +3418,19 @@ function drawInfoPanel() {
 
   ctx.fillStyle = COLORS.mutedText;
   y += drawWrappedText(`Талант: ${selected.talent}`, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 6) * 20 + 8;
+  const abilityLines = getTowerAbilityDescriptions(selected);
+  if (abilityLines.length) {
+    y += drawWrappedText(
+      `Способности: ${abilityLines.join(" ")}`,
+      bodyX,
+      y,
+      INFO_W - 32,
+      20,
+      COLORS.mutedText,
+      "14px Avenir Next",
+      16
+    ) * 20 + 8;
+  }
   y += drawWrappedText(selected.description, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 12) * 20;
   ctx.restore();
   state.infoScrollMax = Math.max(0, y - (body.y + body.h));
