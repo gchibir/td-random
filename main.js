@@ -390,6 +390,7 @@ const START_LIVES = 20;
 const TILE_SPEED = ENEMY_SPEED_CELLS * TILE;
 const TOOL_RE_ROLL_COST = 950;
 const TOOL_MOVE_COST = 100;
+const ITEM_PURCHASE_COST = 500;
 const BOSS_DEFS = [
   { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 240, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
   { id: "boss2", name: "Босс 2", hp: 15000, armor: 15, magicResist: 0.35, cost: 150, cooldown: 240, maxBuys: 4, rewardMines: 4, castleDamage: 5, color: "#7c2d12" },
@@ -1461,6 +1462,8 @@ function activateMysteryBagChoice(choiceId) {
 function buyRandomItem() {
   const slotIndex = state.inventory.findIndex((slot) => slot === null);
   if (slotIndex < 0) return false;
+  if (state.silver < ITEM_PURCHASE_COST) return false;
+  state.silver -= ITEM_PURCHASE_COST;
   const itemId = rollRandomShopItemId();
   state.inventory[slotIndex] = { itemId };
   state.selectedTowerItemTowerId = null;
@@ -3421,9 +3424,9 @@ function getShopButtons() {
       y: SHOP_Y + 40,
       w: SHOP_W - 24,
       h: 34,
-      label: "Купить предмет",
+      label: `Купить предмет ${ITEM_PURCHASE_COST}`,
       sublabel: state.inventory.some((slot) => slot === null) ? "рандом" : "нет места",
-      ready: state.inventory.some((slot) => slot === null)
+      ready: state.inventory.some((slot) => slot === null) && state.silver >= ITEM_PURCHASE_COST
     }
   ];
   return buttons.concat(BOSS_DEFS.map((boss, index) => {
