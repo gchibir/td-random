@@ -2,7 +2,7 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 canvas.width = 540;
-canvas.height = 960;
+canvas.height = 1040;
 
 const GRID_COLS = 12;
 const GRID_ROWS = 13;
@@ -56,18 +56,17 @@ let SHOP_Y = 0;
 
 function recalculateLayout() {
   STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
-  GAME_H =
-    canvas.height - STACK_TOP - LAYOUT.padding - LAYOUT.auraH - LAYOUT.statsH - LAYOUT.controlH - LAYOUT.gap * 3;
   BOARD_W = GRID_COLS * TILE;
   BOARD_H = GRID_ROWS * TILE;
   MAP_VISUAL_H = BOARD_H + TILE * RIVER_ROWS;
-  BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
-  BOARD_Y = STACK_TOP + Math.floor((GAME_H - MAP_VISUAL_H) / 2);
   TOP_HUD_X = LAYOUT.padding;
   TOP_HUD_Y = STACK_TOP;
   TOP_HUD_W = canvas.width - LAYOUT.padding * 2;
+  BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
+  BOARD_Y = TOP_HUD_Y + LAYOUT.statsH + LAYOUT.gap;
+  GAME_H = BOARD_Y + MAP_VISUAL_H - STACK_TOP;
   AURA_X = LAYOUT.padding;
-  AURA_Y = STACK_TOP + GAME_H + LAYOUT.gap;
+  AURA_Y = BOARD_Y + MAP_VISUAL_H + LAYOUT.gap;
   AURA_W = canvas.width - LAYOUT.padding * 2;
   STATS_X = LAYOUT.padding;
   STATS_Y = AURA_Y + LAYOUT.auraH + LAYOUT.gap;
