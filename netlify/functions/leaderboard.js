@@ -6,21 +6,29 @@ const LIMIT = 10;
 
 function normalizeEntries(rawEntries) {
   if (!Array.isArray(rawEntries)) return [];
-  return rawEntries
-    .filter(
-      (entry) =>
-        entry &&
-        typeof entry.playerKey === "string" &&
-        entry.playerKey &&
-        typeof entry.name === "string"
-    )
-    .map((entry) => ({
+  const deduped = new Map();
+  for (const entry of rawEntries) {
+    if (!entry || typeof entry.playerKey !== "string" || !entry.playerKey || typeof entry.name !== "string") {
+      continue;
+    }
+    const normalized = {
       playerKey: String(entry.playerKey).slice(0, 80),
       name: String(entry.name).slice(0, 20),
       bestWave: Math.max(1, Number(entry.bestWave) || 1),
       bestExtraKills: Math.max(0, Number(entry.bestExtraKills) || 0),
       updatedAt: Number(entry.updatedAt) || 0
-    }))
+    };
+    const existing = deduped.get(normalized.playerKey);
+    if (!existing) {
+      deduped.set(normalized.playerKey, normalized);
+      continue;
+    }
+    existing.name = normalized.name;
+    existing.bestWave = Math.max(existing.bestWave, normalized.bestWave);
+    existing.bestExtraKills = Math.max(existing.bestExtraKills, normalized.bestExtraKills);
+    existing.updatedAt = Math.max(existing.updatedAt, normalized.updatedAt);
+  }
+  return [...deduped.values()]
     .sort((a, b) => b.bestExtraKills - a.bestExtraKills || b.bestWave - a.bestWave || b.updatedAt - a.updatedAt)
     .slice(0, LIMIT);
 }

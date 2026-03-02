@@ -839,9 +839,10 @@ function storeBestWave(bestWave) {
 
 function normalizeLeaderboardEntries(rawEntries) {
   if (!Array.isArray(rawEntries)) return [];
-  return rawEntries
-    .filter((entry) => entry && typeof entry.name === "string" && Number.isFinite(Number(entry.bestWave)))
-    .map((entry) => ({
+  const deduped = new Map();
+  for (const entry of rawEntries) {
+    if (!entry || typeof entry.name !== "string" || !Number.isFinite(Number(entry.bestWave))) continue;
+    const normalized = {
       playerKey:
         typeof entry.playerKey === "string" && entry.playerKey
           ? entry.playerKey
@@ -850,7 +851,19 @@ function normalizeLeaderboardEntries(rawEntries) {
       bestWave: Math.max(1, Number(entry.bestWave) || 1),
       bestExtraKills: Math.max(0, Number(entry.bestExtraKills) || 0),
       updatedAt: Number(entry.updatedAt) || 0
-    }))
+    };
+    const existing = deduped.get(normalized.playerKey);
+    if (!existing) {
+      deduped.set(normalized.playerKey, normalized);
+      continue;
+    }
+    existing.name = normalized.name;
+    existing.bestWave = Math.max(existing.bestWave, normalized.bestWave);
+    existing.bestExtraKills = Math.max(existing.bestExtraKills, normalized.bestExtraKills);
+    existing.updatedAt = Math.max(existing.updatedAt, normalized.updatedAt);
+  }
+  return [...deduped.values()]
+    .filter((entry) => entry && typeof entry.name === "string" && Number.isFinite(Number(entry.bestWave)))
     .sort((a, b) => b.bestExtraKills - a.bestExtraKills || b.bestWave - a.bestWave || b.updatedAt - a.updatedAt)
     .slice(0, 10);
 }
@@ -1427,7 +1440,7 @@ function getItemDefById(itemId) {
 }
 
 function canTowerHoldItems(tower) {
-  return !!(tower && tower.kind === "tower" && tower.level === 6);
+  return !!(tower && tower.kind === "tower" && tower.level >= 6);
 }
 
 function getTowerById(towerId) {
