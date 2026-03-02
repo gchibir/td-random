@@ -6,33 +6,36 @@ canvas.height = 960;
 
 const GRID_COLS = 12;
 const GRID_ROWS = 13;
-const TILE = 38;
+const TILE = 40;
 const RIVER_ROWS = 2;
+const TOP_UI_OFFSET = 36;
 
 const LAYOUT = {
   padding: 16,
   gap: 10,
   auraH: 58,
   statsH: 48,
-  controlH: 192
+  controlH: 156
 };
 
 const NICK_STORAGE_KEY = "td_random_nick";
 const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
 const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
 
-const GAME_H = canvas.height - LAYOUT.padding * 2 - LAYOUT.auraH - LAYOUT.statsH - LAYOUT.controlH - LAYOUT.gap * 3;
+const STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
+const GAME_H =
+  canvas.height - STACK_TOP - LAYOUT.padding - LAYOUT.auraH - LAYOUT.statsH - LAYOUT.controlH - LAYOUT.gap * 3;
 const BOARD_W = GRID_COLS * TILE;
 const BOARD_H = GRID_ROWS * TILE;
 const MAP_VISUAL_H = BOARD_H + TILE * RIVER_ROWS;
 const BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
-const BOARD_Y = LAYOUT.padding + Math.floor((GAME_H - MAP_VISUAL_H) / 2);
+const BOARD_Y = STACK_TOP + Math.floor((GAME_H - MAP_VISUAL_H) / 2);
 const TOP_HUD_X = LAYOUT.padding;
-const TOP_HUD_Y = LAYOUT.padding;
+const TOP_HUD_Y = STACK_TOP;
 const TOP_HUD_W = canvas.width - LAYOUT.padding * 2;
 
 const AURA_X = LAYOUT.padding;
-const AURA_Y = LAYOUT.padding + GAME_H + LAYOUT.gap;
+const AURA_Y = STACK_TOP + GAME_H + LAYOUT.gap;
 const AURA_W = canvas.width - LAYOUT.padding * 2;
 
 const STATS_X = LAYOUT.padding;
