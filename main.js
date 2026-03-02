@@ -2105,24 +2105,41 @@ function getMatchingUpgradeMate(tower) {
   );
 }
 
+function getUpgradePoolForTower(tower) {
+  if (!tower || tower.kind !== "tower") return null;
+  const nextLevel = tower.level + 1;
+  const pool = getPoolForLevel(nextLevel);
+  if (!pool?.length) return null;
+  const filtered = pool.filter((candidate) => candidate.level === nextLevel);
+  return filtered.length ? filtered : null;
+}
+
 function canUpgradeTower(tower) {
-  return !!(tower && tower.kind === "tower" && getMatchingUpgradeMate(tower) && getNextTierPool(tower.level));
+  return !!(tower && tower.kind === "tower" && getMatchingUpgradeMate(tower) && getUpgradePoolForTower(tower));
 }
 
 function upgradeTower(tower) {
   if (!canUpgradeTower(tower)) return false;
   const mate = getMatchingUpgradeMate(tower);
-  const nextPool = getNextTierPool(tower.level);
+  const nextPool = getUpgradePoolForTower(tower);
   if (!mate || !nextPool) return false;
 
-  removeStructure(tower);
-  removeStructure(mate);
-
   const nextDef = rollRandomFrom(nextPool);
+  if (!nextDef || nextDef.level !== tower.level + 1) return false;
+
   const upgraded = createTower(tower.cellC, tower.cellR, nextDef);
+  upgraded.nextShotAt = Math.max(tower.nextShotAt || 0, mate.nextShotAt || 0);
+
+  removeStructure(mate);
+  removeStructure(tower);
   state.towers.push(upgraded);
   state.selectedCell = { c: upgraded.cellC, r: upgraded.cellR };
-  state.lastRoll = `${upgraded.name} (${upgraded.tier})`;
+  state.selectedEnemyId = null;
+  state.selectedAuraSourceId = null;
+  state.toolsOpen = false;
+  state.selectedToolAction = null;
+  state.lastRoll = `Апгрейд: ${upgraded.name} (${upgraded.tier})`;
+  showTowerAnnouncement(upgraded.level);
   return true;
 }
 
