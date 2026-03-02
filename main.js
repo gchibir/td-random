@@ -8,7 +8,7 @@ const GRID_COLS = 12;
 const GRID_ROWS = 13;
 const TILE = 40;
 const RIVER_ROWS = 2;
-const TOP_UI_OFFSET = 36;
+const BASE_TOP_UI_OFFSET = 36;
 
 const LAYOUT = {
   padding: 16,
@@ -22,41 +22,94 @@ const NICK_STORAGE_KEY = "td_random_nick";
 const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
 const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
 
-const STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
-const GAME_H =
-  canvas.height - STACK_TOP - LAYOUT.padding - LAYOUT.auraH - LAYOUT.statsH - LAYOUT.controlH - LAYOUT.gap * 3;
-const BOARD_W = GRID_COLS * TILE;
-const BOARD_H = GRID_ROWS * TILE;
-const MAP_VISUAL_H = BOARD_H + TILE * RIVER_ROWS;
-const BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
-const BOARD_Y = STACK_TOP + Math.floor((GAME_H - MAP_VISUAL_H) / 2);
-const TOP_HUD_X = LAYOUT.padding;
-const TOP_HUD_Y = STACK_TOP;
-const TOP_HUD_W = canvas.width - LAYOUT.padding * 2;
+let TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
+let STACK_TOP = 0;
+let GAME_H = 0;
+let BOARD_W = 0;
+let BOARD_H = 0;
+let MAP_VISUAL_H = 0;
+let BOARD_X = 0;
+let BOARD_Y = 0;
+let TOP_HUD_X = 0;
+let TOP_HUD_Y = 0;
+let TOP_HUD_W = 0;
+let AURA_X = 0;
+let AURA_Y = 0;
+let AURA_W = 0;
+let STATS_X = 0;
+let STATS_Y = 0;
+let STATS_W = 0;
+let CONTROL_X = 0;
+let CONTROL_Y = 0;
+let CONTROL_W = 0;
+let CONTROL_H = 0;
+let INFO_W = 0;
+let BUTTONS_X = 0;
+let BUTTONS_W = 0;
+let BUTTON_GAP = 10;
+let ACTION_BUTTON_W = 0;
+let ACTION_BUTTON_H = 0;
+let SHOP_W = 0;
+let SHOP_H = 112;
+let SHOP_X = 0;
+let SHOP_Y = 0;
 
-const AURA_X = LAYOUT.padding;
-const AURA_Y = STACK_TOP + GAME_H + LAYOUT.gap;
-const AURA_W = canvas.width - LAYOUT.padding * 2;
+function recalculateLayout() {
+  STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
+  GAME_H =
+    canvas.height - STACK_TOP - LAYOUT.padding - LAYOUT.auraH - LAYOUT.statsH - LAYOUT.controlH - LAYOUT.gap * 3;
+  BOARD_W = GRID_COLS * TILE;
+  BOARD_H = GRID_ROWS * TILE;
+  MAP_VISUAL_H = BOARD_H + TILE * RIVER_ROWS;
+  BOARD_X = Math.floor((canvas.width - BOARD_W) / 2);
+  BOARD_Y = STACK_TOP + Math.floor((GAME_H - MAP_VISUAL_H) / 2);
+  TOP_HUD_X = LAYOUT.padding;
+  TOP_HUD_Y = STACK_TOP;
+  TOP_HUD_W = canvas.width - LAYOUT.padding * 2;
+  AURA_X = LAYOUT.padding;
+  AURA_Y = STACK_TOP + GAME_H + LAYOUT.gap;
+  AURA_W = canvas.width - LAYOUT.padding * 2;
+  STATS_X = LAYOUT.padding;
+  STATS_Y = AURA_Y + LAYOUT.auraH + LAYOUT.gap;
+  STATS_W = canvas.width - LAYOUT.padding * 2;
+  CONTROL_X = LAYOUT.padding;
+  CONTROL_Y = STATS_Y + LAYOUT.statsH + LAYOUT.gap;
+  CONTROL_W = canvas.width - LAYOUT.padding * 2;
+  CONTROL_H = LAYOUT.controlH;
+  INFO_W = Math.min(308, CONTROL_W - 120);
+  BUTTONS_X = CONTROL_X + INFO_W + 12;
+  BUTTONS_W = CONTROL_W - INFO_W - 12;
+  ACTION_BUTTON_W = Math.floor((BUTTONS_W - BUTTON_GAP) / 2);
+  ACTION_BUTTON_H = Math.floor((CONTROL_H - BUTTON_GAP) / 2);
+  SHOP_W = BUTTONS_W;
+  SHOP_X = BUTTONS_X;
+  SHOP_Y = CONTROL_Y - SHOP_H - 10;
+}
 
-const STATS_X = LAYOUT.padding;
-const STATS_Y = AURA_Y + LAYOUT.auraH + LAYOUT.gap;
-const STATS_W = canvas.width - LAYOUT.padding * 2;
+function getTelegramInsetTopCanvasPx() {
+  const tg = window.Telegram?.WebApp;
+  if (!tg) return BASE_TOP_UI_OFFSET;
+  const insetTop = tg.safeAreaInset?.top ?? tg.contentSafeAreaInset?.top ?? 0;
+  const rect = canvas.getBoundingClientRect();
+  const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+  return Math.max(BASE_TOP_UI_OFFSET, Math.round(insetTop * scaleY) + 10);
+}
 
-const CONTROL_X = LAYOUT.padding;
-const CONTROL_Y = STATS_Y + LAYOUT.statsH + LAYOUT.gap;
-const CONTROL_W = canvas.width - LAYOUT.padding * 2;
-const CONTROL_H = LAYOUT.controlH;
-const INFO_W = 308;
-const BUTTONS_X = CONTROL_X + INFO_W + 12;
-const BUTTONS_W = CONTROL_W - INFO_W - 12;
-const BUTTON_GAP = 10;
-const ACTION_BUTTON_W = Math.floor((BUTTONS_W - BUTTON_GAP) / 2);
-const ACTION_BUTTON_H = Math.floor((CONTROL_H - BUTTON_GAP) / 2);
+function applyTelegramViewportLayout() {
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    try {
+      tg.ready?.();
+      tg.expand?.();
+    } catch {}
+    TOP_UI_OFFSET = getTelegramInsetTopCanvasPx();
+  } else {
+    TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
+  }
+  recalculateLayout();
+}
 
-const SHOP_W = BUTTONS_W;
-const SHOP_H = 112;
-const SHOP_X = BUTTONS_X;
-const SHOP_Y = CONTROL_Y - SHOP_H - 10;
+recalculateLayout();
 
 const COLORS = {
   pageTop: "#0e1925",
@@ -3924,6 +3977,19 @@ window.advanceTime = (ms) => {
   return Promise.resolve();
 };
 
+function initTelegramWebApp() {
+  const tg = window.Telegram?.WebApp;
+  applyTelegramViewportLayout();
+  if (!tg) {
+    window.addEventListener("resize", applyTelegramViewportLayout);
+    return;
+  }
+  if (typeof tg.onEvent === "function") {
+    tg.onEvent("viewportChanged", applyTelegramViewportLayout);
+  }
+  window.addEventListener("resize", applyTelegramViewportLayout);
+}
+
 let lastFrame = performance.now();
 function frame(now) {
   const dt = Math.min((now - lastFrame) / 1000, 0.05);
@@ -3937,6 +4003,7 @@ state.nickname = loadStoredNickname();
 state.bestWave = loadBestWave();
 state.leaderboard = loadLeaderboard();
 syncLeaderboardEntry();
+initTelegramWebApp();
 
 draw();
 if (!navigator.webdriver) {
