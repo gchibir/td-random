@@ -12,7 +12,7 @@ const BASE_TOP_UI_OFFSET = 36;
 
 const LAYOUT = {
   padding: 16,
-  gap: 10,
+  gap: 6,
   auraH: 58,
   statsH: 48,
   controlH: 156
