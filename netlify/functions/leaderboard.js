@@ -1,8 +1,36 @@
-const { getStore } = require("@netlify/blobs");
-
 const STORE_NAME = "td-random";
 const STORE_KEY = "leaderboard";
 const LIMIT = 10;
+
+function getMemoryStore() {
+  const memory = (globalThis.__tdRandomLeaderboardStore = globalThis.__tdRandomLeaderboardStore || new Map());
+  return {
+    async get(key, options = {}) {
+      const value = memory.get(key);
+      if (value == null) return null;
+      if (options.type === "json") {
+        return JSON.parse(value);
+      }
+      return value;
+    },
+    async set(key, value) {
+      memory.set(key, typeof value === "string" ? value : JSON.stringify(value));
+    },
+    async setJSON(key, value) {
+      memory.set(key, JSON.stringify(value));
+    }
+  };
+}
+
+async function getLeaderboardStore() {
+  try {
+    const blobs = await import("@netlify/blobs");
+    if (typeof blobs.getStore === "function") {
+      return blobs.getStore(STORE_NAME);
+    }
+  } catch {}
+  return getMemoryStore();
+}
 
 function normalizeEntries(rawEntries) {
   if (!Array.isArray(rawEntries)) return [];
@@ -71,7 +99,7 @@ function json(statusCode, payload) {
 }
 
 exports.handler = async (event) => {
-  const store = getStore(STORE_NAME);
+  const store = await getLeaderboardStore();
 
   if (event.httpMethod === "GET") {
     const entries = await loadEntries(store);
