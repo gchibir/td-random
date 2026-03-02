@@ -132,3 +132,10 @@ Update:
 - Changed aura geometry: buffs now apply when the aura circle intersects the target tower's cell square, not only when the target tower center is inside the aura radius.
 - This matches the design rule that clipping the tower's tile is enough for the aura to affect it.
 - Self-buffing is still blocked: the source tower does not count its own cell for its own aura.
+
+Update:
+- Added a persistent local leaderboard stored in localStorage (`td_random_leaderboard`) keyed by nickname and best cleared wave.
+- Nickname changes and best-wave updates now sync into that leaderboard automatically.
+- Removed the old `Рейтинг по раундам` pause-menu entry.
+- Replaced the previous placeholder leaderboard copy with a real rendered top list in the pause menu.
+- Increased pause-menu button heights and enlarged title, button, and panel text for better mobile readability.

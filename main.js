@@ -19,6 +19,7 @@ const LAYOUT = {
 
 const NICK_STORAGE_KEY = "td_random_nick";
 const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
+const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
 
 const GAME_H = canvas.height - LAYOUT.padding * 2 - LAYOUT.auraH - LAYOUT.statsH - LAYOUT.controlH - LAYOUT.gap * 3;
 const BOARD_W = GRID_COLS * TILE;
@@ -403,6 +404,7 @@ const state = {
   totalKills: 0,
   nickname: "",
   bestWave: 1,
+  leaderboard: [],
   nextEnemyId: 1,
   time: 0,
   hoveredSlot: null,
@@ -505,6 +507,7 @@ function ensureNickname(force = false) {
   }
   state.nickname = trimmed;
   storeNickname(trimmed);
+  syncLeaderboardEntry();
   return trimmed;
 }
 
@@ -544,6 +547,52 @@ function storeBestWave(bestWave) {
   try {
     window.localStorage.setItem(BEST_WAVE_STORAGE_KEY, String(bestWave));
   } catch {}
+}
+
+function loadLeaderboard() {
+  try {
+    const raw = window.localStorage.getItem(LEADERBOARD_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((entry) => entry && typeof entry.name === "string" && Number.isFinite(Number(entry.bestWave)))
+      .map((entry) => ({
+        name: String(entry.name).slice(0, 20),
+        bestWave: Math.max(1, Number(entry.bestWave) || 1),
+        updatedAt: Number(entry.updatedAt) || 0
+      }))
+      .sort((a, b) => b.bestWave - a.bestWave || b.updatedAt - a.updatedAt)
+      .slice(0, 10);
+  } catch {
+    return [];
+  }
+}
+
+function storeLeaderboard(entries) {
+  try {
+    window.localStorage.setItem(LEADERBOARD_STORAGE_KEY, JSON.stringify(entries.slice(0, 10)));
+  } catch {}
+}
+
+function syncLeaderboardEntry() {
+  const name = (state.nickname || "").trim();
+  if (!name) return;
+  const entries = loadLeaderboard();
+  const existing = entries.find((entry) => entry.name === name);
+  if (existing) {
+    existing.bestWave = Math.max(existing.bestWave, state.bestWave);
+    existing.updatedAt = Date.now();
+  } else {
+    entries.push({
+      name,
+      bestWave: state.bestWave,
+      updatedAt: Date.now()
+    });
+  }
+  entries.sort((a, b) => b.bestWave - a.bestWave || b.updatedAt - a.updatedAt);
+  state.leaderboard = entries.slice(0, 10);
+  storeLeaderboard(state.leaderboard);
 }
 
 function rollRandomFrom(list) {
@@ -1483,6 +1532,7 @@ function updateWave(dt) {
     state.lastWaveRecorded = state.wave;
     state.bestWave = Math.max(state.bestWave, state.wave);
     storeBestWave(state.bestWave);
+    syncLeaderboardEntry();
     state.wave += 1;
     maybeAwardMysteryBag(state.wave);
     state.waveActive = false;
@@ -2912,16 +2962,16 @@ function drawControlPanel() {
 
 function getPauseMenuButtons() {
   const menuX = 78;
-  const menuY = 164;
+  const menuY = 144;
   const menuW = canvas.width - 156;
   const buttonW = menuW - 32;
+  const buttonH = 50;
   return [
-    { id: "resume", label: "Продолжить", x: menuX + 16, y: menuY + 66, w: buttonW, h: 42 },
-    { id: "settings", label: "Настройки", x: menuX + 16, y: menuY + 116, w: buttonW, h: 42 },
-    { id: "nickname", label: "Сменить ник", x: menuX + 16, y: menuY + 166, w: buttonW, h: 42 },
-    { id: "leaders", label: "Таблица лидеров", x: menuX + 16, y: menuY + 216, w: buttonW, h: 42 },
-    { id: "round_rank", label: "Рейтинг по раундам", x: menuX + 16, y: menuY + 266, w: buttonW, h: 42 },
-    { id: "payments", label: "Магазин транзакций", x: menuX + 16, y: menuY + 316, w: buttonW, h: 42 }
+    { id: "resume", label: "Продолжить", x: menuX + 16, y: menuY + 76, w: buttonW, h: buttonH },
+    { id: "settings", label: "Настройки", x: menuX + 16, y: menuY + 134, w: buttonW, h: buttonH },
+    { id: "nickname", label: "Сменить ник", x: menuX + 16, y: menuY + 192, w: buttonW, h: buttonH },
+    { id: "leaders", label: "Таблица лидеров", x: menuX + 16, y: menuY + 250, w: buttonW, h: buttonH },
+    { id: "payments", label: "Магазин транзакций", x: menuX + 16, y: menuY + 308, w: buttonW, h: buttonH }
   ];
 }
 
@@ -2931,19 +2981,19 @@ function drawPauseMenu() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   const menuX = 78;
-  const menuY = 164;
+  const menuY = 144;
   const menuW = canvas.width - 156;
-  const menuH = 472;
+  const menuH = 560;
   fillRoundedRect(menuX, menuY, menuW, menuH, 22, "#1a2f44", "rgba(255,255,255,0.14)");
 
   ctx.fillStyle = "#ffffff";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.font = "bold 24px Avenir Next";
+  ctx.font = "bold 30px Avenir Next";
   ctx.fillText("Пауза", menuX + 16, menuY + 18);
-  ctx.font = "13px Avenir Next";
+  ctx.font = "16px Avenir Next";
   ctx.fillStyle = COLORS.subtext;
-  ctx.fillText("Игра остановлена. Выбери действие ниже.", menuX + 16, menuY + 48);
+  ctx.fillText("Игра остановлена. Выбери действие ниже.", menuX + 16, menuY + 56);
 
   for (const button of getPauseMenuButtons()) {
     const active = state.pausePanel === button.id;
@@ -2952,27 +3002,46 @@ function drawPauseMenu() {
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "13px Avenir Next";
+    ctx.font = "bold 16px Avenir Next";
     ctx.fillText(button.label, button.x + 12, button.y + button.h / 2);
   }
+
+  const infoY = menuY + 376;
+  const infoH = menuH - (infoY - menuY) - 16;
+  fillRoundedRect(menuX + 16, infoY, menuW - 32, infoH, 16, "#223a4f", "rgba(255,255,255,0.08)");
 
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillStyle = "#d6e6f4";
-  ctx.font = "12px Avenir Next";
-  const copy =
-    state.pausePanel === "settings"
-      ? "Настройки: звук, управление, графика и уведомления будут здесь."
-      : state.pausePanel === "nickname"
-        ? `Текущий ник: ${state.nickname}. Нажми «Сменить ник», чтобы изменить его.`
-        : state.pausePanel === "leaders"
-        ? "Таблица лидеров: глобальный и локальный рейтинг добавим следующим шагом."
-        : state.pausePanel === "round_rank"
-          ? `Лучший локальный результат: ${state.bestWave} волн. Глобальный рейтинг по пройденным раундам подключим после серверной части.`
-        : state.pausePanel === "payments"
-          ? "Магазин транзакций: внутриигровые покупки, пропуски и пакеты валюты."
-          : "Нажми «Продолжить», чтобы вернуться в игру.";
-  drawWrappedText(copy, menuX + 16, menuY + 378, menuW - 32, 18, "#d6e6f4", "12px Avenir Next", 5);
+  if (state.pausePanel === "leaders") {
+    ctx.font = "bold 18px Avenir Next";
+    ctx.fillText("Таблица лидеров", menuX + 28, infoY + 14);
+    const entries = state.leaderboard.length
+      ? state.leaderboard
+      : [{ name: state.nickname || "Player", bestWave: state.bestWave }];
+    let y = infoY + 46;
+    for (let i = 0; i < Math.min(5, entries.length); i += 1) {
+      const entry = entries[i];
+      ctx.font = i === 0 ? "bold 16px Avenir Next" : "15px Avenir Next";
+      ctx.fillStyle = i === 0 ? "#ffe8a3" : "#d6e6f4";
+      ctx.fillText(`${i + 1}. ${entry.name}`, menuX + 28, y);
+      ctx.textAlign = "right";
+      ctx.fillText(`${entry.bestWave} волн`, menuX + menuW - 28, y);
+      ctx.textAlign = "left";
+      y += 28;
+    }
+  } else {
+    ctx.font = "15px Avenir Next";
+    const copy =
+      state.pausePanel === "settings"
+        ? "Настройки: звук, управление, графика и уведомления будут здесь."
+        : state.pausePanel === "nickname"
+          ? `Текущий ник: ${state.nickname}. Нажми «Сменить ник», чтобы изменить его.`
+          : state.pausePanel === "payments"
+            ? "Магазин транзакций: внутриигровые покупки, пропуски и пакеты валюты."
+            : "Нажми «Продолжить», чтобы вернуться в игру.";
+    drawWrappedText(copy, menuX + 28, infoY + 14, menuW - 56, 22, "#d6e6f4", "15px Avenir Next", 6);
+  }
 }
 
 function drawDefeatOverlay() {
@@ -3748,6 +3817,7 @@ function renderGameToText() {
       nickname: state.nickname,
       bestWave: state.bestWave
     },
+    leaderboard: state.leaderboard,
     modifiers: {
       globalDamageBoost: state.globalDamageBoost,
       nuggetSaleBonus: state.nuggetSaleBonus
@@ -3862,6 +3932,8 @@ function frame(now) {
 
 state.nickname = loadStoredNickname();
 state.bestWave = loadBestWave();
+state.leaderboard = loadLeaderboard();
+syncLeaderboardEntry();
 
 draw();
 if (!navigator.webdriver) {
