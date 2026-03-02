@@ -2164,6 +2164,7 @@ function rerollTower(tower) {
   state.silver -= TOOL_RE_ROLL_COST;
   const replacement = createTower(tower.cellC, tower.cellR, nextDef);
   replacement.nextShotAt = tower.nextShotAt;
+  replacement.equippedItem = tower.equippedItem ? { ...tower.equippedItem } : null;
   removeStructure(tower);
   state.towers.push(replacement);
   state.selectedCell = { c: replacement.cellC, r: replacement.cellR };
@@ -4249,20 +4250,24 @@ function tryPlaceOnSlot(slot) {
 
   if (state.pendingBagTowerDef) {
     if (existing) {
+      clearItemSelection();
       state.selectedCell = { c: slot.c, r: slot.r };
       state.selectedEnemyId = null;
       state.selectedAuraSourceId = null;
       state.infoScroll = 0;
       return;
     }
+    clearItemSelection();
     placePendingBagTower(slot);
     return;
   }
 
   if (state.pendingBagUpgrade) {
     if (existing?.kind === "tower" && existing.level < 6) {
+      clearItemSelection();
       applyBagUpgradeToTower(existing);
     } else if (existing) {
+      clearItemSelection();
       state.selectedCell = { c: slot.c, r: slot.r };
       state.selectedEnemyId = null;
       state.selectedAuraSourceId = null;
@@ -4272,6 +4277,7 @@ function tryPlaceOnSlot(slot) {
   }
 
   if (existing) {
+    if (state.pendingItemTransfer) clearItemSelection();
     state.selectedCell = { c: slot.c, r: slot.r };
     state.selectedEnemyId = null;
     state.selectedAuraSourceId = null;
@@ -4285,6 +4291,7 @@ function tryPlaceOnSlot(slot) {
 
   if (mode === "mine") {
     if (state.mineStock <= 0) return;
+    if (state.pendingItemTransfer) clearItemSelection();
     const mine = createMine(slot.c, slot.r);
     state.towers.push(mine);
     state.mineStock -= 1;
@@ -4314,6 +4321,7 @@ function tryPlaceOnSlot(slot) {
   const buildCost = mode === "master" ? MASTER_TOWER_COST : SIMPLE_TOWER_COST;
   if (state.silver < buildCost) return;
 
+  if (state.pendingItemTransfer) clearItemSelection();
   state.silver -= buildCost;
   const tower = createTower(slot.c, slot.r, towerDef);
   state.towers.push(tower);
@@ -4414,13 +4422,12 @@ function handleTap(event) {
   if (inventorySlot != null) {
     if (!state.inventory[inventorySlot]) {
       if (state.selectedItemSlot === inventorySlot) {
-        state.selectedItemSlot = null;
-        state.itemMenuOpen = false;
+        clearItemSelection();
       }
       draw();
       return;
     }
-    if (state.selectedItemSlot === inventorySlot && state.itemMenuOpen) {
+    if (state.selectedItemSlot === inventorySlot) {
       clearItemSelection();
     } else {
       state.selectedTowerItemTowerId = null;
@@ -4438,7 +4445,7 @@ function handleTap(event) {
       const sameSelected =
         state.pendingItemTransfer?.source === "tower" &&
         state.pendingItemTransfer?.towerInstanceId === selectedTower.instanceId;
-      if (sameSelected && state.itemMenuOpen) {
+      if (sameSelected) {
         clearItemSelection();
       } else {
         state.selectedTowerItemTowerId = selectedTower.instanceId;
