@@ -106,6 +106,11 @@ function applyTelegramViewportLayout() {
     TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
   }
   recalculateLayout();
+  if (typeof state !== "undefined" && Array.isArray(state.towers)) {
+    for (const structure of state.towers) {
+      syncStructurePosition(structure);
+    }
+  }
 }
 
 recalculateLayout();
@@ -732,7 +737,12 @@ function buildExpandedPath(turns) {
 }
 
 const PATH_CELLS = buildExpandedPath(PATH_TURNS);
-const PATH_POINTS = PATH_CELLS.map((cell) => cellCenter(cell.c, cell.r));
+const PATH_LAST_INDEX = PATH_CELLS.length - 1;
+
+function getPathPoint(index) {
+  const cell = PATH_CELLS[Math.max(0, Math.min(index, PATH_LAST_INDEX))];
+  return cellCenter(cell.c, cell.r);
+}
 
 function getWaveStats(wave) {
   if (wave <= 5) {
@@ -1201,8 +1211,8 @@ function segLength(a, b) {
 }
 
 function enemyPixel(enemy) {
-  const a = PATH_POINTS[Math.min(enemy.segment, PATH_POINTS.length - 1)];
-  const b = PATH_POINTS[Math.min(enemy.segment + 1, PATH_POINTS.length - 1)];
+  const a = getPathPoint(enemy.segment);
+  const b = getPathPoint(enemy.segment + 1);
   return pointLerp(a, b, enemy.t);
 }
 
@@ -2022,9 +2032,9 @@ function updateEnemies(dt) {
     if (state.time < enemy.stunUntil) continue;
     let distance = TILE_SPEED * enemy.slowFactor * dt;
 
-    while (distance > 0 && enemy.segment < PATH_POINTS.length - 1) {
-      const a = PATH_POINTS[enemy.segment];
-      const b = PATH_POINTS[enemy.segment + 1];
+    while (distance > 0 && enemy.segment < PATH_LAST_INDEX) {
+      const a = getPathPoint(enemy.segment);
+      const b = getPathPoint(enemy.segment + 1);
       const length = segLength(a, b);
       if (length < 0.0001) {
         enemy.segment += 1;
@@ -2042,7 +2052,7 @@ function updateEnemies(dt) {
       }
     }
 
-    if (enemy.segment >= PATH_POINTS.length - 1) {
+    if (enemy.segment >= PATH_LAST_INDEX) {
       if (state.selectedEnemyId === enemy.id) state.selectedEnemyId = null;
       state.enemies.splice(i, 1);
       if (!enemy.isBoss) state.waveEscaped += 1;
