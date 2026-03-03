@@ -3993,16 +3993,20 @@ function drawButtonImage(button) {
   const drawW = Math.max(1, Math.round(img.naturalWidth * scale));
   const drawH = Math.max(1, Math.round(img.naturalHeight * scale));
   const drawX = Math.round(button.x + (button.w - drawW) / 2);
-  const iconCenterY = button.sublabel ? button.y + 37 : button.y + button.h / 2;
+  const iconCenterY = getActionButtonIconCenterY(button);
   const drawY = Math.round(iconCenterY - drawH / 2);
 
   ctx.drawImage(img, drawX, drawY, drawW, drawH);
   return true;
 }
 
+function getActionButtonIconCenterY(button) {
+  return button.y + 37;
+}
+
 function drawHammerGlyph(button, color) {
   const cx = button.x + button.w / 2;
-  const cy = button.y + 34;
+  const cy = getActionButtonIconCenterY(button) - 3;
   ctx.strokeStyle = color;
   ctx.lineWidth = 4;
   ctx.lineCap = "round";
@@ -4034,7 +4038,7 @@ function drawBuildTierBadge(button) {
 
 function drawPickaxeGlyph(button, color) {
   const cx = button.x + button.w / 2;
-  const cy = button.y + 34;
+  const cy = getActionButtonIconCenterY(button) - 3;
   ctx.strokeStyle = color;
   ctx.lineWidth = 4;
   ctx.lineCap = "round";
@@ -4052,7 +4056,7 @@ function drawPickaxeGlyph(button, color) {
 
 function drawCoinsGlyph(button, color) {
   const cx = button.x + button.w / 2;
-  const cy = button.y + 34;
+  const cy = getActionButtonIconCenterY(button) - 3;
   ctx.strokeStyle = color;
   ctx.fillStyle = "rgba(255,255,255,0.08)";
   ctx.lineWidth = 3;
@@ -4074,7 +4078,7 @@ function drawCoinsGlyph(button, color) {
 
 function drawCartGlyph(button, color) {
   const cx = button.x + button.w / 2;
-  const cy = button.y + 34;
+  const cy = getActionButtonIconCenterY(button) - 3;
   ctx.strokeStyle = color;
   ctx.lineWidth = 3.5;
   ctx.lineCap = "round";
@@ -4095,7 +4099,7 @@ function drawCartGlyph(button, color) {
 
 function drawWrenchGlyph(button, color) {
   const cx = button.x + button.w / 2;
-  const cy = button.y + 34;
+  const cy = getActionButtonIconCenterY(button) - 3;
   ctx.strokeStyle = color;
   ctx.lineWidth = 4;
   ctx.lineCap = "round";
