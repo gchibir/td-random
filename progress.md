@@ -166,3 +166,13 @@ Update:
 - Frontend now uses a stable `playerKey` (Telegram user id when available, nickname fallback), submits updates to the Netlify function, and fetches the shared top list when the leaderboard screen opens and on startup.
 - Local storage remains as a fallback cache when the remote endpoint is unavailable.
 - `node --check` passes for both `main.js` and `netlify/functions/leaderboard.js`.
+
+Update:
+- Replaced the old pre-start blur/button overlay with a real top-level menu that opens on first load (`mainMenuOpen = true`).
+- The menu now provides: start/continue, leaderboard, nickname, settings, and tutorial.
+- Pause now reuses the same menu shell; the primary button label switches from `Начать игру` before the first run to `Продолжить` after the run has started.
+- Added a guided tutorial flow: intro modal (`Монстры уже идут...`), highlighted `Строить` button, forced selection of the 170-silver tower, highlighted placement cell, then a mine reminder with the build button highlighted again.
+- The old start overlay now only shows the 5-second countdown for normal starts; the old darkened pre-start blocker is gone.
+- `render_game_to_text` now exposes `mainMenuOpen` and `tutorial` state for validation.
+- `node --check` passes.
+- Local server on port 8091 was restarted for manual verification; browser automation artifacts did not refresh in this environment, so UI was validated by served-source checks rather than a fresh Playwright screenshot.

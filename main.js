@@ -644,6 +644,7 @@ const state = {
   shopOpen: false,
   toolsOpen: false,
   paused: false,
+  mainMenuOpen: true,
   pausePanel: "settings",
   started: false,
   startCountdown: 0,
@@ -683,6 +684,10 @@ const state = {
   nextEnemyId: 1,
   time: 0,
   hoveredSlot: null,
+  tutorial: {
+    active: false,
+    step: "idle"
+  },
   camera: { zoom: 1, panX: 0, panY: 0 }
 };
 
@@ -2976,6 +2981,18 @@ function getStartButtonRect() {
   };
 }
 
+function findTutorialNextButtonAt(clientX, clientY) {
+  const rect = getTutorialNextButtonRect();
+  if (!rect) return false;
+  const point = getCanvasPoint(clientX, clientY);
+  return (
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.w &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.h
+  );
+}
+
 function getDamageToggleRect() {
   return { x: AURA_X + AURA_W - 92, y: AURA_Y + 10, w: 80, h: 22 };
 }
@@ -3266,37 +3283,217 @@ function drawEventText(text, centerY, options = {}) {
 }
 
 function drawStartOverlay() {
-  if (state.started && state.startCountdown <= 0) return;
-  if (!state.started) {
-    ctx.fillStyle = "rgba(6, 12, 19, 0.42)";
-    ctx.fillRect(BOARD_X, BOARD_Y, BOARD_W, MAP_VISUAL_H);
-    const button = getStartButtonRect();
-    fillRoundedRect(button.x, button.y, button.w, button.h, 20, "#d4a93d", "#ffe7a2");
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#ffffff";
-    ctx.textBaseline = "bottom";
-    ctx.font = "bold 20px Avenir Next";
-    ctx.fillText(
-      state.nickname ? `Ник: ${state.nickname}` : "Сначала придумай ник игрока",
-      BOARD_X + BOARD_W / 2,
-      button.y - 14
-    );
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#1f1702";
-    ctx.font = "bold 22px Avenir Next";
-    ctx.fillText(
-      state.nickname ? "Начать играть" : "Придумать ник",
-      button.x + button.w / 2,
-      button.y + button.h / 2 + 0.5
-    );
-    return;
-  }
+  if (!state.started || state.startCountdown <= 0) return;
 
   drawEventText(`Волна через ${Math.ceil(state.startCountdown)}`, BOARD_Y + 24, {
     color: "#ffffff",
     font: "bold 26px Avenir Next",
     boxH: 42
   });
+}
+
+function isMenuOpen() {
+  return state.mainMenuOpen || state.paused;
+}
+
+function getMenuButtons() {
+  const menuX = 78;
+  const menuY = 144;
+  const menuW = canvas.width - 156;
+  const buttonW = menuW - 32;
+  const buttonH = 50;
+  const primaryLabel = state.started ? "Продолжить" : "Начать игру";
+  return [
+    { id: "primary", label: primaryLabel, x: menuX + 16, y: menuY + 76, w: buttonW, h: buttonH },
+    { id: "leaders", label: "Таблица лидеров", x: menuX + 16, y: menuY + 134, w: buttonW, h: buttonH },
+    { id: "nickname", label: "Сменить ник", x: menuX + 16, y: menuY + 192, w: buttonW, h: buttonH },
+    { id: "settings", label: "Настройки", x: menuX + 16, y: menuY + 250, w: buttonW, h: buttonH },
+    { id: "tutorial", label: "Обучение", x: menuX + 16, y: menuY + 308, w: buttonW, h: buttonH }
+  ];
+}
+
+function startNormalGame() {
+  state.mainMenuOpen = false;
+  state.paused = false;
+  state.pausePanel = "settings";
+  state.tutorial.active = false;
+  state.tutorial.step = "idle";
+  if (!state.started) {
+    state.started = true;
+    state.startCountdown = 5;
+  }
+  state.selectedCell = null;
+  state.selectedEnemyId = null;
+  state.selectedAuraSourceId = null;
+}
+
+function startTutorialGame() {
+  state.mainMenuOpen = false;
+  state.paused = false;
+  state.pausePanel = "settings";
+  state.started = true;
+  state.startCountdown = 0;
+  state.buildMode = "simple";
+  state.towerBuildMode = "simple";
+  state.buildPickerOpen = false;
+  state.shopOpen = false;
+  state.toolsOpen = false;
+  state.itemMenuOpen = false;
+  state.moveMode = false;
+  clearItemSelection();
+  state.tutorial.active = true;
+  state.tutorial.step = "intro";
+  state.selectedCell = null;
+  state.selectedEnemyId = null;
+  state.selectedAuraSourceId = null;
+}
+
+function getTutorialTargetSlot() {
+  if (!state.tutorial.active || !["place_simple", "place_mine"].includes(state.tutorial.step)) return null;
+  for (let r = 0; r < GRID_ROWS; r += 1) {
+    for (let c = 0; c < GRID_COLS; c += 1) {
+      if (!isBuildCell(c, r) || getStructureAt(c, r)) continue;
+      return { c, r };
+    }
+  }
+  return null;
+}
+
+function getTutorialHighlightMode() {
+  if (!state.tutorial.active) return "";
+  if (state.tutorial.step === "highlight_build" || state.tutorial.step === "prompt_mine" || state.tutorial.step === "pick_mine") {
+    return "build";
+  }
+  if (state.tutorial.step === "place_simple" || state.tutorial.step === "place_mine") {
+    return "slot";
+  }
+  return "";
+}
+
+function getTutorialModalConfig() {
+  if (!state.tutorial.active) return null;
+  if (state.tutorial.step === "intro") {
+    return {
+      text: "Монстры уже идут! Скорее строй башни для обороны!",
+      button: "Далее"
+    };
+  }
+  if (state.tutorial.step === "pick_simple") {
+    return {
+      text: "Выбери башню за 170 серебра"
+    };
+  }
+  if (state.tutorial.step === "prompt_mine" || state.tutorial.step === "pick_mine" || state.tutorial.step === "place_mine") {
+    return {
+      text: "Не забудь поставить шахты, они будут добывать тебе золото"
+    };
+  }
+  return null;
+}
+
+function advanceTutorialFromAction(actionId) {
+  if (!state.tutorial.active) return;
+  if (state.tutorial.step === "highlight_build" && actionId === "build") {
+    state.tutorial.step = "pick_simple";
+    return;
+  }
+  if (state.tutorial.step === "prompt_mine" && actionId === "build") {
+    state.tutorial.step = "pick_mine";
+  }
+}
+
+function advanceTutorialFromBuildChoice(choiceId) {
+  if (!state.tutorial.active) return true;
+  if (state.tutorial.step === "pick_simple") {
+    if (choiceId !== "simple") return false;
+    state.tutorial.step = "place_simple";
+    return true;
+  }
+  if (state.tutorial.step === "pick_mine") {
+    if (choiceId !== "mine") return false;
+    state.tutorial.step = "place_mine";
+    return true;
+  }
+  return true;
+}
+
+function advanceTutorialAfterPlacement(kind) {
+  if (!state.tutorial.active) return;
+  if (state.tutorial.step === "place_simple" && kind === "tower") {
+    state.tutorial.step = "prompt_mine";
+    return;
+  }
+  if (state.tutorial.step === "place_mine" && kind === "mine") {
+    state.tutorial.active = false;
+    state.tutorial.step = "idle";
+  }
+}
+
+function getTutorialNextButtonRect() {
+  const modal = getTutorialModalConfig();
+  if (!modal?.button) return null;
+  const boxW = 360;
+  const boxH = 170;
+  return {
+    x: canvas.width / 2 - 84,
+    y: canvas.height / 2 - boxH / 2 + 106,
+    w: 168,
+    h: 42
+  };
+}
+
+function drawTutorialHighlight() {
+  if (!state.tutorial.active) return;
+  const pulse = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(state.time * 7));
+  const mode = getTutorialHighlightMode();
+  if (mode === "build") {
+    const button = getActionButtons().find((entry) => entry.id === "build");
+    if (!button) return;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 230, 120, ${0.55 + pulse * 0.35})`;
+    ctx.lineWidth = 4;
+    roundedRectPath(button.x - 6, button.y - 6, button.w + 12, button.h + 12, 22);
+    ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  if (mode === "slot") {
+    const slot = getTutorialTargetSlot();
+    if (!slot) return;
+    const p = cellToPixel(slot.c, slot.r);
+    ctx.save();
+    ctx.fillStyle = `rgba(255, 226, 94, ${0.08 + pulse * 0.18})`;
+    ctx.fillRect(p.x + 2, p.y + 2, TILE - 4, TILE - 4);
+    ctx.strokeStyle = `rgba(255, 230, 120, ${0.6 + pulse * 0.3})`;
+    ctx.lineWidth = 4;
+    roundedRectPath(p.x + 2, p.y + 2, TILE - 4, TILE - 4, 10);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawTutorialOverlay() {
+  if (!state.tutorial.active) return;
+  drawTutorialHighlight();
+  const modal = getTutorialModalConfig();
+  if (!modal) return;
+  const boxW = 360;
+  const boxH = modal.button ? 170 : 138;
+  const boxX = canvas.width / 2 - boxW / 2;
+  const boxY = canvas.height / 2 - boxH / 2;
+  fillRoundedRect(boxX, boxY, boxW, boxH, 20, "rgba(18, 33, 48, 0.94)", "rgba(255,255,255,0.14)");
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#eef7ff";
+  ctx.font = "bold 18px Avenir Next";
+  drawWrappedText(modal.text, boxX + 18, boxY + 20, boxW - 36, 24, "#eef7ff", "bold 18px Avenir Next", 4);
+  if (!modal.button) return;
+  const button = getTutorialNextButtonRect();
+  fillRoundedRect(button.x, button.y, button.w, button.h, 14, "#d4a93d", "#ffe7a2");
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#1f1702";
+  ctx.font = "bold 18px Avenir Next";
+  ctx.fillText(modal.button, button.x + button.w / 2, button.y + button.h / 2 + 0.5);
 }
 
 function drawPendingBagHint() {
@@ -3921,23 +4118,8 @@ function drawControlPanel() {
   drawToolsPopup();
 }
 
-function getPauseMenuButtons() {
-  const menuX = 78;
-  const menuY = 144;
-  const menuW = canvas.width - 156;
-  const buttonW = menuW - 32;
-  const buttonH = 50;
-  return [
-    { id: "resume", label: "Продолжить", x: menuX + 16, y: menuY + 76, w: buttonW, h: buttonH },
-    { id: "settings", label: "Настройки", x: menuX + 16, y: menuY + 134, w: buttonW, h: buttonH },
-    { id: "nickname", label: "Сменить ник", x: menuX + 16, y: menuY + 192, w: buttonW, h: buttonH },
-    { id: "leaders", label: "Таблица лидеров", x: menuX + 16, y: menuY + 250, w: buttonW, h: buttonH },
-    { id: "payments", label: "Магазин транзакций", x: menuX + 16, y: menuY + 308, w: buttonW, h: buttonH }
-  ];
-}
-
 function drawPauseMenu() {
-  if (!state.paused) return;
+  if (!isMenuOpen()) return;
   ctx.fillStyle = "rgba(6, 12, 19, 0.68)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -3951,14 +4133,19 @@ function drawPauseMenu() {
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.font = "bold 30px Avenir Next";
-  ctx.fillText("Пауза", menuX + 16, menuY + 18);
+  ctx.fillText(state.started ? "Пауза" : "Меню", menuX + 16, menuY + 18);
   ctx.font = "16px Avenir Next";
   ctx.fillStyle = COLORS.subtext;
-  ctx.fillText("Игра остановлена. Выбери действие ниже.", menuX + 16, menuY + 56);
+  const menuCopy = state.started
+    ? "Игра остановлена. Выбери действие ниже."
+    : state.nickname
+      ? `Ник: ${state.nickname}. Выбери режим запуска.`
+      : "Сначала задай ник или сразу начни игру, ник будет запрошен при запуске.";
+  ctx.fillText(menuCopy, menuX + 16, menuY + 56);
 
-  for (const button of getPauseMenuButtons()) {
+  for (const button of getMenuButtons()) {
     const active = state.pausePanel === button.id;
-    const fill = button.id === "resume" ? "#284a63" : active ? "#365f7e" : "#243b4e";
+    const fill = button.id === "primary" ? "#284a63" : active ? "#365f7e" : "#243b4e";
     fillRoundedRect(button.x, button.y, button.w, button.h, 14, fill, "rgba(255,255,255,0.08)");
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "left";
@@ -4013,9 +4200,9 @@ function drawPauseMenu() {
         ? "Настройки: звук, управление, графика и уведомления будут здесь."
         : state.pausePanel === "nickname"
           ? `Текущий ник: ${state.nickname}. Нажми «Сменить ник», чтобы изменить его.`
-          : state.pausePanel === "payments"
-            ? "Магазин транзакций: внутриигровые покупки, пропуски и пакеты валюты."
-            : "Нажми «Продолжить», чтобы вернуться в игру.";
+          : state.pausePanel === "tutorial"
+            ? "Обучение покажет базовый цикл: открыть строительство, выбрать башню, поставить ее и затем добавить шахту."
+            : "Нажми «Начать игру» или «Продолжить», чтобы перейти к обороне.";
     drawWrappedText(copy, menuX + 28, infoY + 14, menuW - 56, 22, "#d6e6f4", "15px Avenir Next", 6);
   }
 }
@@ -4057,14 +4244,7 @@ function drawBoardViewport() {
 
 function draw() {
   drawBackground();
-  if (!state.started && state.startCountdown <= 0) {
-    ctx.save();
-    ctx.filter = "blur(3px)";
-    drawBoardViewport();
-    ctx.restore();
-  } else {
-    drawBoardViewport();
-  }
+  drawBoardViewport();
   drawPendingBagHint();
   drawTowerAnnouncement();
   drawDamagePanel();
@@ -4075,6 +4255,7 @@ function draw() {
   drawDefeatOverlay();
   drawPauseMenu();
   drawStartOverlay();
+  drawTutorialOverlay();
 }
 
 function getCanvasPoint(clientX, clientY) {
@@ -4290,9 +4471,9 @@ function findToolsActionAt(clientX, clientY) {
 }
 
 function findPauseMenuActionAt(clientX, clientY) {
-  if (!state.paused) return null;
+  if (!isMenuOpen()) return null;
   const point = getCanvasPoint(clientX, clientY);
-  for (const button of getPauseMenuButtons()) {
+  for (const button of getMenuButtons()) {
     if (
       point.x >= button.x &&
       point.x <= button.x + button.w &&
@@ -4307,6 +4488,12 @@ function findPauseMenuActionAt(clientX, clientY) {
 
 function tryPlaceOnSlot(slot) {
   const existing = getStructureAt(slot.c, slot.r);
+  if (state.tutorial.active && ["place_simple", "place_mine"].includes(state.tutorial.step)) {
+    const target = getTutorialTargetSlot();
+    if (target && (slot.c !== target.c || slot.r !== target.r)) {
+      return;
+    }
+  }
   if (state.moveMode) {
     executeMove(slot);
     return;
@@ -4363,6 +4550,7 @@ function tryPlaceOnSlot(slot) {
     state.selectedEnemyId = null;
     state.selectedAuraSourceId = null;
     state.infoScroll = 0;
+    advanceTutorialAfterPlacement("mine");
     return;
   }
 
@@ -4394,6 +4582,7 @@ function tryPlaceOnSlot(slot) {
   state.selectedEnemyId = null;
   state.selectedAuraSourceId = null;
   state.infoScroll = 0;
+  advanceTutorialAfterPlacement("tower");
 }
 
 function handleToolsAction(action) {
@@ -4416,52 +4605,67 @@ function handleToolsAction(action) {
 }
 
 function handleTap(event) {
-  if (findStartButtonAt(event.clientX, event.clientY)) {
-    if (!state.nickname) {
-      const nickname = ensureNickname();
-      if (!nickname) {
-        draw();
-        return;
+  if (state.tutorial.active && state.tutorial.step === "intro" && findTutorialNextButtonAt(event.clientX, event.clientY)) {
+    state.tutorial.step = "highlight_build";
+    draw();
+    return;
+  }
+  if (state.tutorial.active && state.tutorial.step === "intro") {
+    draw();
+    return;
+  }
+
+  const menuAction = findPauseMenuActionAt(event.clientX, event.clientY);
+  if (menuAction) {
+    if (menuAction === "primary") {
+      if (!state.nickname) {
+        const nickname = ensureNickname();
+        if (!nickname) {
+          draw();
+          return;
+        }
       }
+      if (state.started) {
+        state.paused = false;
+        state.mainMenuOpen = false;
+      } else {
+        startNormalGame();
+      }
+    } else if (menuAction === "tutorial") {
+      if (!state.nickname) {
+        const nickname = ensureNickname();
+        if (!nickname) {
+          draw();
+          return;
+        }
+      }
+      state.pausePanel = "tutorial";
+      startTutorialGame();
+    } else if (menuAction === "nickname") {
+      ensureNickname(true);
+      state.pausePanel = "nickname";
+    } else if (menuAction === "leaders") {
+      syncLeaderboardEntry();
+      state.pausePanel = "leaders";
+      void refreshLeaderboardFromServer();
     } else {
-      state.started = true;
-      state.startCountdown = 5;
-      state.selectedCell = null;
-      state.selectedEnemyId = null;
+      state.pausePanel = menuAction;
     }
+    draw();
+    return;
+  }
+
+  if (isMenuOpen()) {
     draw();
     return;
   }
 
   if (findPauseButtonAt(event.clientX, event.clientY)) {
-    state.paused = !state.paused;
-    if (!state.paused) {
+    if (state.started) {
+      state.paused = !state.paused;
       state.pausePanel = "settings";
+      state.mainMenuOpen = false;
     }
-    draw();
-    return;
-  }
-
-  const pauseAction = findPauseMenuActionAt(event.clientX, event.clientY);
-  if (pauseAction) {
-    if (pauseAction === "resume") {
-      state.paused = false;
-      state.pausePanel = "settings";
-    } else if (pauseAction === "nickname") {
-      ensureNickname(true);
-      state.pausePanel = "nickname";
-    } else if (pauseAction === "leaders") {
-      syncLeaderboardEntry();
-      state.pausePanel = "leaders";
-      void refreshLeaderboardFromServer();
-    } else {
-      state.pausePanel = pauseAction;
-    }
-    draw();
-    return;
-  }
-
-  if (state.paused) {
     draw();
     return;
   }
@@ -4537,6 +4741,10 @@ function handleTap(event) {
 
   const buildPickerAction = findBuildPickerActionAt(event.clientX, event.clientY);
   if (buildPickerAction) {
+    if (!advanceTutorialFromBuildChoice(buildPickerAction.id)) {
+      draw();
+      return;
+    }
     if (buildPickerAction.id === "mine") {
       state.buildMode = "mine";
     } else {
@@ -4570,6 +4778,7 @@ function handleTap(event) {
   const actionButton = findActionButtonAt(event.clientX, event.clientY);
   if (actionButton) {
     if (actionButton.id === "build") {
+      advanceTutorialFromAction("build");
       state.buildMode = state.towerBuildMode;
       state.buildPickerOpen = !state.buildPickerOpen;
       state.moveMode = false;
@@ -4840,6 +5049,7 @@ function renderGameToText() {
       shopOpen: state.shopOpen,
       toolsOpen: state.toolsOpen,
       paused: state.paused,
+      mainMenuOpen: state.mainMenuOpen,
       pausePanel: state.pausePanel,
       started: state.started,
       startCountdown: state.startCountdown,
@@ -4861,6 +5071,7 @@ function renderGameToText() {
       bossShop: state.bossShop,
       lastRoll: state.lastRoll,
       selectedCell: state.selectedCell,
+      tutorial: state.tutorial,
       upgradeAvailable: canUpgradeTower(selected),
       camera: state.camera
     },
