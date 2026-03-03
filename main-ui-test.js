@@ -4110,6 +4110,22 @@ function getShopCloseRect() {
   return { x: SHOP_X + SHOP_W - 34, y: SHOP_Y + 8, w: 24, h: 24 };
 }
 
+function drawCloseButton(rect) {
+  if (!rect) return;
+  fillRoundedRect(rect.x, rect.y, rect.w, rect.h, 8, "#2b4458", "rgba(255,255,255,0.1)");
+  ctx.save();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(rect.x + 7, rect.y + 7);
+  ctx.lineTo(rect.x + rect.w - 7, rect.y + rect.h - 7);
+  ctx.moveTo(rect.x + rect.w - 7, rect.y + 7);
+  ctx.lineTo(rect.x + 7, rect.y + rect.h - 7);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawShopPopup() {
   if (!state.shopOpen) return;
 
@@ -4122,11 +4138,7 @@ function drawShopPopup() {
   ctx.font = "bold 16px Avenir Next";
   ctx.fillText("Магазин", SHOP_X + 12, SHOP_Y + 10);
   const close = getShopCloseRect();
-  fillRoundedRect(close.x, close.y, close.w, close.h, 8, "#2b4458", "rgba(255,255,255,0.1)");
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = "bold 14px Avenir Next";
-  ctx.fillText("X", close.x + close.w / 2, close.y + close.h / 2 + 0.5);
+  drawCloseButton(close);
 
   for (const button of buttons) {
     const selected = state.selectedShopItem === button.id;
@@ -4183,11 +4195,7 @@ function drawToolsPopup() {
   ctx.font = "bold 16px Avenir Next";
   ctx.fillText("Меню башни", BUTTONS_X, CONTROL_Y - 248);
   const close = getToolsCloseRect();
-  fillRoundedRect(close.x, close.y, close.w, close.h, 8, "#2b4458", "rgba(255,255,255,0.1)");
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = "bold 14px Avenir Next";
-  ctx.fillText("X", close.x + close.w / 2, close.y + close.h / 2 + 0.5);
+  drawCloseButton(close);
 
   for (const button of buttons) {
     const active =

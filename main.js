@@ -15,7 +15,7 @@ const LAYOUT = {
   gap: 6,
   auraH: 58,
   statsH: 48,
-  controlH: 156
+  controlH: 74
 };
 
 const NICK_STORAGE_KEY = "td_random_nick";
@@ -76,13 +76,13 @@ function recalculateLayout() {
   CONTROL_Y = STATS_Y + LAYOUT.statsH + LAYOUT.gap;
   CONTROL_W = canvas.width - LAYOUT.padding * 2;
   CONTROL_H = LAYOUT.controlH;
-  INFO_W = Math.min(308, CONTROL_W - 120);
-  BUTTONS_X = CONTROL_X + INFO_W + 12;
-  BUTTONS_W = CONTROL_W - INFO_W - 12;
-  ACTION_BUTTON_W = Math.floor((BUTTONS_W - BUTTON_GAP) / 2);
-  ACTION_BUTTON_H = Math.floor((CONTROL_H - BUTTON_GAP) / 2);
-  SHOP_W = BUTTONS_W;
-  SHOP_X = BUTTONS_X;
+  INFO_W = 0;
+  BUTTONS_X = CONTROL_X;
+  BUTTONS_W = CONTROL_W;
+  ACTION_BUTTON_W = Math.floor((BUTTONS_W - BUTTON_GAP * 4) / 5);
+  ACTION_BUTTON_H = CONTROL_H;
+  SHOP_W = 248;
+  SHOP_X = canvas.width - LAYOUT.padding - SHOP_W;
   SHOP_Y = CONTROL_Y - SHOP_H - 10;
 }
 
@@ -3029,23 +3029,39 @@ function getDamageToggleRect() {
   return { x: AURA_X + AURA_W - 92, y: AURA_Y + 10, w: 80, h: 22 };
 }
 
-function getInfoBodyRect() {
+function getFloatingInfoRect() {
+  const selected = getSelectedStructure();
+  const selectedEnemy = getSelectedEnemy();
+  const selectedItemDef = getSelectedTransferItemDef();
+  if (!selected && !selectedEnemy && !selectedItemDef) return null;
   return {
-    x: CONTROL_X + 10,
-    y: CONTROL_Y + 48,
-    w: INFO_W - 20,
-    h: CONTROL_H - 58
+    x: BOARD_X + 8,
+    y: BOARD_Y + MAP_VISUAL_H - 114,
+    w: BOARD_W - 16,
+    h: 104
+  };
+}
+
+function getInfoBodyRect() {
+  const rect = getFloatingInfoRect();
+  if (!rect) return null;
+  return {
+    x: rect.x + 12,
+    y: rect.y + 12,
+    w: rect.w - 24,
+    h: rect.h - 24
   };
 }
 
 function getSelectedTowerItemRect() {
   const selected = getSelectedStructure();
-  if (!selected || selected.kind !== "tower" || !canTowerHoldItems(selected)) return null;
+  const rect = getFloatingInfoRect();
+  if (!rect || !selected || selected.kind !== "tower" || !canTowerHoldItems(selected)) return null;
   return {
-    x: CONTROL_X + INFO_W - 58,
-    y: CONTROL_Y + 10,
-    w: 34,
-    h: 34
+    x: rect.x + rect.w - 46,
+    y: rect.y + 27,
+    w: 28,
+    h: 28
   };
 }
 
@@ -3457,10 +3473,12 @@ function getTutorialMineSlots() {
 function getTutorialHighlightMode() {
   if (!state.tutorial.active) return "";
   if (
-    state.tutorial.step === "highlight_build" ||
-    state.tutorial.step === "prompt_mine"
+    state.tutorial.step === "highlight_build"
   ) {
     return "build";
+  }
+  if (state.tutorial.step === "prompt_mine" || state.tutorial.step === "pick_mine") {
+    return "mine_button";
   }
   if (state.tutorial.step === "pick_simple") return "picker_simple";
   if (state.tutorial.step === "pick_mine") return "picker_mine";
@@ -3528,8 +3546,8 @@ function advanceTutorialFromAction(actionId) {
     resetTutorialScroll();
     return;
   }
-  if (state.tutorial.step === "prompt_mine" && actionId === "build") {
-    state.tutorial.step = "pick_mine";
+  if (state.tutorial.step === "prompt_mine" && actionId === "mine") {
+    state.tutorial.step = "place_mine";
     resetTutorialScroll();
   }
 }
@@ -3669,10 +3687,12 @@ function drawTutorialHighlight() {
   if (!state.tutorial.active) return;
   const pulse = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin((Date.now() / 1000) * 7));
   const mode = getTutorialHighlightMode();
-  if (["build", "picker_simple", "picker_mine", "tools", "shop"].includes(mode)) {
+  if (["build", "picker_simple", "mine_button", "tools", "shop"].includes(mode)) {
     const button =
       mode === "build"
         ? getActionButtons().find((entry) => entry.id === "build")
+        : mode === "mine_button"
+          ? getActionButtons().find((entry) => entry.id === "mine")
         : mode === "tools"
           ? getActionButtons().find((entry) => entry.id === "tools")
           : mode === "shop"
@@ -3774,290 +3794,103 @@ function getBuildModeLabel() {
 }
 
 function drawInfoPanel() {
-  fillRoundedRect(CONTROL_X, CONTROL_Y, INFO_W, CONTROL_H, 22, COLORS.infoPanel, COLORS.infoStroke);
-
+  const rect = getFloatingInfoRect();
+  if (!rect) return;
   const selected = getSelectedStructure();
   const selectedEnemy = getSelectedEnemy();
   const selectedItemDef = getSelectedTransferItemDef();
-  const innerX = CONTROL_X + 16;
-  const headerY = CONTROL_Y + 14;
   const body = getInfoBodyRect();
-  const bodyX = innerX;
-  let y = body.y - state.infoScroll;
 
+  fillRoundedRect(rect.x, rect.y, rect.w, rect.h, 18, "rgba(24, 46, 64, 0.78)", "rgba(255,255,255,0.14)");
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
 
   if (selectedItemDef) {
-    ctx.fillStyle = COLORS.darkText;
-    ctx.font = "bold 20px Avenir Next";
-    ctx.fillText(selectedItemDef.name, innerX, headerY);
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(body.x, body.y, body.w, body.h);
-    ctx.clip();
-    ctx.fillStyle = COLORS.mutedText;
-    ctx.font = "bold 13px Avenir Next";
-    ctx.fillText(`Предмет • Уровень ${selectedItemDef.level || 0}`, bodyX, y);
-    y += 24;
-    ctx.font = "14px Avenir Next";
-    const sourceText =
-      state.pendingItemTransfer?.source === "tower"
-        ? "Источник: башня"
-        : state.pendingItemTransfer?.source === "inventory"
-          ? "Источник: инвентарь"
-          : "Источник: неизвестно";
-    ctx.fillText(sourceText, bodyX, y);
-    y += 28;
-    y += drawWrappedText(selectedItemDef.description, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 8) * 20;
-    ctx.restore();
-    state.infoScrollMax = Math.max(0, y - (body.y + body.h));
-    state.infoScroll = Math.min(state.infoScroll, state.infoScrollMax);
-    return;
-  }
-
-  if (!selected && !selectedEnemy) {
-    ctx.fillStyle = COLORS.darkText;
-    ctx.font = "bold 20px Avenir Next";
-    ctx.fillText("Информация", innerX, headerY);
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(body.x, body.y, body.w, body.h);
-    ctx.clip();
-
-    ctx.font = "14px Avenir Next";
-    ctx.fillStyle = COLORS.mutedText;
-    ctx.fillText(`Игрок: ${state.nickname || "Player"}`, bodyX, y);
-    y += 24;
-    ctx.fillText(`Режим: ${getBuildModeLabel()}`, bodyX, y);
-    y += 24;
-    ctx.fillText(`Запас шахт: ${state.mineStock}`, bodyX, y);
-    y += 24;
-    ctx.fillText(`Цена самородка: ${getAdjustedNuggetPrice()}`, bodyX, y);
-    y += 24;
-
-    const rollText = state.lastRoll ? `Последний ролл: ${state.lastRoll}` : "Последний ролл: еще не было";
-    y += drawWrappedText(rollText, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 4) * 20 + 8;
-    drawWrappedText(
-      "Тяни карту пальцем. Зум меняется жестом. Нажатие на врага показывает его статы, инструменты открывают действия башни.",
-      bodyX,
-      y,
-      INFO_W - 32,
-      20,
-      COLORS.mutedText,
-      "14px Avenir Next",
-      8
-    );
-    y += 160;
-    ctx.restore();
-    state.infoScrollMax = Math.max(0, y - (body.y + body.h));
-    state.infoScroll = Math.min(state.infoScroll, state.infoScrollMax);
+    ctx.fillStyle = "#eef7ff";
+    ctx.font = "bold 15px Avenir Next";
+    ctx.fillText(selectedItemDef.name, body.x, body.y);
+    ctx.fillStyle = "#cfe0ec";
+    ctx.font = "12px Avenir Next";
+    const itemAbility = selectedItemDef.description || "Без дополнительного эффекта.";
+    drawWrappedText(`Эффект: ${itemAbility}`, body.x, body.y + 22, body.w, 16, "#cfe0ec", "12px Avenir Next", 4);
     return;
   }
 
   if (selectedEnemy && !selected) {
-    ctx.fillStyle = COLORS.darkText;
-    ctx.font = "bold 20px Avenir Next";
-    ctx.fillText(selectedEnemy.isBoss ? selectedEnemy.name || "Босс" : "Монстр", innerX, headerY);
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(body.x, body.y, body.w, body.h);
-    ctx.clip();
-    ctx.fillStyle = COLORS.mutedText;
-    ctx.font = "bold 13px Avenir Next";
-    ctx.fillText(selectedEnemy.isBoss ? "Особый враг" : "Обычный враг", bodyX, y);
-    y += 24;
-
-    ctx.fillStyle = COLORS.darkText;
-    ctx.font = "14px Avenir Next";
-    ctx.fillText(`HP: ${Math.ceil(selectedEnemy.hp)} / ${selectedEnemy.maxHp}`, bodyX, y);
-    y += 24;
-    ctx.fillText(`Броня: ${selectedEnemy.armor}`, bodyX, y);
-    y += 24;
-    ctx.fillText(`Магрезист: ${Math.round(selectedEnemy.magicResist * 100)}%`, bodyX, y);
-    y += 24;
-    if (selectedEnemy.isBoss) {
-      ctx.fillText(`Урон базе: ${selectedEnemy.castleDamage}`, bodyX, y);
-      y += 24;
-      ctx.fillText(`Награда: +${selectedEnemy.rewardMines} шахт`, bodyX, y);
-      y += 24;
-    }
-    ctx.restore();
-    state.infoScrollMax = Math.max(0, y - (body.y + body.h));
-    state.infoScroll = Math.min(state.infoScroll, state.infoScrollMax);
+    ctx.fillStyle = "#eef7ff";
+    ctx.font = "bold 15px Avenir Next";
+    ctx.fillText(selectedEnemy.isBoss ? selectedEnemy.name || "Босс" : "Монстр", body.x, body.y);
+    ctx.fillStyle = "#cfe0ec";
+    ctx.font = "12px Avenir Next";
+    const line = `HP ${Math.ceil(selectedEnemy.hp)}/${selectedEnemy.maxHp} • Броня ${selectedEnemy.armor} • Магрез ${Math.round(selectedEnemy.magicResist * 100)}%`;
+    drawWrappedText(line, body.x, body.y + 22, body.w, 16, "#cfe0ec", "12px Avenir Next", 3);
     return;
   }
 
-  ctx.fillStyle = COLORS.darkText;
-  ctx.font = "bold 20px Avenir Next";
-  ctx.fillText(selected.name, innerX, headerY);
+  if (!selected) return;
+
+  ctx.fillStyle = "#eef7ff";
+  ctx.font = "bold 15px Avenir Next";
+  ctx.fillText(selected.name, body.x, body.y);
+
   const equippedItemDef = getItemDefById(selected.equippedItem?.itemId);
   const itemRect = getSelectedTowerItemRect();
   if (itemRect) {
-    const itemSelected =
-      state.pendingItemTransfer?.source === "tower" &&
-      state.pendingItemTransfer?.towerInstanceId === selected.instanceId;
-    fillRoundedRect(
-      itemRect.x,
-      itemRect.y,
-      itemRect.w,
-      itemRect.h,
-      10,
-      itemSelected ? "#d4a93d" : "#36536a",
-      itemSelected ? "#ffe7a2" : "rgba(255,255,255,0.08)"
-    );
-    ctx.fillStyle = itemSelected ? "#1f1702" : "#ffffff";
+    fillRoundedRect(itemRect.x, itemRect.y, itemRect.w, itemRect.h, 8, "#36536a", "rgba(255,255,255,0.1)");
+    ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 11px Avenir Next";
+    ctx.font = "bold 10px Avenir Next";
     ctx.fillText(equippedItemDef?.short || "+", itemRect.x + itemRect.w / 2, itemRect.y + itemRect.h / 2 + 0.5);
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
   }
 
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(body.x, body.y, body.w, body.h);
-  ctx.clip();
-  ctx.fillStyle = COLORS.mutedText;
-  ctx.font = "bold 13px Avenir Next";
   if (selected.kind === "mine") {
-    ctx.fillText("Шахта", bodyX, y);
-  } else {
-    ctx.fillText(`${selected.tier} • ${selected.attackType}`, bodyX, y);
-  }
-  y += 24;
-
-  ctx.font = "14px Avenir Next";
-  if (selected.kind === "mine") {
-    ctx.fillStyle = COLORS.darkText;
-    ctx.fillText(`Добыча: ${selected.yieldNuggets} самородок / раунд`, bodyX, y);
-    y += 24;
-    ctx.fillText(`Цена самородка: ${getAdjustedNuggetPrice()} серебра`, bodyX, y);
-    y += 24;
-    ctx.fillText(`Осталось раундов: ${selected.remainingTurns}`, bodyX, y);
-    y += 28;
-    y += drawWrappedText(selected.talent, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 3) * 20 + 8;
-    drawWrappedText(selected.description, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 10);
-    y += 220;
-    ctx.restore();
-    state.infoScrollMax = Math.max(0, y - (body.y + body.h));
-    state.infoScroll = Math.min(state.infoScroll, state.infoScrollMax);
+    ctx.fillStyle = "#cfe0ec";
+    ctx.font = "12px Avenir Next";
+    drawWrappedText(
+      `Шахта • Самородок/раунд: ${selected.yieldNuggets} • Осталось: ${selected.remainingTurns}`,
+      body.x,
+      body.y + 22,
+      body.w - (itemRect ? 42 : 0),
+      16,
+      "#cfe0ec",
+      "12px Avenir Next",
+      3
+    );
     return;
   }
 
-  ctx.fillStyle = COLORS.darkText;
-  ctx.fillText(`Тип: ${selected.attackType}`, bodyX, y);
-  y += 24;
-  ctx.fillText(`Атрибут: ${selected.attributeType} ${selected.attributeLevel}`, bodyX, y);
-  y += 24;
   const aura = getAuraBonuses(selected);
   const effectiveDamage = Math.round(getTowerAttackDamage(selected, aura));
   const effectiveCooldown = getTowerEffectiveCooldown(selected, aura);
-  ctx.fillText(
-    `Урон: ${effectiveDamage}${effectiveDamage !== Math.round(selected.damage) ? ` (база ${Math.round(selected.damage)})` : ""}`,
-    bodyX,
-    y
-  );
-  y += 24;
-  const auraParts = [];
-  if (selected.auraDamageBoost) auraParts.push(`урон +${Math.round(selected.auraDamageBoost * 100)}%`);
-  if (selected.auraFlatDamage) auraParts.push(`урон +${Math.round(selected.auraFlatDamage)}`);
-  if (selected.auraAttackSpeedBoost) auraParts.push(`скорость +${Math.round(selected.auraAttackSpeedBoost * 100)}%`);
-  if (selected.auraCritChanceBoost) auraParts.push(`крит +${Math.round(selected.auraCritChanceBoost * 100)}%`);
-  if (auraParts.length) {
-    ctx.fillText(`Аура: ${auraParts.join(", ")}`, bodyX, y);
-    y += 24;
-  }
-  if (selected.cooldown > 0) {
-    ctx.fillText(
-      `Скорость: ${effectiveCooldown.toFixed(2)} сек./выстр.${Math.abs(effectiveCooldown - selected.cooldown) > 0.001 ? ` (база ${selected.cooldown.toFixed(2)})` : ""}`,
-      bodyX,
-      y
-    );
-    y += 24;
-    ctx.fillText(`Рэндж: ${selected.rangeCells.toFixed(1)} клетки`, bodyX, y);
-    y += 24;
-  } else if (auraParts.length) {
-    ctx.fillText(`Радиус: ${(selected.rangeCellsAura || selected.rangeCells).toFixed(1)} клетки`, bodyX, y);
-    y += 24;
-  }
-  if (canTowerHoldItems(selected)) {
-    ctx.fillText(`Слот предмета: ${equippedItemDef ? equippedItemDef.name : "пусто"}`, bodyX, y);
-    y += 24;
-  }
-
-  ctx.fillStyle = COLORS.mutedText;
-  y += drawWrappedText(`Талант: ${selected.talent}`, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 6) * 20 + 8;
+  ctx.fillStyle = "#cfe0ec";
+  ctx.font = "12px Avenir Next";
+  const statLine = `${selected.tier} • ${selected.attackType} • Урон ${effectiveDamage} • ${effectiveCooldown.toFixed(2)}с • Рэндж ${selected.rangeCells.toFixed(1)}`;
+  const textW = body.w - (itemRect ? 42 : 0);
+  drawWrappedText(statLine, body.x, body.y + 22, textW, 16, "#cfe0ec", "12px Avenir Next", 2);
   const abilityLines = getTowerAbilityDescriptions(selected);
-  if (abilityLines.length) {
-    y += drawWrappedText(
-      `Способности: ${abilityLines.join(" ")}`,
-      bodyX,
-      y,
-      INFO_W - 32,
-      20,
-      COLORS.mutedText,
-      "14px Avenir Next",
-      16
-    ) * 20 + 8;
-  }
-  y += drawWrappedText(selected.description, bodyX, y, INFO_W - 32, 20, COLORS.mutedText, "14px Avenir Next", 12) * 20;
-  ctx.restore();
-  state.infoScrollMax = Math.max(0, y - (body.y + body.h));
-  state.infoScroll = Math.min(state.infoScroll, state.infoScrollMax);
+  const detailText = abilityLines.length ? abilityLines[0] : selected.talent || "Без особой способности.";
+  drawWrappedText(`Способность: ${detailText}`, body.x, body.y + 54, textW, 14, "#cfe0ec", "11px Avenir Next", 2);
 }
 
 function getActionButtons() {
   const topY = CONTROL_Y;
-  const bottomY = CONTROL_Y + ACTION_BUTTON_H + BUTTON_GAP;
-
-  return [
-    {
-      id: "build",
-      label: "Строить",
-      sublabel:
-        state.buildMode === "mine"
-          ? `Шахта x${state.mineStock}`
-          : state.towerBuildMode === "master"
-            ? "Башня 4 уровня"
-            : "Башня 1 уровня",
-      x: BUTTONS_X,
-      y: topY,
-      w: ACTION_BUTTON_W,
-      h: ACTION_BUTTON_H
-    },
-    {
-      id: "sell",
-      label: "Продать",
-      sublabel: `${Math.min(5, state.goldNuggets)} x ${getAdjustedNuggetPrice()}`,
-      x: BUTTONS_X + ACTION_BUTTON_W + BUTTON_GAP,
-      y: topY,
-      w: ACTION_BUTTON_W,
-      h: ACTION_BUTTON_H
-    },
-    {
-      id: "shop",
-      label: "Магазин",
-      sublabel: "Товары",
-      x: BUTTONS_X,
-      y: bottomY,
-      w: ACTION_BUTTON_W,
-      h: ACTION_BUTTON_H
-    },
-    {
-      id: "tools",
-      label: "",
-      sublabel: "",
-      x: BUTTONS_X + ACTION_BUTTON_W + BUTTON_GAP,
-      y: bottomY,
-      w: ACTION_BUTTON_W,
-      h: ACTION_BUTTON_H
-    }
+  const ids = [
+    { id: "build", label: "Строить", sublabel: state.towerBuildMode === "master" ? "4 ур." : "1 ур." },
+    { id: "mine", label: "Шахта", sublabel: `x${state.mineStock}` },
+    { id: "sell", label: "Продать", sublabel: `${Math.min(5, state.goldNuggets)} x ${getAdjustedNuggetPrice()}` },
+    { id: "shop", label: "Магазин", sublabel: "Товары" },
+    { id: "tools", label: "", sublabel: "" }
   ];
+  return ids.map((entry, index) => ({
+    ...entry,
+    x: BUTTONS_X + index * (ACTION_BUTTON_W + BUTTON_GAP),
+    y: topY,
+    w: ACTION_BUTTON_W,
+    h: ACTION_BUTTON_H
+  }));
 }
 
 function getButtonColors(button) {
@@ -4067,6 +3900,15 @@ function getButtonColors(button) {
       fill: active ? COLORS.simpleBtnActive : COLORS.simpleBtn,
       stroke: "rgba(255,255,255,0.16)",
       text: "#ffffff"
+    };
+  }
+
+  if (button.id === "mine") {
+    const active = state.buildMode === "mine";
+    return {
+      fill: active ? "#d4a93d" : "#6f6252",
+      stroke: "rgba(255,255,255,0.16)",
+      text: active ? "#1f1702" : "#fff6da"
     };
   }
 
@@ -4096,44 +3938,44 @@ function getButtonColors(button) {
 
 function drawToolsGlyph(button) {
   const cx = button.x + button.w / 2;
-  const cy = button.y + button.h / 2 - 3;
+  const cy = button.y + button.h / 2 - 4;
   ctx.strokeStyle = getButtonColors(button).text;
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 3;
   ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.moveTo(cx - 18, cy + 10);
-  ctx.lineTo(cx + 6, cy - 14);
-  ctx.moveTo(cx - 4, cy - 14);
-  ctx.lineTo(cx + 16, cy + 8);
+  ctx.moveTo(cx - 10, cy + 7);
+  ctx.lineTo(cx + 4, cy - 8);
+  ctx.moveTo(cx - 3, cy - 8);
+  ctx.lineTo(cx + 10, cy + 6);
   ctx.stroke();
   ctx.fillStyle = getButtonColors(button).text;
   ctx.beginPath();
-  ctx.arc(cx + 19, cy + 11, 3, 0, Math.PI * 2);
+  ctx.arc(cx + 12, cy + 8, 2.5, 0, Math.PI * 2);
   ctx.fill();
 }
 
 function drawActionButtons() {
   for (const button of getActionButtons()) {
     const colors = getButtonColors(button);
-    fillRoundedRect(button.x, button.y, button.w, button.h, 18, colors.fill, colors.stroke);
+    fillRoundedRect(button.x, button.y, button.w, button.h, 14, colors.fill, colors.stroke);
 
     if (button.id === "tools") {
       drawToolsGlyph(button);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = colors.text;
-      ctx.font = "12px Avenir Next";
-      ctx.fillText("Действия", button.x + button.w / 2, button.y + button.h - 18);
+      ctx.font = "11px Avenir Next";
+      ctx.fillText("Действ.", button.x + button.w / 2, button.y + button.h - 16);
       continue;
     }
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = colors.text;
-    ctx.font = "bold 16px Avenir Next";
+    ctx.font = "bold 12px Avenir Next";
     ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 - 10);
-    ctx.font = "13px Avenir Next";
-    ctx.fillText(button.sublabel, button.x + button.w / 2, button.y + button.h / 2 + 14);
+    ctx.font = "10px Avenir Next";
+    ctx.fillText(button.sublabel, button.x + button.w / 2, button.y + button.h / 2 + 11);
   }
 }
 
@@ -4145,27 +3987,18 @@ function getBuildPickerButtons() {
       label: "Башня 1 уровня",
       sublabel: `${SIMPLE_TOWER_COST}`,
       x: BUTTONS_X,
-      y: CONTROL_Y - 102,
-      w: BUTTONS_W,
-      h: 42
+      y: CONTROL_Y - 132,
+      w: 220,
+      h: 40
     },
     {
       id: "master",
       label: "Башня 4 уровня",
       sublabel: `${MASTER_TOWER_COST}`,
       x: BUTTONS_X,
-      y: CONTROL_Y - 54,
-      w: BUTTONS_W,
-      h: 42
-    },
-    {
-      id: "mine",
-      label: "Шахта",
-      sublabel: `x${state.mineStock}`,
-      x: BUTTONS_X,
-      y: CONTROL_Y - 6,
-      w: BUTTONS_W,
-      h: 42
+      y: CONTROL_Y - 86,
+      w: 220,
+      h: 40
     }
   ];
 }
@@ -4173,9 +4006,9 @@ function getBuildPickerButtons() {
 function drawBuildPicker() {
   const buttons = getBuildPickerButtons();
   if (!buttons.length) return;
-  fillRoundedRect(BUTTONS_X - 8, CONTROL_Y - 110, BUTTONS_W + 16, 154, 18, "#173246", "rgba(255,255,255,0.12)");
+  fillRoundedRect(BUTTONS_X - 8, CONTROL_Y - 140, 236, 104, 18, "#173246", "rgba(255,255,255,0.12)");
   for (const button of buttons) {
-    const selected = button.id === "mine" ? state.buildMode === "mine" : state.towerBuildMode === button.id && state.buildMode !== "mine";
+    const selected = state.towerBuildMode === button.id && state.buildMode !== "mine";
     const fill = selected ? "#d4a93d" : "#48515c";
     const stroke = selected ? "#ffe7a2" : "rgba(255,255,255,0.08)";
     const text = selected ? "#1f1702" : "rgba(255,255,255,0.7)";
@@ -4244,7 +4077,7 @@ function getShopButtons() {
       x: SHOP_X + 12,
       y: SHOP_Y + 40,
       w: SHOP_W - 24,
-      h: 34,
+      h: 44,
       label: `Купить предмет ${ITEM_PURCHASE_COST}`,
       sublabel: state.inventory.some((slot) => slot === null) ? "рандом" : "нет места",
       ready: state.inventory.some((slot) => slot === null) && state.silver >= ITEM_PURCHASE_COST
@@ -4257,9 +4090,9 @@ function getShopButtons() {
     return {
       id: boss.id,
       x: SHOP_X + 12,
-      y: SHOP_Y + 80 + index * 40,
+      y: SHOP_Y + 92 + index * 50,
       w: SHOP_W - 24,
-      h: 34,
+      h: 44,
       label: `${boss.name} ${boss.cost}`,
       sublabel:
         status.bought >= boss.maxBuys
@@ -4272,17 +4105,40 @@ function getShopButtons() {
   }));
 }
 
+function getShopCloseRect() {
+  if (!state.shopOpen) return null;
+  return { x: SHOP_X + SHOP_W - 34, y: SHOP_Y + 8, w: 24, h: 24 };
+}
+
+function drawCloseButton(rect) {
+  if (!rect) return;
+  fillRoundedRect(rect.x, rect.y, rect.w, rect.h, 8, "#2b4458", "rgba(255,255,255,0.1)");
+  ctx.save();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(rect.x + 7, rect.y + 7);
+  ctx.lineTo(rect.x + rect.w - 7, rect.y + rect.h - 7);
+  ctx.moveTo(rect.x + rect.w - 7, rect.y + 7);
+  ctx.lineTo(rect.x + 7, rect.y + rect.h - 7);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawShopPopup() {
   if (!state.shopOpen) return;
 
   const buttons = getShopButtons();
-  const popupH = 52 + buttons.length * 40;
+  const popupH = 56 + buttons.length * 50;
   fillRoundedRect(SHOP_X, SHOP_Y, SHOP_W, popupH, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillStyle = COLORS.text;
-  ctx.font = "bold 15px Avenir Next";
+  ctx.font = "bold 16px Avenir Next";
   ctx.fillText("Магазин", SHOP_X + 12, SHOP_Y + 10);
+  const close = getShopCloseRect();
+  drawCloseButton(close);
 
   for (const button of buttons) {
     const selected = state.selectedShopItem === button.id;
@@ -4298,9 +4154,10 @@ function drawShopPopup() {
     ctx.fillStyle = selected ? "#1f1702" : button.ready ? "#ffffff" : COLORS.disabledText;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "13px Avenir Next";
+    ctx.font = "bold 14px Avenir Next";
     ctx.fillText(button.label, button.x + 10, button.y + button.h / 2);
     ctx.textAlign = "right";
+    ctx.font = "13px Avenir Next";
     ctx.fillText(button.sublabel, button.x + button.w - 10, button.y + button.h / 2);
   }
 }
@@ -4316,22 +4173,29 @@ function getToolsMenuButtons() {
   ].map((button, index) => ({
     ...button,
     x: BUTTONS_X - 8,
-    y: CONTROL_Y - 178 + index * 42,
+    y: CONTROL_Y - 214 + index * 50,
     w: BUTTONS_W + 8,
-    h: 36
+    h: 44
   }));
+}
+
+function getToolsCloseRect() {
+  if (!getToolsMenuButtons().length) return null;
+  return { x: BUTTONS_X + BUTTONS_W - 28, y: CONTROL_Y - 250, w: 24, h: 24 };
 }
 
 function drawToolsPopup() {
   const buttons = getToolsMenuButtons();
   if (!buttons.length) return;
 
-  fillRoundedRect(BUTTONS_X - 12, CONTROL_Y - 184, BUTTONS_W + 16, 176, 18, "#173246", "rgba(255,255,255,0.12)");
+  fillRoundedRect(BUTTONS_X - 12, CONTROL_Y - 258, BUTTONS_W + 16, 248, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.font = "bold 15px Avenir Next";
-  ctx.fillText("Меню башни", BUTTONS_X, CONTROL_Y - 174);
+  ctx.font = "bold 16px Avenir Next";
+  ctx.fillText("Меню башни", BUTTONS_X, CONTROL_Y - 248);
+  const close = getToolsCloseRect();
+  drawCloseButton(close);
 
   for (const button of buttons) {
     const active =
@@ -4352,9 +4216,10 @@ function drawToolsPopup() {
     ctx.fillStyle = !active ? COLORS.disabledText : selected ? "#1f1702" : "#ffffff";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "13px Avenir Next";
+    ctx.font = "bold 14px Avenir Next";
     ctx.fillText(button.label, button.x + 10, button.y + button.h / 2);
     ctx.textAlign = "right";
+    ctx.font = "13px Avenir Next";
     ctx.fillText(button.sub, button.x + button.w - 10, button.y + button.h / 2);
   }
 }
@@ -4670,11 +4535,13 @@ function findSelectedTowerItemAt(clientX, clientY) {
 }
 
 function isPointInInfoPanel(point) {
+  const rect = getFloatingInfoRect();
+  if (!rect) return false;
   return (
-    point.x >= CONTROL_X &&
-    point.x <= CONTROL_X + INFO_W &&
-    point.y >= CONTROL_Y &&
-    point.y <= CONTROL_Y + CONTROL_H
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.w &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.h
   );
 }
 
@@ -4692,6 +4559,16 @@ function findPauseButtonAt(clientX, clientY) {
 function findShopActionAt(clientX, clientY) {
   if (!state.shopOpen) return null;
   const point = getCanvasPoint(clientX, clientY);
+  const close = getShopCloseRect();
+  if (
+    close &&
+    point.x >= close.x &&
+    point.x <= close.x + close.w &&
+    point.y >= close.y &&
+    point.y <= close.y + close.h
+  ) {
+    return "close_shop";
+  }
   for (const button of getShopButtons()) {
     if (
       point.x >= button.x &&
@@ -4707,6 +4584,16 @@ function findShopActionAt(clientX, clientY) {
 
 function findToolsActionAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
+  const close = getToolsCloseRect();
+  if (
+    close &&
+    point.x >= close.x &&
+    point.x <= close.x + close.w &&
+    point.y >= close.y &&
+    point.y <= close.y + close.h
+  ) {
+    return "close_tools";
+  }
   for (const button of getToolsMenuButtons()) {
     if (
       point.x >= button.x &&
@@ -5003,6 +4890,11 @@ function handleTap(event) {
 
   const shopAction = findShopActionAt(event.clientX, event.clientY);
   if (shopAction) {
+    if (shopAction === "close_shop") {
+      state.shopOpen = false;
+      draw();
+      return;
+    }
     state.selectedShopItem = shopAction;
     if (shopAction === "buy_item") {
       buyRandomItem();
@@ -5046,6 +4938,12 @@ function handleTap(event) {
 
   const toolsAction = findToolsActionAt(event.clientX, event.clientY);
   if (toolsAction) {
+    if (toolsAction === "close_tools") {
+      state.toolsOpen = false;
+      state.selectedToolAction = null;
+      draw();
+      return;
+    }
     handleToolsAction(toolsAction);
     draw();
     return;
@@ -5055,8 +4953,10 @@ function handleTap(event) {
   if (actionButton) {
     if (state.tutorial.active) {
       const forcedAction =
-        state.tutorial.step === "highlight_build" || state.tutorial.step === "prompt_mine"
+        state.tutorial.step === "highlight_build"
           ? "build"
+          : state.tutorial.step === "prompt_mine"
+            ? "mine"
           : state.tutorial.step === "upgrade_prompt"
             ? "tools"
             : state.tutorial.step === "sell_prompt"
@@ -5075,6 +4975,13 @@ function handleTap(event) {
       state.buildPickerOpen = !state.buildPickerOpen;
       state.moveMode = false;
       state.shopOpen = false;
+      state.toolsOpen = false;
+      state.itemMenuOpen = false;
+    } else if (actionButton.id === "mine") {
+      advanceTutorialFromAction("mine");
+      state.buildMode = "mine";
+      state.buildPickerOpen = false;
+      state.moveMode = false;
       state.toolsOpen = false;
       state.itemMenuOpen = false;
     } else if (actionButton.id === "sell") {

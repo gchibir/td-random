@@ -193,3 +193,11 @@ Update:
 - Build picker now closes immediately after choosing any build option (`Башня 1 уровня`, `Башня 4 уровня`, `Шахта`). This applies generally, not only in tutorial; shop remains sticky as before.
 - Tutorial mine placement now targets lower central build cells instead of reusing the first central tower slots.
 - Added scroll support for tutorial text modals: long tutorial copy is clipped inside the modal body and can be dragged vertically to read the full text.
+
+Update:
+- Refined the experimental UI build (`main-ui-test.js`): shop/tools submenu buttons are taller with larger text, each now has an explicit `X` close button, and the build submenu is now vertical.
+- The experimental floating info panel now shows a compact ability/effect line for towers and item effects for selected items.
+
+Update:
+- Promoted the experimental floating-info + horizontal-button UI from `main-ui-test.js` into the main build by copying it over `main.js`.
+- Close buttons in shop/tools popups now render a drawn cross icon instead of the letter `X`.
