@@ -217,3 +217,8 @@ Update:
 Update:
 - Fixed Vercel leaderboard API so Supabase writes now preserve the maximum of bestWave and bestExtraKills instead of overwriting with the latest submitted values.
 - This prevents later low-value submits (for example 0 extra kills on a new session start) from erasing a previously higher endless run.
+
+Update:
+- Leaderboard identity now keeps a history of legacy nick-based keys on the client and submits them with each remote leaderboard POST.
+- Vercel leaderboard API now merges legacy nick rows into the current player key (preferably tg:<id>), preserves the maximum bestWave/bestExtraKills, updates the current nickname, and deletes stale legacy rows.
+- Result: changing nickname under the same Telegram account updates the same leaderboard record instead of losing the record or leaving old duplicate rows behind.

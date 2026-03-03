@@ -21,6 +21,7 @@ const LAYOUT = {
 const NICK_STORAGE_KEY = "td_random_nick";
 const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
 const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
+const LEADERBOARD_KEY_HISTORY_STORAGE_KEY = "td_random_leaderboard_key_history";
 const LEADERBOARD_API_PATH = "/api/leaderboard";
 const UI_ICON_PATHS = {
   build: "/assets/ui/hammer.png",
@@ -857,6 +858,7 @@ function storeNickname(nickname) {
   try {
     window.localStorage.setItem(NICK_STORAGE_KEY, nickname);
   } catch {}
+  rememberLeaderboardLegacyKey(`nick:${nickname.trim().toLowerCase()}`);
 }
 
 function loadBestWave() {
@@ -929,6 +931,50 @@ function getLeaderboardPlayerKey() {
   return name ? `nick:${name}` : "";
 }
 
+function loadLeaderboardKeyHistory() {
+  try {
+    const raw = window.localStorage.getItem(LEADERBOARD_KEY_HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((entry) => typeof entry === "string" && entry.startsWith("nick:"))
+      .map((entry) => entry.slice(0, 80));
+  } catch {
+    return [];
+  }
+}
+
+function storeLeaderboardKeyHistory(keys) {
+  try {
+    const normalized = [...new Set(keys)]
+      .filter((entry) => typeof entry === "string" && entry.startsWith("nick:"))
+      .slice(0, 12);
+    window.localStorage.setItem(LEADERBOARD_KEY_HISTORY_STORAGE_KEY, JSON.stringify(normalized));
+  } catch {}
+}
+
+function rememberLeaderboardLegacyKey(key) {
+  if (!key || !key.startsWith("nick:")) return;
+  const history = loadLeaderboardKeyHistory();
+  if (!history.includes(key)) {
+    history.push(key);
+    storeLeaderboardKeyHistory(history);
+  }
+}
+
+function getLeaderboardLegacyKeys() {
+  const history = loadLeaderboardKeyHistory();
+  const currentName = (state.nickname || "").trim().toLowerCase();
+  if (currentName) {
+    const currentNickKey = `nick:${currentName}`;
+    if (!history.includes(currentNickKey)) history.push(currentNickKey);
+    storeLeaderboardKeyHistory(history);
+  }
+  const playerKey = getLeaderboardPlayerKey();
+  return history.filter((key) => key && key !== playerKey);
+}
+
 function canUseRemoteLeaderboard() {
   if (typeof window.fetch !== "function" || !/^https?:$/.test(window.location.protocol)) return false;
   const host = window.location.hostname || "";
@@ -970,6 +1016,7 @@ async function submitLeaderboardEntry() {
   const playerKey = getLeaderboardPlayerKey();
   if (!name || !playerKey || !canUseRemoteLeaderboard()) return false;
   try {
+    const legacyKeys = getLeaderboardLegacyKeys();
     const response = await fetch(LEADERBOARD_API_PATH, {
       method: "POST",
       cache: "no-store",
@@ -981,7 +1028,8 @@ async function submitLeaderboardEntry() {
         playerKey,
         name,
         bestWave: state.bestWave,
-        bestExtraKills: state.extraKills || 0
+        bestExtraKills: state.extraKills || 0,
+        legacyKeys
       })
     });
     if (!response.ok) throw new Error(`Leaderboard POST failed: ${response.status}`);
@@ -5609,6 +5657,7 @@ function frame(now) {
 }
 
 state.nickname = loadStoredNickname();
+if (state.nickname) rememberLeaderboardLegacyKey(`nick:${state.nickname.trim().toLowerCase()}`);
 state.bestWave = loadBestWave();
 state.leaderboard = loadLeaderboard();
 syncLeaderboardEntry();

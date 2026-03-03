@@ -23,6 +23,10 @@ function getSupabaseConfig() {
   return { url: url.replace(/\/+$/, ""), key, table };
 }
 
+function encodePostgrestInList(values) {
+  return values.map((value) => `"${String(value).replace(/"/g, '\\"')}"`).join(",");
+}
+
 function normalizeEntries(rawEntries) {
   if (!Array.isArray(rawEntries)) return [];
   const deduped = new Map();
@@ -103,29 +107,76 @@ async function loadEntryByPlayerKey(config, playerKey) {
   return entries[0] || null;
 }
 
-async function saveEntry(entry) {
+async function loadEntriesByPlayerKeys(config, playerKeys) {
+  const normalizedKeys = [...new Set(playerKeys.filter((entry) => typeof entry === "string" && entry))];
+  if (!normalizedKeys.length) return [];
+  const rows = await supabaseRequest(
+    config,
+    `${encodeURIComponent(config.table)}?select=player_key,name,best_wave,best_extra_kills,updated_at&player_key=in.(${encodeURIComponent(
+      encodePostgrestInList(normalizedKeys)
+    )})`
+  );
+  return normalizeEntries(rows);
+}
+
+async function deleteEntriesByPlayerKeys(config, playerKeys) {
+  const normalizedKeys = [...new Set(playerKeys.filter((entry) => typeof entry === "string" && entry))];
+  if (!normalizedKeys.length) return;
+  await supabaseRequest(
+    config,
+    `${encodeURIComponent(config.table)}?player_key=in.(${encodeURIComponent(encodePostgrestInList(normalizedKeys))})`,
+    {
+      method: "DELETE",
+      headers: {
+        Prefer: "return=minimal"
+      }
+    }
+  );
+}
+
+async function saveEntry(entry, legacyKeys = []) {
   const config = getSupabaseConfig();
   if (!config) {
     const memoryStore = getMemoryStore();
     const entries = normalizeEntries(await memoryStore.load());
-    const existing = entries.find((item) => item.playerKey === entry.playerKey);
+    const keysToMerge = [entry.playerKey, ...legacyKeys].filter(Boolean);
+    const matchingEntries = entries.filter((item) => keysToMerge.includes(item.playerKey));
+    for (let i = entries.length - 1; i >= 0; i -= 1) {
+      if (legacyKeys.includes(entries[i].playerKey)) {
+        entries.splice(i, 1);
+      }
+    }
+    const existing = matchingEntries.find((item) => item.playerKey === entry.playerKey) || matchingEntries[0] || null;
+    const mergedWave = Math.max(entry.bestWave, ...matchingEntries.map((item) => item.bestWave || 1));
+    const mergedExtraKills = Math.max(entry.bestExtraKills, ...matchingEntries.map((item) => item.bestExtraKills || 0));
     if (existing) {
       existing.name = entry.name;
-      existing.bestWave = Math.max(existing.bestWave, entry.bestWave);
-      existing.bestExtraKills = Math.max(existing.bestExtraKills, entry.bestExtraKills);
+      existing.bestWave = mergedWave;
+      existing.bestExtraKills = mergedExtraKills;
       existing.updatedAt = Date.now();
+      existing.playerKey = entry.playerKey;
+      if (!entries.find((item) => item.playerKey === entry.playerKey)) {
+        entries.push(existing);
+      }
     } else {
-      entries.push({ ...entry, updatedAt: Date.now() });
+      entries.push({
+        ...entry,
+        bestWave: mergedWave,
+        bestExtraKills: mergedExtraKills,
+        updatedAt: Date.now()
+      });
     }
     return memoryStore.save(normalizeEntries(entries));
   }
 
-  const existing = await loadEntryByPlayerKey(config, entry.playerKey);
+  const keysToMerge = [...new Set([entry.playerKey, ...legacyKeys].filter((key) => typeof key === "string" && key))];
+  const existingEntries = await loadEntriesByPlayerKeys(config, keysToMerge);
+  const existing = existingEntries.find((item) => item.playerKey === entry.playerKey) || null;
   const mergedEntry = {
     playerKey: entry.playerKey,
     name: entry.name,
-    bestWave: Math.max(existing?.bestWave || 1, entry.bestWave),
-    bestExtraKills: Math.max(existing?.bestExtraKills || 0, entry.bestExtraKills)
+    bestWave: Math.max(entry.bestWave, ...existingEntries.map((item) => item.bestWave || 1)),
+    bestExtraKills: Math.max(entry.bestExtraKills, ...existingEntries.map((item) => item.bestExtraKills || 0))
   };
 
   await supabaseRequest(config, `${encodeURIComponent(config.table)}?on_conflict=player_key`, {
@@ -143,6 +194,11 @@ async function saveEntry(entry) {
       }
     ]
   });
+
+  const staleKeys = existingEntries
+    .map((item) => item.playerKey)
+    .filter((key) => key && key !== mergedEntry.playerKey);
+  await deleteEntriesByPlayerKeys(config, staleKeys);
 
   return loadEntries();
 }
@@ -164,6 +220,12 @@ module.exports = async (req, res) => {
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 20) : "";
     const bestWave = Math.max(1, Number(body.bestWave) || 1);
     const bestExtraKills = Math.max(0, Number(body.bestExtraKills) || 0);
+    const legacyKeys = Array.isArray(body.legacyKeys)
+      ? [...new Set(body.legacyKeys)]
+          .filter((entry) => typeof entry === "string" && entry.startsWith("nick:"))
+          .map((entry) => entry.trim().slice(0, 80))
+          .filter((entry) => entry && entry !== playerKey)
+      : [];
 
     if (!playerKey || !name) {
       return res.status(400).json({ error: "Missing playerKey or name" });
@@ -174,7 +236,7 @@ module.exports = async (req, res) => {
       name,
       bestWave,
       bestExtraKills
-    });
+    }, legacyKeys);
 
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).json({ entries });
