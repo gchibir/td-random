@@ -21,7 +21,7 @@ const LAYOUT = {
 const NICK_STORAGE_KEY = "td_random_nick";
 const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
 const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
-const LEADERBOARD_API_PATH = "/.netlify/functions/leaderboard";
+const LEADERBOARD_API_PATH = "/api/leaderboard";
 
 let TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
 let STACK_TOP = 0;

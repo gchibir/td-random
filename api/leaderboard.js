@@ -33,10 +33,7 @@ function normalizeEntries(rawEntries) {
         : typeof entry.player_key === "string" && entry.player_key
           ? entry.player_key
           : "";
-    const name =
-      typeof entry.name === "string"
-        ? entry.name
-        : "";
+    const name = typeof entry.name === "string" ? entry.name : "";
     if (!playerKey || !name) continue;
 
     const normalized = {
@@ -61,17 +58,6 @@ function normalizeEntries(rawEntries) {
   return [...deduped.values()]
     .sort((a, b) => b.bestExtraKills - a.bestExtraKills || b.bestWave - a.bestWave || b.updatedAt - a.updatedAt)
     .slice(0, LIMIT);
-}
-
-function json(statusCode, payload) {
-  return {
-    statusCode,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store"
-    },
-    body: JSON.stringify(payload)
-  };
 }
 
 async function supabaseRequest(config, path, options = {}) {
@@ -144,31 +130,26 @@ async function saveEntry(entry) {
   return loadEntries();
 }
 
-exports.handler = async (event) => {
+module.exports = async (req, res) => {
   try {
-    if (event.httpMethod === "GET") {
+    if (req.method === "GET") {
       const entries = await loadEntries();
-      return json(200, { entries });
+      res.setHeader("Cache-Control", "no-store");
+      return res.status(200).json({ entries });
     }
 
-    if (event.httpMethod !== "POST") {
-      return json(405, { error: "Method not allowed" });
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
     }
 
-    let body;
-    try {
-      body = JSON.parse(event.body || "{}");
-    } catch {
-      return json(400, { error: "Invalid JSON" });
-    }
-
+    const body = req.body && typeof req.body === "object" ? req.body : {};
     const playerKey = typeof body.playerKey === "string" ? body.playerKey.trim().slice(0, 80) : "";
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 20) : "";
     const bestWave = Math.max(1, Number(body.bestWave) || 1);
     const bestExtraKills = Math.max(0, Number(body.bestExtraKills) || 0);
 
     if (!playerKey || !name) {
-      return json(400, { error: "Missing playerKey or name" });
+      return res.status(400).json({ error: "Missing playerKey or name" });
     }
 
     const entries = await saveEntry({
@@ -178,9 +159,10 @@ exports.handler = async (event) => {
       bestExtraKills
     });
 
-    return json(200, { entries });
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json({ entries });
   } catch (error) {
-    return json(500, {
+    return res.status(500).json({
       error: "Leaderboard function failed",
       details: error instanceof Error ? error.message : String(error)
     });
