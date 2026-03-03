@@ -2838,9 +2838,34 @@ function drawSelection() {
   const selected = getSelectedStructure();
   if (!selected) return;
   const p = cellToPixel(selected.cellC, selected.cellR);
-  ctx.strokeStyle = state.moveMode ? "#ff5d5d" : COLORS.select;
-  ctx.lineWidth = 3;
-  ctx.strokeRect(p.x + 1.5, p.y + 1.5, TILE - 3, TILE - 3);
+  const baseColor = state.moveMode ? "#ff5d5d" : "#ffe27a";
+  const glowColor = state.moveMode ? "rgba(255, 93, 93, 0.28)" : "rgba(255, 226, 122, 0.32)";
+  const pulse = 0.5 + 0.5 * Math.sin(state.time * 6);
+
+  ctx.fillStyle = glowColor;
+  ctx.fillRect(p.x - 3, p.y - 3, TILE + 6, TILE + 6);
+
+  ctx.save();
+  ctx.shadowColor = baseColor;
+  ctx.shadowBlur = 16 + pulse * 10;
+  ctx.strokeStyle = baseColor;
+  ctx.lineWidth = 5;
+  ctx.strokeRect(p.x + 1, p.y + 1, TILE - 2, TILE - 2);
+  ctx.restore();
+
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(p.x + 4, p.y + 4, TILE - 8, TILE - 8);
+
+  if (selected.kind === "tower") {
+    ctx.save();
+    ctx.strokeStyle = state.moveMode ? "#ff7f7f" : "#fff1b8";
+    ctx.lineWidth = 2 + pulse * 1.5;
+    ctx.beginPath();
+    ctx.arc(selected.x, selected.y, 12 + pulse * 3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawMoveTargetHint() {
@@ -3202,6 +3227,44 @@ function drawDamagePanel() {
   }
 }
 
+function drawEventText(text, centerY, options = {}) {
+  if (!text) return;
+  const color = options.color || "#ffffff";
+  const font = options.font || "bold 22px Avenir Next";
+  const paddingX = options.paddingX || 18;
+  const paddingY = options.paddingY || 8;
+  const maxW = Math.min(BOARD_W - 20, 420);
+
+  ctx.save();
+  ctx.font = font;
+  const metrics = ctx.measureText(text);
+  const textW = Math.min(maxW - paddingX * 2, metrics.width);
+  const boxW = Math.min(maxW, Math.max(180, textW + paddingX * 2));
+  const boxH = (options.boxH || 38);
+  const boxX = BOARD_X + (BOARD_W - boxW) / 2;
+  const boxY = centerY - boxH / 2;
+
+  fillRoundedRect(
+    boxX,
+    boxY,
+    boxW,
+    boxH,
+    14,
+    "rgba(8, 12, 18, 0.72)",
+    "rgba(255,255,255,0.12)"
+  );
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.92)";
+  ctx.strokeText(text, BOARD_X + BOARD_W / 2, centerY);
+  ctx.fillStyle = color;
+  ctx.fillText(text, BOARD_X + BOARD_W / 2, centerY);
+  ctx.restore();
+}
+
 function drawStartOverlay() {
   if (state.started && state.startCountdown <= 0) return;
   if (!state.started) {
@@ -3229,29 +3292,30 @@ function drawStartOverlay() {
     return;
   }
 
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 28px Avenir Next";
-  ctx.fillText(`Волна через ${Math.ceil(state.startCountdown)}`, BOARD_X + BOARD_W / 2, BOARD_Y + MAP_VISUAL_H / 2);
+  drawEventText(`Волна через ${Math.ceil(state.startCountdown)}`, BOARD_Y + 24, {
+    color: "#ffffff",
+    font: "bold 26px Avenir Next",
+    boxH: 42
+  });
 }
 
 function drawPendingBagHint() {
   if (!state.pendingBagTowerDef && !state.pendingBagUpgrade) return;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = "bold 22px Avenir Next";
-  ctx.fillStyle = "#8ee7ff";
-  ctx.fillText(state.bagPlacementHint || "Установите башню", canvas.width / 2, BOARD_Y + 18);
+  drawEventText(state.bagPlacementHint || "Установите башню", BOARD_Y + 24, {
+    color: "#8ee7ff",
+    font: "bold 21px Avenir Next",
+    boxH: 38
+  });
 }
 
 function drawTowerAnnouncement() {
   if (!state.towerAnnouncement || state.time >= state.towerAnnouncement.until) return;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.font = "bold 24px Avenir Next";
-  ctx.fillStyle = state.towerAnnouncement.color;
-  ctx.fillText(state.towerAnnouncement.text, canvas.width / 2, BOARD_Y + 48);
+  const offsetY = state.pendingBagTowerDef || state.pendingBagUpgrade ? 66 : 24;
+  drawEventText(state.towerAnnouncement.text, BOARD_Y + offsetY, {
+    color: state.towerAnnouncement.color,
+    font: "bold 23px Avenir Next",
+    boxH: 38
+  });
 }
 
 function getBuildModeLabel() {
