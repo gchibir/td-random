@@ -213,3 +213,7 @@ Update:
 - Kept the old vector glyphs as a fallback if an icon fails to load.
 - Synced the same image-based button UI into main-ui-test.js.
 - node --check passes; Playwright rerun still fails here because Chromium cannot launch (MachPortRendezvousServer permission error).
+
+Update:
+- Fixed Vercel leaderboard API so Supabase writes now preserve the maximum of bestWave and bestExtraKills instead of overwriting with the latest submitted values.
+- This prevents later low-value submits (for example 0 extra kills on a new session start) from erasing a previously higher endless run.

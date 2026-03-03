@@ -94,6 +94,15 @@ async function loadEntries() {
   return normalizeEntries(rows);
 }
 
+async function loadEntryByPlayerKey(config, playerKey) {
+  const rows = await supabaseRequest(
+    config,
+    `${encodeURIComponent(config.table)}?select=player_key,name,best_wave,best_extra_kills,updated_at&player_key=eq.${encodeURIComponent(playerKey)}&limit=1`
+  );
+  const entries = normalizeEntries(rows);
+  return entries[0] || null;
+}
+
 async function saveEntry(entry) {
   const config = getSupabaseConfig();
   if (!config) {
@@ -111,6 +120,14 @@ async function saveEntry(entry) {
     return memoryStore.save(normalizeEntries(entries));
   }
 
+  const existing = await loadEntryByPlayerKey(config, entry.playerKey);
+  const mergedEntry = {
+    playerKey: entry.playerKey,
+    name: entry.name,
+    bestWave: Math.max(existing?.bestWave || 1, entry.bestWave),
+    bestExtraKills: Math.max(existing?.bestExtraKills || 0, entry.bestExtraKills)
+  };
+
   await supabaseRequest(config, `${encodeURIComponent(config.table)}?on_conflict=player_key`, {
     method: "POST",
     headers: {
@@ -118,10 +135,10 @@ async function saveEntry(entry) {
     },
     body: [
       {
-        player_key: entry.playerKey,
-        name: entry.name,
-        best_wave: entry.bestWave,
-        best_extra_kills: entry.bestExtraKills,
+        player_key: mergedEntry.playerKey,
+        name: mergedEntry.name,
+        best_wave: mergedEntry.bestWave,
+        best_extra_kills: mergedEntry.bestExtraKills,
         updated_at: new Date().toISOString()
       }
     ]
