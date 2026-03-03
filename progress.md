@@ -176,3 +176,9 @@ Update:
 - `render_game_to_text` now exposes `mainMenuOpen` and `tutorial` state for validation.
 - `node --check` passes.
 - Local server on port 8091 was restarted for manual verification; browser automation artifacts did not refresh in this environment, so UI was validated by served-source checks rather than a fresh Playwright screenshot.
+
+Update:
+- Expanded the tutorial into a timed step machine: it now gates enemy movement until the user presses `Далее`, pauses after 2 seconds to force `Строить`, pauses again to force `Башня 1 уровня`, highlights one of the central build cells, resumes after tower placement, then pauses again after 5 seconds to force mine placement.
+- After mine placement, the tutorial resumes with an extra-tower hint. The next two simple towers are forced to match so the player can see the upgrade pattern; after the second matching tower, the game pauses and points at `Действия`.
+- When wave 2 actually starts, the tutorial pauses again, highlights the nugget/price HUD and `Продать`, then pauses once more after selling to point at `Магазин`.
+- Tutorial highlighting now supports specific build-picker items, tools, shop, and the sell flow; blinking uses wall-clock time so it remains animated while the game is paused.

@@ -686,7 +686,11 @@ const state = {
   hoveredSlot: null,
   tutorial: {
     active: false,
-    step: "idle"
+    step: "idle",
+    waitTimer: 0,
+    forcedTowerId: null,
+    forcedTowerLevel: 0,
+    extraTowerCount: 0
   },
   camera: { zoom: 1, panX: 0, panY: 0 }
 };
@@ -2549,8 +2553,10 @@ function updateShots(dt) {
 }
 
 function update(dt) {
-  if (state.mode !== "running" || state.paused) return;
-  state.time += dt;
+  if (state.mode !== "running") return;
+  if (!state.paused) state.time += dt;
+  updateTutorial(dt);
+  if (state.paused) return;
   if (!state.started) return;
   if (state.startCountdown > 0) {
     state.startCountdown = Math.max(0, state.startCountdown - dt);
@@ -3080,6 +3086,18 @@ function drawStatsStrip() {
   }
 }
 
+function getTopHudMetricRects() {
+  const contentX = TOP_HUD_X + 56;
+  const contentW = TOP_HUD_W - 112;
+  const itemW = contentW / 4;
+  return {
+    wave: { x: contentX, y: TOP_HUD_Y + 6, w: itemW, h: LAYOUT.statsH - 12 },
+    silver: { x: contentX + itemW, y: TOP_HUD_Y + 6, w: itemW, h: LAYOUT.statsH - 12 },
+    nuggets: { x: contentX + itemW * 2, y: TOP_HUD_Y + 6, w: itemW, h: LAYOUT.statsH - 12 },
+    price: { x: contentX + itemW * 3, y: TOP_HUD_Y + 6, w: itemW, h: LAYOUT.statsH - 12 }
+  };
+}
+
 function getInventorySlotRects() {
   const gap = 6;
   const slotSize = 42;
@@ -3318,6 +3336,10 @@ function startNormalGame() {
   state.pausePanel = "settings";
   state.tutorial.active = false;
   state.tutorial.step = "idle";
+  state.tutorial.waitTimer = 0;
+  state.tutorial.forcedTowerId = null;
+  state.tutorial.forcedTowerLevel = 0;
+  state.tutorial.extraTowerCount = 0;
   if (!state.started) {
     state.started = true;
     state.startCountdown = 5;
@@ -3329,7 +3351,7 @@ function startNormalGame() {
 
 function startTutorialGame() {
   state.mainMenuOpen = false;
-  state.paused = false;
+  state.paused = true;
   state.pausePanel = "settings";
   state.started = true;
   state.startCountdown = 0;
@@ -3343,6 +3365,10 @@ function startTutorialGame() {
   clearItemSelection();
   state.tutorial.active = true;
   state.tutorial.step = "intro";
+  state.tutorial.waitTimer = 0;
+  state.tutorial.forcedTowerId = null;
+  state.tutorial.forcedTowerLevel = 0;
+  state.tutorial.extraTowerCount = 0;
   state.selectedCell = null;
   state.selectedEnemyId = null;
   state.selectedAuraSourceId = null;
@@ -3350,6 +3376,10 @@ function startTutorialGame() {
 
 function getTutorialTargetSlot() {
   if (!state.tutorial.active || !["place_simple", "place_mine"].includes(state.tutorial.step)) return null;
+  const centralCandidates = getCentralTutorialSlots();
+  for (const slot of centralCandidates) {
+    if (!getStructureAt(slot.c, slot.r)) return slot;
+  }
   for (let r = 0; r < GRID_ROWS; r += 1) {
     for (let c = 0; c < GRID_COLS; c += 1) {
       if (!isBuildCell(c, r) || getStructureAt(c, r)) continue;
@@ -3359,14 +3389,37 @@ function getTutorialTargetSlot() {
   return null;
 }
 
+function getCentralTutorialSlots() {
+  const center = { c: (GRID_COLS - 1) / 2, r: (GRID_ROWS - 1) / 2 };
+  return Array.from({ length: GRID_ROWS * GRID_COLS }, (_, index) => ({
+    c: index % GRID_COLS,
+    r: Math.floor(index / GRID_COLS)
+  }))
+    .filter((slot) => isBuildCell(slot.c, slot.r))
+    .sort((a, b) => {
+      const da = Math.hypot(a.c - center.c, a.r - center.r);
+      const db = Math.hypot(b.c - center.c, b.r - center.r);
+      return da - db;
+    })
+    .slice(0, 4);
+}
+
 function getTutorialHighlightMode() {
   if (!state.tutorial.active) return "";
-  if (state.tutorial.step === "highlight_build" || state.tutorial.step === "prompt_mine" || state.tutorial.step === "pick_mine") {
+  if (
+    state.tutorial.step === "highlight_build" ||
+    state.tutorial.step === "prompt_mine"
+  ) {
     return "build";
   }
+  if (state.tutorial.step === "pick_simple") return "picker_simple";
+  if (state.tutorial.step === "pick_mine") return "picker_mine";
   if (state.tutorial.step === "place_simple" || state.tutorial.step === "place_mine") {
     return "slot";
   }
+  if (state.tutorial.step === "upgrade_prompt") return "tools";
+  if (state.tutorial.step === "sell_prompt") return "sell_prompt";
+  if (state.tutorial.step === "shop_prompt") return "shop";
   return "";
 }
 
@@ -3383,9 +3436,31 @@ function getTutorialModalConfig() {
       text: "Выбери башню за 170 серебра"
     };
   }
+  if (state.tutorial.step === "after_mine_hint") {
+    return {
+      text: "У тебя есть серебро, может поставишь еще башню?"
+    };
+  }
+  if (state.tutorial.step === "upgrade_prompt") {
+    return {
+      text: "Две одинаковые башни улучшаются до случайной башни следующего уровня. Выбери нужную башню, нажми «Действия», а затем «Апгрейд»."
+    };
+  }
+  if (state.tutorial.step === "sell_prompt") {
+    return {
+      text: "Здесь ты видишь запас золотых самородков и курс золота к серебру. С помощью кнопки «Продать» ты можешь продать самородки за серебро."
+    };
+  }
+  if (state.tutorial.step === "shop_prompt") {
+    return {
+      text: "В магазине ты можешь купить предметы для башен 6 уровня, прокачать атрибуты башен или вызвать боссов."
+    };
+  }
   if (state.tutorial.step === "prompt_mine" || state.tutorial.step === "pick_mine" || state.tutorial.step === "place_mine") {
     return {
-      text: "Не забудь поставить шахты, они будут добывать тебе золото"
+      text: state.tutorial.step === "pick_mine" || state.tutorial.step === "place_mine"
+        ? "Каждый уровень ты можешь поставить 2 шахты. Каждая шахта 1 раз за уровень дает 1 золото. Шахта разрушается через 2 уровня. Не забывай ставить новые шахты!"
+        : "У тебя нет золота, нужна Шахта!"
     };
   }
   return null;
@@ -3420,12 +3495,55 @@ function advanceTutorialFromBuildChoice(choiceId) {
 function advanceTutorialAfterPlacement(kind) {
   if (!state.tutorial.active) return;
   if (state.tutorial.step === "place_simple" && kind === "tower") {
-    state.tutorial.step = "prompt_mine";
+    state.paused = false;
+    state.tutorial.step = "after_first_tower_running";
+    state.tutorial.waitTimer = 5;
     return;
   }
   if (state.tutorial.step === "place_mine" && kind === "mine") {
-    state.tutorial.active = false;
-    state.tutorial.step = "idle";
+    state.paused = false;
+    state.tutorial.step = "after_mine_hint";
+    state.tutorial.waitTimer = 0;
+  }
+}
+
+function getTowerDefByIdentity(towerId, level) {
+  return ALL_TOWERS.find((tower) => tower.id === towerId && tower.level === level) || null;
+}
+
+function updateTutorial(dt) {
+  if (!state.tutorial.active) return;
+
+  if (state.tutorial.step === "pre_build_wait" || state.tutorial.step === "after_first_tower_running" || state.tutorial.step === "after_sell_wait") {
+    state.tutorial.waitTimer = Math.max(0, state.tutorial.waitTimer - dt);
+    if (state.tutorial.waitTimer > 0) return;
+  }
+
+  if (state.tutorial.step === "pre_build_wait") {
+    state.paused = true;
+    state.tutorial.step = "highlight_build";
+    return;
+  }
+
+  if (state.tutorial.step === "after_first_tower_running") {
+    state.paused = true;
+    state.tutorial.step = "prompt_mine";
+    return;
+  }
+
+  if (state.tutorial.step === "after_sell_wait") {
+    state.paused = true;
+    state.tutorial.step = "shop_prompt";
+    return;
+  }
+
+  if (
+    ["after_mine_hint", "after_first_extra_tower", "await_wave2_sell_prompt"].includes(state.tutorial.step) &&
+    state.wave >= 2 &&
+    state.waveActive
+  ) {
+    state.paused = true;
+    state.tutorial.step = "sell_prompt";
   }
 }
 
@@ -3444,16 +3562,36 @@ function getTutorialNextButtonRect() {
 
 function drawTutorialHighlight() {
   if (!state.tutorial.active) return;
-  const pulse = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(state.time * 7));
+  const pulse = 0.55 + 0.45 * (0.5 + 0.5 * Math.sin((Date.now() / 1000) * 7));
   const mode = getTutorialHighlightMode();
-  if (mode === "build") {
-    const button = getActionButtons().find((entry) => entry.id === "build");
+  if (["build", "picker_simple", "picker_mine", "tools", "shop"].includes(mode)) {
+    const button =
+      mode === "build"
+        ? getActionButtons().find((entry) => entry.id === "build")
+        : mode === "tools"
+          ? getActionButtons().find((entry) => entry.id === "tools")
+          : mode === "shop"
+            ? getActionButtons().find((entry) => entry.id === "shop")
+            : getBuildPickerButtons().find((entry) => entry.id === (mode === "picker_simple" ? "simple" : "mine"));
     if (!button) return;
     ctx.save();
     ctx.strokeStyle = `rgba(255, 230, 120, ${0.55 + pulse * 0.35})`;
     ctx.lineWidth = 4;
     roundedRectPath(button.x - 6, button.y - 6, button.w + 12, button.h + 12, 22);
     ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  if (mode === "sell_prompt") {
+    const sellButton = getActionButtons().find((entry) => entry.id === "sell");
+    const hudRects = getTopHudMetricRects();
+    ctx.save();
+    for (const rect of [hudRects.nuggets, hudRects.price, sellButton].filter(Boolean)) {
+      ctx.strokeStyle = `rgba(255, 230, 120, ${0.55 + pulse * 0.35})`;
+      ctx.lineWidth = 4;
+      roundedRectPath(rect.x - 6, rect.y - 6, rect.w + 12, rect.h + 12, 18);
+      ctx.stroke();
+    }
     ctx.restore();
     return;
   }
@@ -4556,7 +4694,15 @@ function tryPlaceOnSlot(slot) {
 
   if (!pool) return;
   let towerDef;
-  if (mode === "simple") {
+  if (
+    mode === "simple" &&
+    state.tutorial.active &&
+    ["after_mine_hint", "after_first_extra_tower"].includes(state.tutorial.step) &&
+    state.tutorial.extraTowerCount === 1 &&
+    state.tutorial.forcedTowerId
+  ) {
+    towerDef = getTowerDefByIdentity(state.tutorial.forcedTowerId, state.tutorial.forcedTowerLevel) || rollRandomFrom(pool);
+  } else if (mode === "simple") {
     const roll = Math.random();
     if (roll < 0.01) {
       towerDef = rollRandomFrom(getPoolForLevel(4));
@@ -4582,6 +4728,18 @@ function tryPlaceOnSlot(slot) {
   state.selectedEnemyId = null;
   state.selectedAuraSourceId = null;
   state.infoScroll = 0;
+  if (state.tutorial.active && mode === "simple" && ["after_mine_hint", "after_first_extra_tower"].includes(state.tutorial.step)) {
+    if (state.tutorial.extraTowerCount === 0) {
+      state.tutorial.forcedTowerId = tower.towerId;
+      state.tutorial.forcedTowerLevel = tower.level;
+      state.tutorial.extraTowerCount = 1;
+      state.tutorial.step = "after_first_extra_tower";
+    } else {
+      state.tutorial.extraTowerCount = 2;
+      state.paused = true;
+      state.tutorial.step = "upgrade_prompt";
+    }
+  }
   advanceTutorialAfterPlacement("tower");
 }
 
@@ -4606,7 +4764,9 @@ function handleToolsAction(action) {
 
 function handleTap(event) {
   if (state.tutorial.active && state.tutorial.step === "intro" && findTutorialNextButtonAt(event.clientX, event.clientY)) {
-    state.tutorial.step = "highlight_build";
+    state.paused = false;
+    state.tutorial.step = "pre_build_wait";
+    state.tutorial.waitTimer = 2;
     draw();
     return;
   }
@@ -4661,7 +4821,7 @@ function handleTap(event) {
   }
 
   if (findPauseButtonAt(event.clientX, event.clientY)) {
-    if (state.started) {
+    if (state.started && !state.tutorial.active) {
       state.paused = !state.paused;
       state.pausePanel = "settings";
       state.mainMenuOpen = false;
@@ -4777,6 +4937,22 @@ function handleTap(event) {
 
   const actionButton = findActionButtonAt(event.clientX, event.clientY);
   if (actionButton) {
+    if (state.tutorial.active) {
+      const forcedAction =
+        state.tutorial.step === "highlight_build" || state.tutorial.step === "prompt_mine"
+          ? "build"
+          : state.tutorial.step === "upgrade_prompt"
+            ? "tools"
+            : state.tutorial.step === "sell_prompt"
+              ? "sell"
+              : state.tutorial.step === "shop_prompt"
+                ? "shop"
+                : null;
+      if (forcedAction && actionButton.id !== forcedAction) {
+        draw();
+        return;
+      }
+    }
     if (actionButton.id === "build") {
       advanceTutorialFromAction("build");
       state.buildMode = state.towerBuildMode;
@@ -4787,11 +4963,22 @@ function handleTap(event) {
       state.itemMenuOpen = false;
     } else if (actionButton.id === "sell") {
       sellNuggets();
+      if (state.tutorial.active && state.tutorial.step === "sell_prompt") {
+        state.paused = false;
+        state.tutorial.step = "after_sell_wait";
+        state.tutorial.waitTimer = 2;
+      }
     } else if (actionButton.id === "shop") {
       state.shopOpen = !state.shopOpen;
       state.buildPickerOpen = false;
       state.toolsOpen = false;
       state.itemMenuOpen = false;
+      if (state.tutorial.active && state.tutorial.step === "shop_prompt" && state.shopOpen) {
+        state.paused = false;
+        state.tutorial.active = false;
+        state.tutorial.step = "idle";
+        state.tutorial.waitTimer = 0;
+      }
     } else if (actionButton.id === "tools") {
       const selected = getSelectedStructure();
       if (selected && selected.kind === "tower") {
@@ -4799,6 +4986,10 @@ function handleTap(event) {
         state.shopOpen = false;
         state.buildPickerOpen = false;
         state.itemMenuOpen = false;
+        if (state.tutorial.active && state.tutorial.step === "upgrade_prompt" && state.toolsOpen) {
+          state.paused = false;
+          state.tutorial.step = "await_wave2_sell_prompt";
+        }
       }
     }
     draw();
@@ -4806,6 +4997,11 @@ function handleTap(event) {
   }
 
   if (isPointInTopHud(event.clientX, event.clientY)) {
+    draw();
+    return;
+  }
+
+  if (state.paused && !(state.tutorial.active && ["place_simple", "place_mine"].includes(state.tutorial.step))) {
     draw();
     return;
   }
