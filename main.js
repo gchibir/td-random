@@ -22,6 +22,13 @@ const NICK_STORAGE_KEY = "td_random_nick";
 const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
 const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
 const LEADERBOARD_API_PATH = "/api/leaderboard";
+const UI_ICON_PATHS = {
+  build: "assets/ui/hammer.png",
+  mine: "assets/ui/pickaxe.png",
+  sell: "assets/ui/coins.png",
+  shop: "assets/ui/bascet.png",
+  tools: "assets/ui/tools.png"
+};
 
 let TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
 let STACK_TOP = 0;
@@ -54,6 +61,21 @@ let SHOP_W = 0;
 let SHOP_H = 112;
 let SHOP_X = 0;
 let SHOP_Y = 0;
+
+function loadUiIcons() {
+  const icons = {};
+  for (const [id, src] of Object.entries(UI_ICON_PATHS)) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      if (typeof render === "function") render();
+    };
+    icons[id] = img;
+  }
+  return icons;
+}
+
+const UI_ICONS = loadUiIcons();
 
 function recalculateLayout() {
   STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
@@ -3937,6 +3959,10 @@ function getButtonColors(button) {
 }
 
 function drawButtonGlyph(button, color) {
+  if (drawButtonImage(button)) {
+    if (button.id === "build") drawBuildTierBadge(button);
+    return;
+  }
   if (button.id === "build") {
     drawHammerGlyph(button, color);
     drawBuildTierBadge(button);
@@ -3955,6 +3981,23 @@ function drawButtonGlyph(button, color) {
     return;
   }
   drawWrenchGlyph(button, color);
+}
+
+function drawButtonImage(button) {
+  const img = UI_ICONS[button.id];
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+
+  const maxW = button.w - 22;
+  const maxH = button.sublabel ? 46 : 54;
+  const scale = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
+  const drawW = Math.max(1, Math.round(img.naturalWidth * scale));
+  const drawH = Math.max(1, Math.round(img.naturalHeight * scale));
+  const drawX = Math.round(button.x + (button.w - drawW) / 2);
+  const iconCenterY = button.sublabel ? button.y + 37 : button.y + button.h / 2;
+  const drawY = Math.round(iconCenterY - drawH / 2);
+
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  return true;
 }
 
 function drawHammerGlyph(button, color) {

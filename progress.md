@@ -207,3 +207,9 @@ Update:
 - Kept only compact numeric sublabels where needed (mine stock, sell amount/price) and added a tier badge on the build button.
 - Synced the same UI change into main-ui-test.js.
 - node --check passes for both files; Playwright rerun still fails in this environment because Chromium cannot launch (MachPortRendezvousServer permission error).
+
+Update:
+- Replaced the canvas-drawn action button symbols with imported PNG icons from assets/ui (hammer, pickaxe, coins, basket, tools) using drawImage with aspect-ratio fit.
+- Kept the old vector glyphs as a fallback if an icon fails to load.
+- Synced the same image-based button UI into main-ui-test.js.
+- node --check passes; Playwright rerun still fails here because Chromium cannot launch (MachPortRendezvousServer permission error).
