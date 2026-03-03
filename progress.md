@@ -182,3 +182,8 @@ Update:
 - After mine placement, the tutorial resumes with an extra-tower hint. The next two simple towers are forced to match so the player can see the upgrade pattern; after the second matching tower, the game pauses and points at `Действия`.
 - When wave 2 actually starts, the tutorial pauses again, highlights the nugget/price HUD and `Продать`, then pauses once more after selling to point at `Магазин`.
 - Tutorial highlighting now supports specific build-picker items, tools, shop, and the sell flow; blinking uses wall-clock time so it remains animated while the game is paused.
+
+Update:
+- Split tutorial/script pauses from the visible pause menu by adding `pauseMenuOpen`.
+- `paused` now only means simulation is halted; `pauseMenuOpen` now controls whether the pause menu overlay is rendered.
+- Result: tutorial-controlled pauses no longer open the pause menu, while the top-left pause button still opens the menu and pauses the game normally.

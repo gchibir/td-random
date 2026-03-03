@@ -644,6 +644,7 @@ const state = {
   shopOpen: false,
   toolsOpen: false,
   paused: false,
+  pauseMenuOpen: false,
   mainMenuOpen: true,
   pausePanel: "settings",
   started: false,
@@ -2966,7 +2967,7 @@ function drawPauseButton() {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = "bold 15px Avenir Next";
-  ctx.fillText(state.paused ? "▶" : "Ⅱ", button.x + button.w / 2, button.y + button.h / 2 + 0.5);
+  ctx.fillText(state.pauseMenuOpen ? "▶" : "Ⅱ", button.x + button.w / 2, button.y + button.h / 2 + 0.5);
 }
 
 function drawRiverLanes() {
@@ -3311,7 +3312,7 @@ function drawStartOverlay() {
 }
 
 function isMenuOpen() {
-  return state.mainMenuOpen || state.paused;
+  return state.mainMenuOpen || state.pauseMenuOpen;
 }
 
 function getMenuButtons() {
@@ -3332,6 +3333,7 @@ function getMenuButtons() {
 
 function startNormalGame() {
   state.mainMenuOpen = false;
+  state.pauseMenuOpen = false;
   state.paused = false;
   state.pausePanel = "settings";
   state.tutorial.active = false;
@@ -3351,6 +3353,7 @@ function startNormalGame() {
 
 function startTutorialGame() {
   state.mainMenuOpen = false;
+  state.pauseMenuOpen = false;
   state.paused = true;
   state.pausePanel = "settings";
   state.started = true;
@@ -4786,6 +4789,7 @@ function handleTap(event) {
         }
       }
       if (state.started) {
+        state.pauseMenuOpen = false;
         state.paused = false;
         state.mainMenuOpen = false;
       } else {
@@ -4822,7 +4826,8 @@ function handleTap(event) {
 
   if (findPauseButtonAt(event.clientX, event.clientY)) {
     if (state.started && !state.tutorial.active) {
-      state.paused = !state.paused;
+      state.pauseMenuOpen = !state.pauseMenuOpen;
+      state.paused = state.pauseMenuOpen;
       state.pausePanel = "settings";
       state.mainMenuOpen = false;
     }
@@ -5245,6 +5250,7 @@ function renderGameToText() {
       shopOpen: state.shopOpen,
       toolsOpen: state.toolsOpen,
       paused: state.paused,
+      pauseMenuOpen: state.pauseMenuOpen,
       mainMenuOpen: state.mainMenuOpen,
       pausePanel: state.pausePanel,
       started: state.started,
