@@ -238,3 +238,8 @@ Update:
 - Synced main-ui-test.js from main.js.
 - Ran node --check successfully for both main.js and main-ui-test.js.
 - Attempted the required Playwright client run, but Chromium still fails in this environment with MachPortRendezvousServer permission errors.
+
+Update:
+- Rebalanced two level-1 towers.
+- Archer changed to 0.4s cooldown and 14 base damage.
+- Stonethrower changed to 1.0s cooldown and 2.5-cell splash radius.
