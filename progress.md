@@ -227,3 +227,14 @@ Update:
 - Added level-6 tower sprite loading from /assets/towers/level6/*.png in the main build and the test build.
 - drawTowerSprite now first tries a loaded PNG by towerId and falls back to the existing procedural tower graphics if the image is missing or not loaded yet.
 - node --check passes; Playwright rerun still fails in this environment because Chromium cannot launch (MachPortRendezvousServer permission error).
+
+Update:
+- Reworked the floating info panel: larger footprint, more transparent background, stronger contrast, larger text, larger tower item slot, and a close button with a drawn cross.
+- Info panel now only opens when tapping a tower, enemy, or item; it no longer opens for mines or auto-opens after buying an item.
+- Added real scroll support inside the info panel (drag inside the panel scrolls content instead of panning the board).
+- Regular item info now uses the info panel with an inline sell button; mystery bag choices remain in their popup.
+- Inventory item labels now use case by item level (level 1 lower-case, level 2 upper-case).
+- Added cache-busting versioning to level 6 tower sprite URLs so replaced lighter PNGs reload in the browser.
+- Synced main-ui-test.js from main.js.
+- Ran node --check successfully for both main.js and main-ui-test.js.
+- Attempted the required Playwright client run, but Chromium still fails in this environment with MachPortRendezvousServer permission errors.

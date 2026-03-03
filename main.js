@@ -30,6 +30,7 @@ const UI_ICON_PATHS = {
   shop: "/assets/ui/bascet.png",
   tools: "/assets/ui/tools.png"
 };
+const TOWER_SPRITE_VERSION = "20260303b";
 const TOWER_SPRITE_IDS = [
   "soul_reaper",
   "heaven_archon",
@@ -48,7 +49,7 @@ const TOWER_SPRITE_IDS = [
   "star_judgment"
 ];
 const TOWER_SPRITE_PATHS = Object.fromEntries(
-  TOWER_SPRITE_IDS.map((id) => [id, `/assets/towers/level6/${id}.png`])
+  TOWER_SPRITE_IDS.map((id) => [id, `/assets/towers/level6/${id}.png?v=${TOWER_SPRITE_VERSION}`])
 );
 
 let TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
@@ -725,6 +726,7 @@ const state = {
   pendingBagUpgrade: false,
   bagPlacementHint: "",
   towerAnnouncement: null,
+  infoPanelVisible: false,
   infoScroll: 0,
   infoScrollMax: 0,
   bossShop: Object.fromEntries(BOSS_DEFS.map((boss) => [boss.id, { bought: 0, nextReadyAt: 0 }])),
@@ -894,6 +896,27 @@ function storeNickname(nickname) {
     window.localStorage.setItem(NICK_STORAGE_KEY, nickname);
   } catch {}
   rememberLeaderboardLegacyKey(`nick:${nickname.trim().toLowerCase()}`);
+}
+
+function formatItemDisplayName(itemDef) {
+  if (!itemDef?.name) return "";
+  return itemDef.level >= 2 ? itemDef.name.toUpperCase() : itemDef.name.toLowerCase();
+}
+
+function formatItemShortLabel(itemDef) {
+  const label = itemDef?.short || "?";
+  return itemDef?.level >= 2 ? label.toUpperCase() : label.toLowerCase();
+}
+
+function pointInRect(point, rect) {
+  return !!(
+    point &&
+    rect &&
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.w &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.h
+  );
 }
 
 function loadBestWave() {
@@ -1589,6 +1612,14 @@ function clearItemSelection() {
   state.selectedTowerItemTowerId = null;
   state.pendingItemTransfer = null;
   state.itemMenuOpen = false;
+  state.infoPanelVisible = false;
+  state.infoScroll = 0;
+}
+
+function hideInfoPanel() {
+  state.infoPanelVisible = false;
+  state.infoScroll = 0;
+  state.infoScrollMax = 0;
 }
 
 function addItemToInventory(itemId) {
@@ -1740,10 +1771,7 @@ function buyRandomItem() {
   state.silver -= ITEM_PURCHASE_COST;
   const itemId = rollRandomShopItemId();
   state.inventory[slotIndex] = { itemId };
-  state.selectedTowerItemTowerId = null;
-  state.selectedItemSlot = slotIndex;
-  state.pendingItemTransfer = { source: "inventory", slotIndex };
-  state.itemMenuOpen = true;
+  clearItemSelection();
   return true;
 }
 
@@ -3155,12 +3183,13 @@ function getFloatingInfoRect() {
   const selected = getSelectedStructure();
   const selectedEnemy = getSelectedEnemy();
   const selectedItemDef = getSelectedTransferItemDef();
-  if (!selected && !selectedEnemy && !selectedItemDef) return null;
+  const selectedTower = selected?.kind === "tower" ? selected : null;
+  if (!state.infoPanelVisible || (!selectedTower && !selectedEnemy && !selectedItemDef)) return null;
   return {
-    x: BOARD_X + 8,
-    y: BOARD_Y + MAP_VISUAL_H - 114,
-    w: BOARD_W - 16,
-    h: 104
+    x: BOARD_X + 2,
+    y: BOARD_Y + MAP_VISUAL_H - 146,
+    w: BOARD_W - 4,
+    h: 138
   };
 }
 
@@ -3168,10 +3197,10 @@ function getInfoBodyRect() {
   const rect = getFloatingInfoRect();
   if (!rect) return null;
   return {
-    x: rect.x + 12,
-    y: rect.y + 12,
-    w: rect.w - 24,
-    h: rect.h - 24
+    x: rect.x + 14,
+    y: rect.y + 14,
+    w: rect.w - 28,
+    h: rect.h - 28
   };
 }
 
@@ -3180,10 +3209,33 @@ function getSelectedTowerItemRect() {
   const rect = getFloatingInfoRect();
   if (!rect || !selected || selected.kind !== "tower" || !canTowerHoldItems(selected)) return null;
   return {
-    x: rect.x + rect.w - 46,
-    y: rect.y + 27,
-    w: 28,
-    h: 28
+    x: rect.x + rect.w - 70,
+    y: rect.y + 42,
+    w: 48,
+    h: 48
+  };
+}
+
+function getInfoPanelCloseRect() {
+  const rect = getFloatingInfoRect();
+  if (!rect) return null;
+  return {
+    x: rect.x + rect.w - 34,
+    y: rect.y + 10,
+    w: 24,
+    h: 24
+  };
+}
+
+function getInfoPanelSellButtonRect() {
+  const rect = getFloatingInfoRect();
+  const itemDef = getSelectedTransferItemDef();
+  if (!rect || !itemDef || itemDef.id === "mystery_bag") return null;
+  return {
+    x: rect.x + rect.w - 132,
+    y: rect.y + rect.h - 40,
+    w: 110,
+    h: 26
   };
 }
 
@@ -3281,7 +3333,7 @@ function drawInventoryStrip() {
   fillRoundedRect(STATS_X, STATS_Y, STATS_W, LAYOUT.statsH, 16, "#21435f", "rgba(255,255,255,0.12)");
   for (const slot of getInventorySlotRects()) {
     const item = state.inventory[slot.index];
-    const selected = state.itemMenuOpen && state.selectedItemSlot === slot.index;
+    const selected = state.selectedItemSlot === slot.index;
     fillRoundedRect(
       slot.x,
       slot.y,
@@ -3297,7 +3349,7 @@ function drawInventoryStrip() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "bold 12px Avenir Next";
-    ctx.fillText(def?.short || "?", slot.x + slot.w / 2, slot.y + slot.h / 2 + 0.5);
+    ctx.fillText(formatItemShortLabel(def), slot.x + slot.w / 2, slot.y + slot.h / 2 + 0.5);
   }
 }
 
@@ -3922,79 +3974,116 @@ function drawInfoPanel() {
   const selectedEnemy = getSelectedEnemy();
   const selectedItemDef = getSelectedTransferItemDef();
   const body = getInfoBodyRect();
+  const closeRect = getInfoPanelCloseRect();
+  const selectedTower = selected?.kind === "tower" ? selected : null;
+  const itemRect = getSelectedTowerItemRect();
+  const sellRect = getInfoPanelSellButtonRect();
+  const textW = body.w - (itemRect ? itemRect.w + 14 : 0);
+  const lineHeights = {
+    body: 20,
+    detail: 18
+  };
 
-  fillRoundedRect(rect.x, rect.y, rect.w, rect.h, 18, "rgba(24, 46, 64, 0.78)", "rgba(255,255,255,0.14)");
+  let contentHeight = 0;
+  let bodyBottomPadding = 0;
+
+  fillRoundedRect(rect.x, rect.y, rect.w, rect.h, 20, "rgba(20, 40, 58, 0.56)", "rgba(255,255,255,0.22)");
+  drawCloseButton(closeRect);
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
 
   if (selectedItemDef) {
-    ctx.fillStyle = "#eef7ff";
-    ctx.font = "bold 15px Avenir Next";
-    ctx.fillText(selectedItemDef.name, body.x, body.y);
-    ctx.fillStyle = "#cfe0ec";
-    ctx.font = "12px Avenir Next";
     const itemAbility = selectedItemDef.description || "Без дополнительного эффекта.";
-    drawWrappedText(`Эффект: ${itemAbility}`, body.x, body.y + 22, body.w, 16, "#cfe0ec", "12px Avenir Next", 4);
+    const detailLineCount = countWrappedLines(`Эффект: ${itemAbility}`, body.w, "16px Avenir Next");
+    bodyBottomPadding = sellRect ? 34 : 0;
+    contentHeight = 26 + detailLineCount * lineHeights.body + bodyBottomPadding;
+    state.infoScrollMax = Math.max(0, contentHeight - body.h);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(body.x, body.y, body.w, body.h);
+    ctx.clip();
+
+    const scrollY = body.y - state.infoScroll;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 19px Avenir Next";
+    ctx.fillText(formatItemDisplayName(selectedItemDef), body.x, scrollY);
+    drawWrappedText(`Эффект: ${itemAbility}`, body.x, scrollY + 30, body.w, lineHeights.body, "#f5fbff", "16px Avenir Next", 12);
+    ctx.restore();
+
+    if (sellRect) {
+      fillRoundedRect(sellRect.x, sellRect.y, sellRect.w, sellRect.h, 10, "#d17b4f", "rgba(255,255,255,0.12)");
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#fffdf7";
+      ctx.font = "bold 14px Avenir Next";
+      ctx.fillText(`Продать ${getItemSellValue(selectedItemDef)}`, sellRect.x + sellRect.w / 2, sellRect.y + sellRect.h / 2 + 0.5);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+    }
     return;
   }
 
-  if (selectedEnemy && !selected) {
-    ctx.fillStyle = "#eef7ff";
-    ctx.font = "bold 15px Avenir Next";
-    ctx.fillText(selectedEnemy.isBoss ? selectedEnemy.name || "Босс" : "Монстр", body.x, body.y);
-    ctx.fillStyle = "#cfe0ec";
-    ctx.font = "12px Avenir Next";
+  if (selectedEnemy && !selectedTower) {
     const line = `HP ${Math.ceil(selectedEnemy.hp)}/${selectedEnemy.maxHp} • Броня ${selectedEnemy.armor} • Магрез ${Math.round(selectedEnemy.magicResist * 100)}%`;
-    drawWrappedText(line, body.x, body.y + 22, body.w, 16, "#cfe0ec", "12px Avenir Next", 3);
+    const lineCount = countWrappedLines(line, body.w, "16px Avenir Next");
+    contentHeight = 26 + lineCount * lineHeights.body;
+    state.infoScrollMax = Math.max(0, contentHeight - body.h);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(body.x, body.y, body.w, body.h);
+    ctx.clip();
+    const scrollY = body.y - state.infoScroll;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 19px Avenir Next";
+    ctx.fillText(selectedEnemy.isBoss ? selectedEnemy.name || "Босс" : "Монстр", body.x, scrollY);
+    drawWrappedText(line, body.x, scrollY + 30, body.w, lineHeights.body, "#f5fbff", "16px Avenir Next", 8);
+    ctx.restore();
     return;
   }
 
-  if (!selected) return;
+  if (!selectedTower) {
+    state.infoScrollMax = 0;
+    return;
+  }
 
-  ctx.fillStyle = "#eef7ff";
-  ctx.font = "bold 15px Avenir Next";
-  ctx.fillText(selected.name, body.x, body.y);
-
-  const equippedItemDef = getItemDefById(selected.equippedItem?.itemId);
-  const itemRect = getSelectedTowerItemRect();
+  const equippedItemDef = getItemDefById(selectedTower.equippedItem?.itemId);
   if (itemRect) {
     fillRoundedRect(itemRect.x, itemRect.y, itemRect.w, itemRect.h, 8, "#36536a", "rgba(255,255,255,0.1)");
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 10px Avenir Next";
-    ctx.fillText(equippedItemDef?.short || "+", itemRect.x + itemRect.w / 2, itemRect.y + itemRect.h / 2 + 0.5);
+    ctx.font = "bold 14px Avenir Next";
+    ctx.fillText(equippedItemDef ? formatItemShortLabel(equippedItemDef) : "+", itemRect.x + itemRect.w / 2, itemRect.y + itemRect.h / 2 + 0.5);
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
   }
 
-  if (selected.kind === "mine") {
-    ctx.fillStyle = "#cfe0ec";
-    ctx.font = "12px Avenir Next";
-    drawWrappedText(
-      `Шахта • Самородок/раунд: ${selected.yieldNuggets} • Осталось: ${selected.remainingTurns}`,
-      body.x,
-      body.y + 22,
-      body.w - (itemRect ? 42 : 0),
-      16,
-      "#cfe0ec",
-      "12px Avenir Next",
-      3
-    );
-    return;
-  }
+  const aura = getAuraBonuses(selectedTower);
+  const effectiveDamage = Math.round(getTowerAttackDamage(selectedTower, aura));
+  const effectiveCooldown = getTowerEffectiveCooldown(selectedTower, aura);
+  const statLine = `${selectedTower.tier} • ${selectedTower.attackType} • Урон ${effectiveDamage} • ${effectiveCooldown.toFixed(2)}с • Рэндж ${selectedTower.rangeCells.toFixed(1)}`;
+  const abilityLines = getTowerAbilityDescriptions(selectedTower);
+  const detailText = abilityLines.length ? abilityLines[0] : selectedTower.talent || "Без особой способности.";
+  const statLineCount = countWrappedLines(statLine, textW, "16px Avenir Next");
+  const detailLineCount = countWrappedLines(`Способность: ${detailText}`, textW, "15px Avenir Next");
+  contentHeight = 26 + statLineCount * lineHeights.body + 12 + detailLineCount * lineHeights.detail;
+  state.infoScrollMax = Math.max(0, contentHeight - body.h);
 
-  const aura = getAuraBonuses(selected);
-  const effectiveDamage = Math.round(getTowerAttackDamage(selected, aura));
-  const effectiveCooldown = getTowerEffectiveCooldown(selected, aura);
-  ctx.fillStyle = "#cfe0ec";
-  ctx.font = "12px Avenir Next";
-  const statLine = `${selected.tier} • ${selected.attackType} • Урон ${effectiveDamage} • ${effectiveCooldown.toFixed(2)}с • Рэндж ${selected.rangeCells.toFixed(1)}`;
-  const textW = body.w - (itemRect ? 42 : 0);
-  drawWrappedText(statLine, body.x, body.y + 22, textW, 16, "#cfe0ec", "12px Avenir Next", 2);
-  const abilityLines = getTowerAbilityDescriptions(selected);
-  const detailText = abilityLines.length ? abilityLines[0] : selected.talent || "Без особой способности.";
-  drawWrappedText(`Способность: ${detailText}`, body.x, body.y + 54, textW, 14, "#cfe0ec", "11px Avenir Next", 2);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(body.x, body.y, body.w, body.h);
+  ctx.clip();
+  const scrollY = body.y - state.infoScroll;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 19px Avenir Next";
+  ctx.fillText(selectedTower.name, body.x, scrollY);
+  drawWrappedText(statLine, body.x, scrollY + 30, textW, lineHeights.body, "#f5fbff", "16px Avenir Next", 8);
+  drawWrappedText(`Способность: ${detailText}`, body.x, scrollY + 30 + statLineCount * lineHeights.body + 12, textW, lineHeights.detail, "#ffffff", "15px Avenir Next", 10);
+  ctx.restore();
 }
 
 function getActionButtons() {
@@ -4286,11 +4375,7 @@ function getItemMenuButtons() {
   const popupX = CONTROL_X;
   const popupY = CONTROL_Y - 156;
   const popupW = CONTROL_W;
-  if (itemDef.id !== "mystery_bag") {
-    return [
-      { id: "sell_item", label: "Продать", sub: `${getItemSellValue(itemDef)}`, x: popupX + 10, y: popupY + 42, w: popupW - 20, h: 36 }
-    ];
-  }
+  if (itemDef.id !== "mystery_bag") return [];
   return [
     { id: "bag_tower", label: "Случайная башня", sub: "4/3/5/6 ур.", x: popupX + 10, y: popupY + 42, w: popupW - 20, h: 32 },
     { id: "bag_upgrade", label: "Поднять уровень", sub: "1 башня", x: popupX + 10, y: popupY + 80, w: popupW - 20, h: 32 },
@@ -4899,6 +4984,7 @@ function tryPlaceOnSlot(slot) {
       state.selectedEnemyId = null;
       state.selectedAuraSourceId = null;
       state.infoScroll = 0;
+      state.infoPanelVisible = existing.kind === "tower";
       return;
     }
     clearItemSelection();
@@ -4916,6 +5002,7 @@ function tryPlaceOnSlot(slot) {
       state.selectedEnemyId = null;
       state.selectedAuraSourceId = null;
       state.infoScroll = 0;
+      state.infoPanelVisible = existing.kind === "tower";
     }
     return;
   }
@@ -4926,6 +5013,7 @@ function tryPlaceOnSlot(slot) {
     state.selectedEnemyId = null;
     state.selectedAuraSourceId = null;
     state.infoScroll = 0;
+    state.infoPanelVisible = existing.kind === "tower";
     return;
   }
 
@@ -4943,6 +5031,7 @@ function tryPlaceOnSlot(slot) {
     state.selectedEnemyId = null;
     state.selectedAuraSourceId = null;
     state.infoScroll = 0;
+    state.infoPanelVisible = false;
     advanceTutorialAfterPlacement("mine");
     return;
   }
@@ -4983,6 +5072,7 @@ function tryPlaceOnSlot(slot) {
   state.selectedEnemyId = null;
   state.selectedAuraSourceId = null;
   state.infoScroll = 0;
+  state.infoPanelVisible = false;
   if (state.tutorial.active && mode === "simple" && ["after_mine_hint", "after_first_extra_tower"].includes(state.tutorial.step)) {
     if (state.tutorial.extraTowerCount === 0) {
       state.tutorial.forcedTowerId = tower.towerId;
@@ -5018,7 +5108,9 @@ function handleToolsAction(action) {
 }
 
 function handleTap(event) {
+  const point = getCanvasPoint(event.clientX, event.clientY);
   if (state.tutorial.active && state.tutorial.step === "intro" && findTutorialNextButtonAt(event.clientX, event.clientY)) {
+    hideInfoPanel();
     state.paused = false;
     state.tutorial.step = "pre_build_wait";
     state.tutorial.waitTimer = 2;
@@ -5033,6 +5125,7 @@ function handleTap(event) {
 
   const menuAction = findPauseMenuActionAt(event.clientX, event.clientY);
   if (menuAction) {
+    hideInfoPanel();
     if (menuAction === "primary") {
       if (!state.nickname) {
         const nickname = ensureNickname();
@@ -5078,6 +5171,7 @@ function handleTap(event) {
   }
 
   if (findPauseButtonAt(event.clientX, event.clientY)) {
+    hideInfoPanel();
     if (state.started && !state.tutorial.active) {
       state.pauseMenuOpen = !state.pauseMenuOpen;
       state.paused = state.pauseMenuOpen;
@@ -5095,6 +5189,7 @@ function handleTap(event) {
 
   const itemMenuAction = findItemMenuActionAt(event.clientX, event.clientY);
   if (itemMenuAction) {
+    hideInfoPanel();
     if (itemMenuAction === "sell_item") {
       sellSelectedItem();
     } else {
@@ -5118,8 +5213,9 @@ function handleTap(event) {
     } else {
       state.selectedTowerItemTowerId = null;
       state.selectedItemSlot = inventorySlot;
-      state.itemMenuOpen = true;
       state.pendingItemTransfer = { source: "inventory", slotIndex: inventorySlot };
+      state.itemMenuOpen = state.inventory[inventorySlot]?.itemId === "mystery_bag";
+      state.infoPanelVisible = true;
     }
     draw();
     return;
@@ -5137,7 +5233,8 @@ function handleTap(event) {
         state.selectedTowerItemTowerId = selectedTower.instanceId;
         state.selectedItemSlot = null;
         state.pendingItemTransfer = { source: "tower", towerInstanceId: selectedTower.instanceId };
-        state.itemMenuOpen = true;
+        state.itemMenuOpen = selectedTower.equippedItem?.itemId === "mystery_bag";
+        state.infoPanelVisible = true;
       }
       draw();
       return;
@@ -5146,6 +5243,8 @@ function handleTap(event) {
 
   const shopAction = findShopActionAt(event.clientX, event.clientY);
   if (shopAction) {
+    hideInfoPanel();
+    if (state.pendingItemTransfer) clearItemSelection();
     if (shopAction === "close_shop") {
       state.shopOpen = false;
       draw();
@@ -5164,6 +5263,8 @@ function handleTap(event) {
 
   const buildPickerAction = findBuildPickerActionAt(event.clientX, event.clientY);
   if (buildPickerAction) {
+    hideInfoPanel();
+    if (state.pendingItemTransfer) clearItemSelection();
     if (!advanceTutorialFromBuildChoice(buildPickerAction.id)) {
       draw();
       return;
@@ -5181,12 +5282,14 @@ function handleTap(event) {
 
   const auraBadge = findAuraBadgeAt(event.clientX, event.clientY);
   if (auraBadge) {
+    hideInfoPanel();
     state.selectedAuraSourceId = auraBadge;
     draw();
     return;
   }
 
   if (findDamageToggleAt(event.clientX, event.clientY)) {
+    hideInfoPanel();
     state.damagePanelOpen = !state.damagePanelOpen;
     draw();
     return;
@@ -5194,6 +5297,8 @@ function handleTap(event) {
 
   const toolsAction = findToolsActionAt(event.clientX, event.clientY);
   if (toolsAction) {
+    hideInfoPanel();
+    if (state.pendingItemTransfer) clearItemSelection();
     if (toolsAction === "close_tools") {
       state.toolsOpen = false;
       state.selectedToolAction = null;
@@ -5207,6 +5312,8 @@ function handleTap(event) {
 
   const actionButton = findActionButtonAt(event.clientX, event.clientY);
   if (actionButton) {
+    hideInfoPanel();
+    if (state.pendingItemTransfer) clearItemSelection();
     if (state.tutorial.active) {
       const forcedAction =
         state.tutorial.step === "highlight_build"
@@ -5279,6 +5386,26 @@ function handleTap(event) {
   }
 
   if (isPointInTopHud(event.clientX, event.clientY)) {
+    hideInfoPanel();
+    draw();
+    return;
+  }
+
+  const infoClose = getInfoPanelCloseRect();
+  if (pointInRect(point, infoClose)) {
+    hideInfoPanel();
+    draw();
+    return;
+  }
+
+  const infoSell = getInfoPanelSellButtonRect();
+  if (pointInRect(point, infoSell)) {
+    sellSelectedItem();
+    draw();
+    return;
+  }
+
+  if (isPointInInfoPanel(point)) {
     draw();
     return;
   }
@@ -5296,6 +5423,7 @@ function handleTap(event) {
       state.selectedCell = null;
       state.selectedAuraSourceId = null;
       state.infoScroll = 0;
+      state.infoPanelVisible = true;
       draw();
       return;
     }
@@ -5326,17 +5454,18 @@ function getActiveBoardPointers() {
 
 canvas.addEventListener("pointerdown", (event) => {
   const point = getCanvasPoint(event.clientX, event.clientY);
+  const insideInfoPanel = isPointInInfoPanel(point);
   if (state.tutorial.active && isPointInTutorialModalBody(point)) {
     pointerState.tutorialPointerId = event.pointerId;
     pointerState.lastTutorialY = point.y;
     pointerState.tutorialMoved = false;
   }
-  if (isPointInInfoPanel(point)) {
+  if (insideInfoPanel) {
     pointerState.infoPointerId = event.pointerId;
     pointerState.lastInfoY = point.y;
     pointerState.infoMoved = false;
   }
-  const board = isPointInBoard(point);
+  const board = isPointInBoard(point) && !insideInfoPanel;
   pointerState.pointers.set(event.pointerId, {
     x: point.x,
     y: point.y,
