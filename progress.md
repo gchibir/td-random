@@ -222,3 +222,8 @@ Update:
 - Leaderboard identity now keeps a history of legacy nick-based keys on the client and submits them with each remote leaderboard POST.
 - Vercel leaderboard API now merges legacy nick rows into the current player key (preferably tg:<id>), preserves the maximum bestWave/bestExtraKills, updates the current nickname, and deletes stale legacy rows.
 - Result: changing nickname under the same Telegram account updates the same leaderboard record instead of losing the record or leaving old duplicate rows behind.
+
+Update:
+- Added level-6 tower sprite loading from /assets/towers/level6/*.png in the main build and the test build.
+- drawTowerSprite now first tries a loaded PNG by towerId and falls back to the existing procedural tower graphics if the image is missing or not loaded yet.
+- node --check passes; Playwright rerun still fails in this environment because Chromium cannot launch (MachPortRendezvousServer permission error).

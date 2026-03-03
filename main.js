@@ -30,6 +30,26 @@ const UI_ICON_PATHS = {
   shop: "/assets/ui/bascet.png",
   tools: "/assets/ui/tools.png"
 };
+const TOWER_SPRITE_IDS = [
+  "soul_reaper",
+  "heaven_archon",
+  "time_keeper",
+  "plague_master",
+  "thunderer",
+  "small_but_strong",
+  "archiarcher",
+  "anglosax",
+  "money_doctor",
+  "flame_of_fate",
+  "shadow_altar",
+  "colossus",
+  "heaven_oracle",
+  "devourer",
+  "star_judgment"
+];
+const TOWER_SPRITE_PATHS = Object.fromEntries(
+  TOWER_SPRITE_IDS.map((id) => [id, `/assets/towers/level6/${id}.png`])
+);
 
 let TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
 let STACK_TOP = 0;
@@ -77,6 +97,21 @@ function loadUiIcons() {
 }
 
 const UI_ICONS = loadUiIcons();
+
+function loadTowerSprites() {
+  const sprites = {};
+  for (const [id, src] of Object.entries(TOWER_SPRITE_PATHS)) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      if (typeof render === "function") render();
+    };
+    sprites[id] = img;
+  }
+  return sprites;
+}
+
+const TOWER_SPRITES = loadTowerSprites();
 
 function recalculateLayout() {
   STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
@@ -2844,6 +2879,8 @@ function drawPolygon(cx, cy, radius, sides, rotation, fill, stroke) {
 }
 
 function drawTowerSprite(tower) {
+  if (drawTowerImageSprite(tower)) return;
+
   const size = tower.level >= 3 ? 13 : tower.level === 2 ? 11 : 9;
   const x = tower.x;
   const y = tower.y;
@@ -2939,6 +2976,21 @@ function drawTowerSprite(tower) {
       ctx.arc(x, y, size, 0, Math.PI * 2);
       ctx.fill();
   }
+}
+
+function drawTowerImageSprite(tower) {
+  const img = TOWER_SPRITES[tower.towerId];
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+
+  const maxSize = tower.level >= 6 ? TILE - 4 : TILE - 8;
+  const scale = Math.min(maxSize / img.naturalWidth, maxSize / img.naturalHeight);
+  const drawW = Math.max(1, Math.round(img.naturalWidth * scale));
+  const drawH = Math.max(1, Math.round(img.naturalHeight * scale));
+  const drawX = Math.round(tower.x - drawW / 2);
+  const drawY = Math.round(tower.y - drawH / 2);
+
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  return true;
 }
 
 function drawSelection() {
