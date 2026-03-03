@@ -23,11 +23,11 @@ const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
 const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
 const LEADERBOARD_API_PATH = "/api/leaderboard";
 const UI_ICON_PATHS = {
-  build: "assets/ui/hammer.png",
-  mine: "assets/ui/pickaxe.png",
-  sell: "assets/ui/coins.png",
-  shop: "assets/ui/bascet.png",
-  tools: "assets/ui/tools.png"
+  build: "/assets/ui/hammer.png",
+  mine: "/assets/ui/pickaxe.png",
+  sell: "/assets/ui/coins.png",
+  shop: "/assets/ui/bascet.png",
+  tools: "/assets/ui/tools.png"
 };
 
 let TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
