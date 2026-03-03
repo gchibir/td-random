@@ -201,3 +201,9 @@ Update:
 Update:
 - Promoted the experimental floating-info + horizontal-button UI from `main-ui-test.js` into the main build by copying it over `main.js`.
 - Close buttons in shop/tools popups now render a drawn cross icon instead of the letter `X`.
+
+Update:
+- Increased the bottom action-row button height and replaced text labels with icon glyphs (hammer, pickaxe, coins, cart, wrench) in the promoted main UI.
+- Kept only compact numeric sublabels where needed (mine stock, sell amount/price) and added a tier badge on the build button.
+- Synced the same UI change into main-ui-test.js.
+- node --check passes for both files; Playwright rerun still fails in this environment because Chromium cannot launch (MachPortRendezvousServer permission error).

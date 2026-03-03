@@ -15,7 +15,7 @@ const LAYOUT = {
   gap: 6,
   auraH: 58,
   statsH: 48,
-  controlH: 74
+  controlH: 106
 };
 
 const NICK_STORAGE_KEY = "td_random_nick";
@@ -3878,10 +3878,10 @@ function drawInfoPanel() {
 function getActionButtons() {
   const topY = CONTROL_Y;
   const ids = [
-    { id: "build", label: "Строить", sublabel: state.towerBuildMode === "master" ? "4 ур." : "1 ур." },
-    { id: "mine", label: "Шахта", sublabel: `x${state.mineStock}` },
-    { id: "sell", label: "Продать", sublabel: `${Math.min(5, state.goldNuggets)} x ${getAdjustedNuggetPrice()}` },
-    { id: "shop", label: "Магазин", sublabel: "Товары" },
+    { id: "build", label: "", sublabel: "" },
+    { id: "mine", label: "", sublabel: `x${state.mineStock}` },
+    { id: "sell", label: "", sublabel: `${Math.min(5, state.goldNuggets)}x${getAdjustedNuggetPrice()}` },
+    { id: "shop", label: "", sublabel: "" },
     { id: "tools", label: "", sublabel: "" }
   ];
   return ids.map((entry, index) => ({
@@ -3936,46 +3936,155 @@ function getButtonColors(button) {
   };
 }
 
-function drawToolsGlyph(button) {
+function drawButtonGlyph(button, color) {
+  if (button.id === "build") {
+    drawHammerGlyph(button, color);
+    drawBuildTierBadge(button);
+    return;
+  }
+  if (button.id === "mine") {
+    drawPickaxeGlyph(button, color);
+    return;
+  }
+  if (button.id === "sell") {
+    drawCoinsGlyph(button, color);
+    return;
+  }
+  if (button.id === "shop") {
+    drawCartGlyph(button, color);
+    return;
+  }
+  drawWrenchGlyph(button, color);
+}
+
+function drawHammerGlyph(button, color) {
   const cx = button.x + button.w / 2;
-  const cy = button.y + button.h / 2 - 4;
-  ctx.strokeStyle = getButtonColors(button).text;
-  ctx.lineWidth = 3;
+  const cy = button.y + 34;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
   ctx.lineCap = "round";
   ctx.beginPath();
-  ctx.moveTo(cx - 10, cy + 7);
-  ctx.lineTo(cx + 4, cy - 8);
-  ctx.moveTo(cx - 3, cy - 8);
-  ctx.lineTo(cx + 10, cy + 6);
+  ctx.moveTo(cx - 10, cy + 14);
+  ctx.lineTo(cx + 8, cy - 4);
   ctx.stroke();
-  ctx.fillStyle = getButtonColors(button).text;
   ctx.beginPath();
-  ctx.arc(cx + 12, cy + 8, 2.5, 0, Math.PI * 2);
+  ctx.moveTo(cx - 16, cy - 10);
+  ctx.lineTo(cx - 1, cy - 10);
+  ctx.moveTo(cx - 11, cy - 14);
+  ctx.lineTo(cx - 11, cy - 5);
+  ctx.moveTo(cx - 3, cy - 12);
+  ctx.lineTo(cx + 2, cy - 17);
+  ctx.stroke();
+}
+
+function drawBuildTierBadge(button) {
+  const tier = state.towerBuildMode === "master" ? "4" : "1";
+  const bx = button.x + button.w - 24;
+  const by = button.y + button.h - 28;
+  fillRoundedRect(bx, by, 18, 18, 8, "rgba(255,255,255,0.18)", "rgba(255,255,255,0.28)");
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 11px Avenir Next";
+  ctx.fillText(tier, bx + 9, by + 9);
+}
+
+function drawPickaxeGlyph(button, color) {
+  const cx = button.x + button.w / 2;
+  const cy = button.y + 34;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx - 9, cy + 14);
+  ctx.lineTo(cx + 8, cy - 4);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - 15, cy - 7);
+  ctx.quadraticCurveTo(cx - 2, cy - 18, cx + 14, cy - 8);
+  ctx.moveTo(cx - 7, cy - 15);
+  ctx.lineTo(cx - 1, cy - 4);
+  ctx.stroke();
+}
+
+function drawCoinsGlyph(button, color) {
+  const cx = button.x + button.w / 2;
+  const cy = button.y + 34;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(cx + 6, cy + 6, 10, 5, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(cx - 4, cy - 2, 10, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - 14, cy - 2);
+  ctx.lineTo(cx - 14, cy + 6);
+  ctx.moveTo(cx + 6, cy + 6);
+  ctx.lineTo(cx + 6, cy + 14);
+  ctx.stroke();
+}
+
+function drawCartGlyph(button, color) {
+  const cx = button.x + button.w / 2;
+  const cy = button.y + 34;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx - 14, cy - 10);
+  ctx.lineTo(cx - 8, cy - 10);
+  ctx.lineTo(cx - 4, cy + 4);
+  ctx.lineTo(cx + 10, cy + 4);
+  ctx.lineTo(cx + 13, cy - 6);
+  ctx.lineTo(cx - 6, cy - 6);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx - 1, cy + 11, 3, 0, Math.PI * 2);
+  ctx.arc(cx + 10, cy + 11, 3, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function drawWrenchGlyph(button, color) {
+  const cx = button.x + button.w / 2;
+  const cy = button.y + 34;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx - 9, cy + 11);
+  ctx.lineTo(cx + 3, cy - 1);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx - 11, cy + 13, 4.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + 5, cy - 3);
+  ctx.lineTo(cx + 13, cy - 11);
+  ctx.moveTo(cx + 7, cy - 12);
+  ctx.lineTo(cx + 14, cy - 5);
+  ctx.stroke();
 }
 
 function drawActionButtons() {
   for (const button of getActionButtons()) {
     const colors = getButtonColors(button);
     fillRoundedRect(button.x, button.y, button.w, button.h, 14, colors.fill, colors.stroke);
+    drawButtonGlyph(button, colors.text);
 
-    if (button.id === "tools") {
-      drawToolsGlyph(button);
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = colors.text;
-      ctx.font = "11px Avenir Next";
-      ctx.fillText("Действ.", button.x + button.w / 2, button.y + button.h - 16);
-      continue;
-    }
+    if (!button.sublabel) continue;
 
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = colors.text;
-    ctx.font = "bold 12px Avenir Next";
-    ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 - 10);
-    ctx.font = "10px Avenir Next";
-    ctx.fillText(button.sublabel, button.x + button.w / 2, button.y + button.h / 2 + 11);
+    ctx.font = "bold 11px Avenir Next";
+    ctx.fillText(button.sublabel, button.x + button.w / 2, button.y + button.h - 17);
   }
 }
 
