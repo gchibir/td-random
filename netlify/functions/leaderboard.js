@@ -26,7 +26,9 @@ async function getLeaderboardStore() {
   try {
     const blobs = await import("@netlify/blobs");
     if (typeof blobs.getStore === "function") {
-      return blobs.getStore(STORE_NAME);
+      try {
+        return blobs.getStore(STORE_NAME);
+      } catch {}
     }
   } catch {}
   return getMemoryStore();
