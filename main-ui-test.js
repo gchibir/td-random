@@ -3036,9 +3036,9 @@ function getFloatingInfoRect() {
   if (!selected && !selectedEnemy && !selectedItemDef) return null;
   return {
     x: BOARD_X + 8,
-    y: BOARD_Y + MAP_VISUAL_H - 98,
+    y: BOARD_Y + MAP_VISUAL_H - 114,
     w: BOARD_W - 16,
-    h: 88
+    h: 104
   };
 }
 
@@ -3811,7 +3811,8 @@ function drawInfoPanel() {
     ctx.fillText(selectedItemDef.name, body.x, body.y);
     ctx.fillStyle = "#cfe0ec";
     ctx.font = "12px Avenir Next";
-    drawWrappedText(selectedItemDef.description, body.x, body.y + 22, body.w, 16, "#cfe0ec", "12px Avenir Next", 3);
+    const itemAbility = selectedItemDef.description || "Без дополнительного эффекта.";
+    drawWrappedText(`Эффект: ${itemAbility}`, body.x, body.y + 22, body.w, 16, "#cfe0ec", "12px Avenir Next", 4);
     return;
   }
 
@@ -3867,7 +3868,11 @@ function drawInfoPanel() {
   ctx.fillStyle = "#cfe0ec";
   ctx.font = "12px Avenir Next";
   const statLine = `${selected.tier} • ${selected.attackType} • Урон ${effectiveDamage} • ${effectiveCooldown.toFixed(2)}с • Рэндж ${selected.rangeCells.toFixed(1)}`;
-  drawWrappedText(statLine, body.x, body.y + 22, body.w - (itemRect ? 42 : 0), 16, "#cfe0ec", "12px Avenir Next", 2);
+  const textW = body.w - (itemRect ? 42 : 0);
+  drawWrappedText(statLine, body.x, body.y + 22, textW, 16, "#cfe0ec", "12px Avenir Next", 2);
+  const abilityLines = getTowerAbilityDescriptions(selected);
+  const detailText = abilityLines.length ? abilityLines[0] : selected.talent || "Без особой способности.";
+  drawWrappedText(`Способность: ${detailText}`, body.x, body.y + 54, textW, 14, "#cfe0ec", "11px Avenir Next", 2);
 }
 
 function getActionButtons() {
@@ -3982,17 +3987,17 @@ function getBuildPickerButtons() {
       label: "Башня 1 уровня",
       sublabel: `${SIMPLE_TOWER_COST}`,
       x: BUTTONS_X,
-      y: CONTROL_Y - 96,
-      w: 180,
+      y: CONTROL_Y - 132,
+      w: 220,
       h: 40
     },
     {
       id: "master",
       label: "Башня 4 уровня",
       sublabel: `${MASTER_TOWER_COST}`,
-      x: BUTTONS_X + 190,
-      y: CONTROL_Y - 96,
-      w: 180,
+      x: BUTTONS_X,
+      y: CONTROL_Y - 86,
+      w: 220,
       h: 40
     }
   ];
@@ -4001,7 +4006,7 @@ function getBuildPickerButtons() {
 function drawBuildPicker() {
   const buttons = getBuildPickerButtons();
   if (!buttons.length) return;
-  fillRoundedRect(BUTTONS_X - 8, CONTROL_Y - 104, 388, 56, 18, "#173246", "rgba(255,255,255,0.12)");
+  fillRoundedRect(BUTTONS_X - 8, CONTROL_Y - 140, 236, 104, 18, "#173246", "rgba(255,255,255,0.12)");
   for (const button of buttons) {
     const selected = state.towerBuildMode === button.id && state.buildMode !== "mine";
     const fill = selected ? "#d4a93d" : "#48515c";
@@ -4072,7 +4077,7 @@ function getShopButtons() {
       x: SHOP_X + 12,
       y: SHOP_Y + 40,
       w: SHOP_W - 24,
-      h: 34,
+      h: 44,
       label: `Купить предмет ${ITEM_PURCHASE_COST}`,
       sublabel: state.inventory.some((slot) => slot === null) ? "рандом" : "нет места",
       ready: state.inventory.some((slot) => slot === null) && state.silver >= ITEM_PURCHASE_COST
@@ -4085,9 +4090,9 @@ function getShopButtons() {
     return {
       id: boss.id,
       x: SHOP_X + 12,
-      y: SHOP_Y + 80 + index * 40,
+      y: SHOP_Y + 92 + index * 50,
       w: SHOP_W - 24,
-      h: 34,
+      h: 44,
       label: `${boss.name} ${boss.cost}`,
       sublabel:
         status.bought >= boss.maxBuys
@@ -4100,17 +4105,28 @@ function getShopButtons() {
   }));
 }
 
+function getShopCloseRect() {
+  if (!state.shopOpen) return null;
+  return { x: SHOP_X + SHOP_W - 34, y: SHOP_Y + 8, w: 24, h: 24 };
+}
+
 function drawShopPopup() {
   if (!state.shopOpen) return;
 
   const buttons = getShopButtons();
-  const popupH = 52 + buttons.length * 40;
+  const popupH = 56 + buttons.length * 50;
   fillRoundedRect(SHOP_X, SHOP_Y, SHOP_W, popupH, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillStyle = COLORS.text;
-  ctx.font = "bold 15px Avenir Next";
+  ctx.font = "bold 16px Avenir Next";
   ctx.fillText("Магазин", SHOP_X + 12, SHOP_Y + 10);
+  const close = getShopCloseRect();
+  fillRoundedRect(close.x, close.y, close.w, close.h, 8, "#2b4458", "rgba(255,255,255,0.1)");
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "bold 14px Avenir Next";
+  ctx.fillText("X", close.x + close.w / 2, close.y + close.h / 2 + 0.5);
 
   for (const button of buttons) {
     const selected = state.selectedShopItem === button.id;
@@ -4126,9 +4142,10 @@ function drawShopPopup() {
     ctx.fillStyle = selected ? "#1f1702" : button.ready ? "#ffffff" : COLORS.disabledText;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "13px Avenir Next";
+    ctx.font = "bold 14px Avenir Next";
     ctx.fillText(button.label, button.x + 10, button.y + button.h / 2);
     ctx.textAlign = "right";
+    ctx.font = "13px Avenir Next";
     ctx.fillText(button.sublabel, button.x + button.w - 10, button.y + button.h / 2);
   }
 }
@@ -4144,22 +4161,33 @@ function getToolsMenuButtons() {
   ].map((button, index) => ({
     ...button,
     x: BUTTONS_X - 8,
-    y: CONTROL_Y - 178 + index * 42,
+    y: CONTROL_Y - 214 + index * 50,
     w: BUTTONS_W + 8,
-    h: 36
+    h: 44
   }));
+}
+
+function getToolsCloseRect() {
+  if (!getToolsMenuButtons().length) return null;
+  return { x: BUTTONS_X + BUTTONS_W - 28, y: CONTROL_Y - 250, w: 24, h: 24 };
 }
 
 function drawToolsPopup() {
   const buttons = getToolsMenuButtons();
   if (!buttons.length) return;
 
-  fillRoundedRect(BUTTONS_X - 12, CONTROL_Y - 184, BUTTONS_W + 16, 176, 18, "#173246", "rgba(255,255,255,0.12)");
+  fillRoundedRect(BUTTONS_X - 12, CONTROL_Y - 258, BUTTONS_W + 16, 248, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.font = "bold 15px Avenir Next";
-  ctx.fillText("Меню башни", BUTTONS_X, CONTROL_Y - 174);
+  ctx.font = "bold 16px Avenir Next";
+  ctx.fillText("Меню башни", BUTTONS_X, CONTROL_Y - 248);
+  const close = getToolsCloseRect();
+  fillRoundedRect(close.x, close.y, close.w, close.h, 8, "#2b4458", "rgba(255,255,255,0.1)");
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "bold 14px Avenir Next";
+  ctx.fillText("X", close.x + close.w / 2, close.y + close.h / 2 + 0.5);
 
   for (const button of buttons) {
     const active =
@@ -4180,9 +4208,10 @@ function drawToolsPopup() {
     ctx.fillStyle = !active ? COLORS.disabledText : selected ? "#1f1702" : "#ffffff";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "13px Avenir Next";
+    ctx.font = "bold 14px Avenir Next";
     ctx.fillText(button.label, button.x + 10, button.y + button.h / 2);
     ctx.textAlign = "right";
+    ctx.font = "13px Avenir Next";
     ctx.fillText(button.sub, button.x + button.w - 10, button.y + button.h / 2);
   }
 }
@@ -4522,6 +4551,16 @@ function findPauseButtonAt(clientX, clientY) {
 function findShopActionAt(clientX, clientY) {
   if (!state.shopOpen) return null;
   const point = getCanvasPoint(clientX, clientY);
+  const close = getShopCloseRect();
+  if (
+    close &&
+    point.x >= close.x &&
+    point.x <= close.x + close.w &&
+    point.y >= close.y &&
+    point.y <= close.y + close.h
+  ) {
+    return "close_shop";
+  }
   for (const button of getShopButtons()) {
     if (
       point.x >= button.x &&
@@ -4537,6 +4576,16 @@ function findShopActionAt(clientX, clientY) {
 
 function findToolsActionAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
+  const close = getToolsCloseRect();
+  if (
+    close &&
+    point.x >= close.x &&
+    point.x <= close.x + close.w &&
+    point.y >= close.y &&
+    point.y <= close.y + close.h
+  ) {
+    return "close_tools";
+  }
   for (const button of getToolsMenuButtons()) {
     if (
       point.x >= button.x &&
@@ -4833,6 +4882,11 @@ function handleTap(event) {
 
   const shopAction = findShopActionAt(event.clientX, event.clientY);
   if (shopAction) {
+    if (shopAction === "close_shop") {
+      state.shopOpen = false;
+      draw();
+      return;
+    }
     state.selectedShopItem = shopAction;
     if (shopAction === "buy_item") {
       buyRandomItem();
@@ -4876,6 +4930,12 @@ function handleTap(event) {
 
   const toolsAction = findToolsActionAt(event.clientX, event.clientY);
   if (toolsAction) {
+    if (toolsAction === "close_tools") {
+      state.toolsOpen = false;
+      state.selectedToolAction = null;
+      draw();
+      return;
+    }
     handleToolsAction(toolsAction);
     draw();
     return;
