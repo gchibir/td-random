@@ -187,3 +187,9 @@ Update:
 - Split tutorial/script pauses from the visible pause menu by adding `pauseMenuOpen`.
 - `paused` now only means simulation is halted; `pauseMenuOpen` now controls whether the pause menu overlay is rendered.
 - Result: tutorial-controlled pauses no longer open the pause menu, while the top-left pause button still opens the menu and pauses the game normally.
+
+Update:
+- Fixed tutorial pause step visibility: `highlight_build` now has its own modal text (`Нажми кнопку «Строить»`), so the scripted stop after the initial delay no longer looks empty.
+- Build picker now closes immediately after choosing any build option (`Башня 1 уровня`, `Башня 4 уровня`, `Шахта`). This applies generally, not only in tutorial; shop remains sticky as before.
+- Tutorial mine placement now targets lower central build cells instead of reusing the first central tower slots.
+- Added scroll support for tutorial text modals: long tutorial copy is clipped inside the modal body and can be dragged vertically to read the full text.

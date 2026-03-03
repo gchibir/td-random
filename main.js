@@ -691,7 +691,9 @@ const state = {
     waitTimer: 0,
     forcedTowerId: null,
     forcedTowerLevel: 0,
-    extraTowerCount: 0
+    extraTowerCount: 0,
+    scroll: 0,
+    scrollMax: 0
   },
   camera: { zoom: 1, panX: 0, panY: 0 }
 };
@@ -701,8 +703,11 @@ const pointerState = {
   panPointerId: null,
   tapPointerId: null,
   infoPointerId: null,
+  tutorialPointerId: null,
   lastInfoY: 0,
+  lastTutorialY: 0,
   infoMoved: false,
+  tutorialMoved: false,
   pinchDistance: 0,
   lastX: 0,
   lastY: 0,
@@ -2627,6 +2632,26 @@ function drawWrappedText(text, x, y, maxWidth, lineHeight, color, font, maxLines
   return lineIndex;
 }
 
+function countWrappedLines(text, maxWidth, font) {
+  ctx.save();
+  ctx.font = font;
+  const words = String(text).split(/\s+/).filter(Boolean);
+  let line = "";
+  let count = 0;
+  for (let i = 0; i < words.length; i += 1) {
+    const test = line ? `${line} ${words[i]}` : words[i];
+    if (ctx.measureText(test).width <= maxWidth || !line) {
+      line = test;
+      continue;
+    }
+    count += 1;
+    line = words[i];
+  }
+  if (line) count += 1;
+  ctx.restore();
+  return Math.max(1, count);
+}
+
 function drawBackground() {
   const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
   gradient.addColorStop(0, COLORS.pageTop);
@@ -3342,6 +3367,8 @@ function startNormalGame() {
   state.tutorial.forcedTowerId = null;
   state.tutorial.forcedTowerLevel = 0;
   state.tutorial.extraTowerCount = 0;
+  state.tutorial.scroll = 0;
+  state.tutorial.scrollMax = 0;
   if (!state.started) {
     state.started = true;
     state.startCountdown = 5;
@@ -3372,6 +3399,8 @@ function startTutorialGame() {
   state.tutorial.forcedTowerId = null;
   state.tutorial.forcedTowerLevel = 0;
   state.tutorial.extraTowerCount = 0;
+  state.tutorial.scroll = 0;
+  state.tutorial.scrollMax = 0;
   state.selectedCell = null;
   state.selectedEnemyId = null;
   state.selectedAuraSourceId = null;
@@ -3379,8 +3408,8 @@ function startTutorialGame() {
 
 function getTutorialTargetSlot() {
   if (!state.tutorial.active || !["place_simple", "place_mine"].includes(state.tutorial.step)) return null;
-  const centralCandidates = getCentralTutorialSlots();
-  for (const slot of centralCandidates) {
+  const candidates = state.tutorial.step === "place_mine" ? getTutorialMineSlots() : getCentralTutorialSlots();
+  for (const slot of candidates) {
     if (!getStructureAt(slot.c, slot.r)) return slot;
   }
   for (let r = 0; r < GRID_ROWS; r += 1) {
@@ -3403,6 +3432,24 @@ function getCentralTutorialSlots() {
       const da = Math.hypot(a.c - center.c, a.r - center.r);
       const db = Math.hypot(b.c - center.c, b.r - center.r);
       return da - db;
+    })
+    .slice(0, 4);
+}
+
+function getTutorialMineSlots() {
+  const centerC = (GRID_COLS - 1) / 2;
+  return Array.from({ length: GRID_ROWS * GRID_COLS }, (_, index) => ({
+    c: index % GRID_COLS,
+    r: Math.floor(index / GRID_COLS)
+  }))
+    .filter((slot) => isBuildCell(slot.c, slot.r))
+    .sort((a, b) => {
+      const bottomBiasA = Math.abs(a.r - (GRID_ROWS - 1));
+      const bottomBiasB = Math.abs(b.r - (GRID_ROWS - 1));
+      if (bottomBiasA !== bottomBiasB) return bottomBiasA - bottomBiasB;
+      const centerBiasA = Math.abs(a.c - centerC);
+      const centerBiasB = Math.abs(b.c - centerC);
+      return centerBiasA - centerBiasB;
     })
     .slice(0, 4);
 }
@@ -3432,6 +3479,11 @@ function getTutorialModalConfig() {
     return {
       text: "Монстры уже идут! Скорее строй башни для обороны!",
       button: "Далее"
+    };
+  }
+  if (state.tutorial.step === "highlight_build") {
+    return {
+      text: "Нажми кнопку «Строить»"
     };
   }
   if (state.tutorial.step === "pick_simple") {
@@ -3473,10 +3525,12 @@ function advanceTutorialFromAction(actionId) {
   if (!state.tutorial.active) return;
   if (state.tutorial.step === "highlight_build" && actionId === "build") {
     state.tutorial.step = "pick_simple";
+    resetTutorialScroll();
     return;
   }
   if (state.tutorial.step === "prompt_mine" && actionId === "build") {
     state.tutorial.step = "pick_mine";
+    resetTutorialScroll();
   }
 }
 
@@ -3485,11 +3539,13 @@ function advanceTutorialFromBuildChoice(choiceId) {
   if (state.tutorial.step === "pick_simple") {
     if (choiceId !== "simple") return false;
     state.tutorial.step = "place_simple";
+    resetTutorialScroll();
     return true;
   }
   if (state.tutorial.step === "pick_mine") {
     if (choiceId !== "mine") return false;
     state.tutorial.step = "place_mine";
+    resetTutorialScroll();
     return true;
   }
   return true;
@@ -3501,12 +3557,14 @@ function advanceTutorialAfterPlacement(kind) {
     state.paused = false;
     state.tutorial.step = "after_first_tower_running";
     state.tutorial.waitTimer = 5;
+    resetTutorialScroll();
     return;
   }
   if (state.tutorial.step === "place_mine" && kind === "mine") {
     state.paused = false;
     state.tutorial.step = "after_mine_hint";
     state.tutorial.waitTimer = 0;
+    resetTutorialScroll();
   }
 }
 
@@ -3525,18 +3583,21 @@ function updateTutorial(dt) {
   if (state.tutorial.step === "pre_build_wait") {
     state.paused = true;
     state.tutorial.step = "highlight_build";
+    resetTutorialScroll();
     return;
   }
 
   if (state.tutorial.step === "after_first_tower_running") {
     state.paused = true;
     state.tutorial.step = "prompt_mine";
+    resetTutorialScroll();
     return;
   }
 
   if (state.tutorial.step === "after_sell_wait") {
     state.paused = true;
     state.tutorial.step = "shop_prompt";
+    resetTutorialScroll();
     return;
   }
 
@@ -3547,20 +3608,61 @@ function updateTutorial(dt) {
   ) {
     state.paused = true;
     state.tutorial.step = "sell_prompt";
+    resetTutorialScroll();
   }
+}
+
+function resetTutorialScroll() {
+  state.tutorial.scroll = 0;
+  state.tutorial.scrollMax = 0;
 }
 
 function getTutorialNextButtonRect() {
   const modal = getTutorialModalConfig();
   if (!modal?.button) return null;
-  const boxW = 360;
-  const boxH = 170;
+  const box = getTutorialModalRect();
   return {
-    x: canvas.width / 2 - 84,
-    y: canvas.height / 2 - boxH / 2 + 106,
+    x: box.x + (box.w - 168) / 2,
+    y: box.y + box.h - 54,
     w: 168,
     h: 42
   };
+}
+
+function getTutorialModalRect() {
+  const modal = getTutorialModalConfig();
+  if (!modal) return null;
+  const boxW = 380;
+  const boxH = modal.button ? 196 : 190;
+  return {
+    x: canvas.width / 2 - boxW / 2,
+    y: canvas.height / 2 - boxH / 2,
+    w: boxW,
+    h: boxH
+  };
+}
+
+function getTutorialModalBodyRect() {
+  const box = getTutorialModalRect();
+  const modal = getTutorialModalConfig();
+  if (!box || !modal) return null;
+  return {
+    x: box.x + 18,
+    y: box.y + 18,
+    w: box.w - 36,
+    h: modal.button ? box.h - 84 : box.h - 36
+  };
+}
+
+function isPointInTutorialModalBody(point) {
+  const rect = getTutorialModalBodyRect();
+  if (!rect) return false;
+  return (
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.w &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.h
+  );
 }
 
 function drawTutorialHighlight() {
@@ -3618,16 +3720,23 @@ function drawTutorialOverlay() {
   drawTutorialHighlight();
   const modal = getTutorialModalConfig();
   if (!modal) return;
-  const boxW = 360;
-  const boxH = modal.button ? 170 : 138;
-  const boxX = canvas.width / 2 - boxW / 2;
-  const boxY = canvas.height / 2 - boxH / 2;
-  fillRoundedRect(boxX, boxY, boxW, boxH, 20, "rgba(18, 33, 48, 0.94)", "rgba(255,255,255,0.14)");
-  ctx.textAlign = "center";
+  const box = getTutorialModalRect();
+  const body = getTutorialModalBodyRect();
+  fillRoundedRect(box.x, box.y, box.w, box.h, 20, "rgba(18, 33, 48, 0.94)", "rgba(255,255,255,0.14)");
+  const font = "bold 18px Avenir Next";
+  const lineHeight = 24;
+  const lineCount = countWrappedLines(modal.text, body.w, font);
+  const contentH = lineCount * lineHeight;
+  state.tutorial.scrollMax = Math.max(0, contentH - body.h);
+  state.tutorial.scroll = Math.max(0, Math.min(state.tutorial.scrollMax, state.tutorial.scroll));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(body.x, body.y, body.w, body.h);
+  ctx.clip();
+  ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillStyle = "#eef7ff";
-  ctx.font = "bold 18px Avenir Next";
-  drawWrappedText(modal.text, boxX + 18, boxY + 20, boxW - 36, 24, "#eef7ff", "bold 18px Avenir Next", 4);
+  drawWrappedText(modal.text, body.x, body.y - state.tutorial.scroll, body.w, lineHeight, "#eef7ff", font, 40);
+  ctx.restore();
   if (!modal.button) return;
   const button = getTutorialNextButtonRect();
   fillRoundedRect(button.x, button.y, button.w, button.h, 14, "#d4a93d", "#ffe7a2");
@@ -4770,6 +4879,7 @@ function handleTap(event) {
     state.paused = false;
     state.tutorial.step = "pre_build_wait";
     state.tutorial.waitTimer = 2;
+    resetTutorialScroll();
     draw();
     return;
   }
@@ -4916,6 +5026,7 @@ function handleTap(event) {
       state.towerBuildMode = buildPickerAction.id;
       state.buildMode = buildPickerAction.id;
     }
+    state.buildPickerOpen = false;
     draw();
     return;
   }
@@ -4972,6 +5083,7 @@ function handleTap(event) {
         state.paused = false;
         state.tutorial.step = "after_sell_wait";
         state.tutorial.waitTimer = 2;
+        resetTutorialScroll();
       }
     } else if (actionButton.id === "shop") {
       state.shopOpen = !state.shopOpen;
@@ -4983,6 +5095,7 @@ function handleTap(event) {
         state.tutorial.active = false;
         state.tutorial.step = "idle";
         state.tutorial.waitTimer = 0;
+        resetTutorialScroll();
       }
     } else if (actionButton.id === "tools") {
       const selected = getSelectedStructure();
@@ -4994,6 +5107,7 @@ function handleTap(event) {
         if (state.tutorial.active && state.tutorial.step === "upgrade_prompt" && state.toolsOpen) {
           state.paused = false;
           state.tutorial.step = "await_wave2_sell_prompt";
+          resetTutorialScroll();
         }
       }
     }
@@ -5049,6 +5163,11 @@ function getActiveBoardPointers() {
 
 canvas.addEventListener("pointerdown", (event) => {
   const point = getCanvasPoint(event.clientX, event.clientY);
+  if (state.tutorial.active && isPointInTutorialModalBody(point)) {
+    pointerState.tutorialPointerId = event.pointerId;
+    pointerState.lastTutorialY = point.y;
+    pointerState.tutorialMoved = false;
+  }
   if (isPointInInfoPanel(point)) {
     pointerState.infoPointerId = event.pointerId;
     pointerState.lastInfoY = point.y;
@@ -5100,6 +5219,15 @@ canvas.addEventListener("pointermove", (event) => {
     }
     pointerState.lastInfoY = point.y;
   }
+  if (pointerState.tutorialPointerId === event.pointerId) {
+    const dy = point.y - pointerState.lastTutorialY;
+    if (Math.abs(dy) > 2) {
+      pointerState.tutorialMoved = true;
+      state.tutorial.scroll = Math.max(0, Math.min(state.tutorial.scrollMax, state.tutorial.scroll - dy));
+      draw();
+    }
+    pointerState.lastTutorialY = point.y;
+  }
 
   const activeBoardPointers = getActiveBoardPointers();
   if (activeBoardPointers.length >= 2) {
@@ -5142,12 +5270,17 @@ function finishPointer(event) {
   if (!pointer) return;
   const tapPointerId = pointerState.tapPointerId;
   const blockedByInfo = pointerState.infoPointerId === event.pointerId && pointerState.infoMoved;
+  const blockedByTutorial = pointerState.tutorialPointerId === event.pointerId && pointerState.tutorialMoved;
   const shouldTap = tapPointerId === event.pointerId && !pointerState.moved;
   pointerState.pointers.delete(event.pointerId);
 
   if (pointerState.infoPointerId === event.pointerId) {
     pointerState.infoPointerId = null;
     pointerState.infoMoved = false;
+  }
+  if (pointerState.tutorialPointerId === event.pointerId) {
+    pointerState.tutorialPointerId = null;
+    pointerState.tutorialMoved = false;
   }
 
   const activeBoardPointers = getActiveBoardPointers();
@@ -5169,7 +5302,7 @@ function finishPointer(event) {
     pointerState.board = false;
   }
 
-  if (shouldTap && !blockedByInfo) {
+  if (shouldTap && !blockedByInfo && !blockedByTutorial) {
     handleTap(event);
   }
 }
