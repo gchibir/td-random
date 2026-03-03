@@ -243,3 +243,16 @@ Update:
 - Rebalanced two level-1 towers.
 - Archer changed to 0.4s cooldown and 14 base damage.
 - Stonethrower changed to 1.0s cooldown and 2.5-cell splash radius.
+
+Update:
+- Rebalanced one level-5 tower.
+- Небесный шторм changed to 0.65s cooldown and 190 base damage.
+
+Update:
+- Nerfed level-1 Time Pendulum to 15% proc chance and 0.5s stun.
+- Applied the pending level-4 balance adjustments: Stardrop all-target chance reduced to 30%, Lightning Lord base damage reduced to 120.
+- Reworked aura logic so self-auras now apply to the source tower and identical tower/item aura families no longer stack.
+- Added timed rounds: normal waves now run on a 60s timer with a skip button after a full clear, while wave 30 transitions into endless mode only after a 5s post-clear delay.
+- Reduced base enemy movement speed by 5%, added extra-wave speed/magic/physical resistance thresholds, and made wave 30 auto-cash out any remaining mine durability.
+- Reworked the aura HUD from text pills into icon badges with tap-to-read details in the aura strip, and made defeat open the menu with a restart action.
+- Ran the required Playwright client again after the change set, but Chromium still cannot launch in this environment (`MachPortRendezvousServer ... Permission denied`), so validation remained limited to syntax checks and served-JS inspection.

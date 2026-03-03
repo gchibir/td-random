@@ -369,32 +369,32 @@ const SIMPLE_TOWERS = [
 ];
 
 const ADVANCED_TOWERS = [
-  makeTower({ id: "hunter", family: "hunter", level: 2, tier: "Уровень 2", name: "Охотник", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 5, cooldown: 0.3, baseDamage: 18, critChance: 0.15, critMultiplier: 2, shotColor: "#d2bc90", bodyColor: "#705844", trimColor: "#faebc7", visual: "ballista", talent: "15% шанс крита x2.", description: "Быстрый критовый стрелок." }),
+  makeTower({ id: "hunter", family: "hunter", level: 2, tier: "Уровень 2", name: "Охотник", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 5, cooldown: 0.4, baseDamage: 18, critChance: 0.15, critMultiplier: 2, shotColor: "#d2bc90", bodyColor: "#705844", trimColor: "#faebc7", visual: "ballista", talent: "15% шанс крита x2.", description: "Быстрый критовый стрелок." }),
   makeTower({ id: "crossbowman", family: "crossbowman", level: 2, tier: "Уровень 2", name: "Арбалетчик", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 5, cooldown: 1.5, baseDamage: 50, shotColor: "#c8a16d", bodyColor: "#5e4b3f", trimColor: "#f0d0a6", visual: "ballista", talent: "Тяжелый одиночный выстрел.", description: "Медленная силовая башня второго уровня." }),
   makeTower({ id: "bombardier", family: "bombardier", level: 2, tier: "Уровень 2", name: "Бомбардир", attributeType: "Сила", attackType: "Физическая по области", pattern: "splash", rangeCells: 4.5, cooldown: 0.8, baseDamage: 35, splashRadiusCells: 1.3, shotColor: "#9aa0a9", bodyColor: "#676f7c", trimColor: "#e3e7ed", visual: "mortar", talent: "Сплэш радиусом 1.3 клетки.", description: "Средний физический сплэш." }),
-  makeTower({ id: "ice_pillar", family: "ice_pillar", level: 2, tier: "Уровень 2", name: "Ледяной столб", attributeType: "Интеллект", attackType: "Магическая", pattern: "slow", rangeCells: 3.5, cooldown: 0.9, baseDamage: 30, slowFactor: 0.85, slowDuration: 2, shotColor: "#b9f1ff", bodyColor: "#377ea0", trimColor: "#edfeff", visual: "frost", talent: "Замедление 15% на 2 сек.", description: "Усиленный ледяной контроль." }),
+  makeTower({ id: "ice_pillar", family: "ice_pillar", level: 2, tier: "Уровень 2", name: "Ледяной столб", attributeType: "Интеллект", attackType: "Магическая", pattern: "slow", rangeCells: 4, cooldown: 0.9, baseDamage: 30, slowFactor: 0.85, slowDuration: 2, shotColor: "#b9f1ff", bodyColor: "#377ea0", trimColor: "#edfeff", visual: "frost", talent: "Замедление 15% на 2 сек.", description: "Усиленный ледяной контроль." }),
   makeTower({ id: "poison_vine", family: "poison_vine", level: 2, tier: "Уровень 2", name: "Башня Ядовитая лоза", attributeType: "Интеллект", attackType: "Магическая", pattern: "poison", rangeCells: 3.0, cooldown: 0.8, baseDamage: 30, poisonDamage: 10, poisonDuration: 4, shotColor: "#b6ff87", bodyColor: "#4a8d37", trimColor: "#efffc4", visual: "toxin", talent: "Яд 10/сек на 4 сек.", description: "Стабильный дот и магический урон." }),
-  makeTower({ id: "discharger", family: "discharger", level: 2, tier: "Уровень 2", name: "Разрядник", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 5, cooldown: 0.6, baseDamage: 40, multiTargets: 3, chainFalloff: 0.25, shotColor: "#fff08f", bodyColor: "#8a761c", trimColor: "#fff8bf", visual: "flare", talent: "3 цели, -25% за прыжок.", description: "Средняя цепная магия." }),
+  makeTower({ id: "discharger", family: "discharger", level: 2, tier: "Уровень 2", name: "Разрядник", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 5, cooldown: 0.7, baseDamage: 30, multiTargets: 3, chainFalloff: 0.25, shotColor: "#fff08f", bodyColor: "#8a761c", trimColor: "#fff8bf", visual: "flare", talent: "3 цели, -25% за прыжок.", description: "Средняя цепная магия." }),
   makeTower({ id: "war_drum", family: "war_drum", level: 2, tier: "Уровень 2", name: "Боевой барабан", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 3.5, cooldown: 0.3, baseDamage: 15, auraAttackSpeedBoost: 0.10, shotColor: "#d7c77b", bodyColor: "#6e3d2e", trimColor: "#f4dd84", visual: "banner", talent: "Дает союзникам +10% к скорости атаки.", description: "Средняя саппорт-башня на темп." })
 ];
 
 const MASTER_TOWERS = [
   makeTower({ id: "sniper", family: "sniper", level: 3, tier: "Уровень 3", name: "Снайпер", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 6, cooldown: 0.8, baseDamage: 60, critChance: 0.10, critMultiplier: 2.2, cost: MASTER_TOWER_COST, shotColor: "#ead8ae", bodyColor: "#80634a", trimColor: "#fff0d0", visual: "ballista", talent: "10% шанс крита x2.2.", description: "Дальняя силовая одиночная башня." }),
-  makeTower({ id: "executioner", family: "executioner", level: 3, tier: "Уровень 3", name: "Палач", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 3.5, cooldown: 1.0, baseDamage: 75, percentCurrentHpDamage: 0.10, percentCurrentHpChance: 0.25, cost: MASTER_TOWER_COST, shotColor: "#d79e6a", bodyColor: "#6c4434", trimColor: "#f7cf92", visual: "spike", talent: "25% шанс нанести 10% текущего HP.", description: "Силовой добивающий удар." }),
-  makeTower({ id: "multicannon", family: "multicannon", level: 3, tier: "Уровень 3", name: "Многоствольная пушка", attributeType: "Ловкость", attackType: "Физическая", pattern: "multi", rangeCells: 3.5, cooldown: 0.85, baseDamage: 70, multiTargets: 5, cost: MASTER_TOWER_COST, shotColor: "#c8cfd8", bodyColor: "#6f7786", trimColor: "#eef2f7", visual: "mortar", talent: "Стреляет по 5 целям.", description: "Ловкий залп по пачкам." }),
+  makeTower({ id: "executioner", family: "executioner", level: 3, tier: "Уровень 3", name: "Палач", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 4, cooldown: 1.0, baseDamage: 75, percentCurrentHpDamage: 0.10, percentCurrentHpChance: 0.25, cost: MASTER_TOWER_COST, shotColor: "#d79e6a", bodyColor: "#6c4434", trimColor: "#f7cf92", visual: "spike", talent: "25% шанс нанести 10% текущего HP.", description: "Силовой добивающий удар." }),
+  makeTower({ id: "multicannon", family: "multicannon", level: 3, tier: "Уровень 3", name: "Многоствольная пушка", attributeType: "Ловкость", attackType: "Физическая", pattern: "multi", rangeCells: 3.5, cooldown: 0.85, baseDamage: 55, multiTargets: 5, cost: MASTER_TOWER_COST, shotColor: "#c8cfd8", bodyColor: "#6f7786", trimColor: "#eef2f7", visual: "mortar", talent: "Стреляет по 5 целям.", description: "Ловкий залп по пачкам." }),
   makeTower({ id: "snow_storm", family: "snow_storm", level: 3, tier: "Уровень 3", name: "Снежная буря", attributeType: "Интеллект", attackType: "Магическая", pattern: "splash", rangeCells: 5, cooldown: 0.9, baseDamage: 50, splashRadiusCells: 1.5, slowFactor: 0.85, slowDuration: 3, cost: MASTER_TOWER_COST, shotColor: "#d8fbff", bodyColor: "#4b8db0", trimColor: "#ffffff", visual: "frost", talent: "Замедление 15% на 3 сек.", description: "Магический сплэш с контролем." }),
   makeTower({ id: "plague_flower", family: "plague_flower", level: 3, tier: "Уровень 3", name: "Чумной цветок", attributeType: "Интеллект", attackType: "Магическая", pattern: "poison", rangeCells: 5, cooldown: 1.2, baseDamage: 60, poisonDamage: 20, poisonDuration: 5, cost: MASTER_TOWER_COST, shotColor: "#d5ffa0", bodyColor: "#4d9c44", trimColor: "#f7ffd7", visual: "toxin", talent: "Яд 20/сек на 5 сек.", description: "Сильный магический дот." }),
-  makeTower({ id: "storm_pillar", family: "storm_pillar", level: 3, tier: "Уровень 3", name: "Грозовой столп", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 5.5, cooldown: 0.5, baseDamage: 75, multiTargets: 4, chainFalloff: 0.25, cost: MASTER_TOWER_COST, shotColor: "#fff5a6", bodyColor: "#9a8524", trimColor: "#fffbd8", visual: "flare", talent: "4 цели, -25% за прыжок.", description: "Среднепоздняя цепная магия." }),
+  makeTower({ id: "storm_pillar", family: "storm_pillar", level: 3, tier: "Уровень 3", name: "Грозовой столп", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 5.5, cooldown: 0.65, baseDamage: 60, multiTargets: 4, chainFalloff: 0.25, cost: MASTER_TOWER_COST, shotColor: "#fff5a6", bodyColor: "#9a8524", trimColor: "#fffbd8", visual: "flare", talent: "4 цели, -25% за прыжок.", description: "Среднепоздняя цепная магия." }),
   makeTower({ id: "power_totem", family: "power_totem", level: 3, tier: "Уровень 3", name: "Тотем силы", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 4, cooldown: 0.3, baseDamage: 25, auraDamageBoost: 0.15, cost: MASTER_TOWER_COST, shotColor: "#f4d983", bodyColor: "#823f36", trimColor: "#ffe7a3", visual: "banner", talent: "Дает союзникам +15% урона.", description: "Поддержка урона с собственной атакой." })
 ];
 
 const EXPERT_TOWERS = [
   makeTower({ id: "sharpshooter", family: "sharpshooter", level: 4, tier: "Уровень 4", name: "Башня Меткий стрелок", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 6.5, cooldown: 1.4, baseDamage: 220, critChance: 0.25, critMultiplier: 2.5, shotColor: "#f0dfbc", bodyColor: "#8a694d", trimColor: "#fff5db", visual: "ballista", talent: "25% шанс крита x2.5.", description: "Сильный дальний крит." }),
   makeTower({ id: "punisher", family: "punisher", level: 4, tier: "Уровень 4", name: "Каратель", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 5.5, cooldown: 1.1, baseDamage: 260, percentCurrentHpDamage: 0.10, percentCurrentHpChance: 0.25, shotColor: "#e0a368", bodyColor: "#7a4a38", trimColor: "#ffd49a", visual: "spike", talent: "25% шанс нанести 10% текущего HP.", description: "Тяжелый силовой палач." }),
-  makeTower({ id: "stardrop", family: "stardrop", level: 4, tier: "Уровень 4", name: "Звездопад", attributeType: "Интеллект", attackType: "Магическая", pattern: "nova", rangeCells: 5.5, cooldown: 0.4, baseDamage: 80, allTargetsChance: 0.40, shotColor: "#ffe9aa", bodyColor: "#7a6dbe", trimColor: "#fff6d0", visual: "flare", talent: "40% шанс задеть всех в радиусе.", description: "Вспышка массовой магии." }),
+  makeTower({ id: "stardrop", family: "stardrop", level: 4, tier: "Уровень 4", name: "Звездопад", attributeType: "Интеллект", attackType: "Магическая", pattern: "nova", rangeCells: 5.5, cooldown: 0.4, baseDamage: 80, allTargetsChance: 0.30, shotColor: "#ffe9aa", bodyColor: "#7a6dbe", trimColor: "#fff6d0", visual: "flare", talent: "30% шанс задеть всех в радиусе.", description: "Вспышка массовой магии." }),
   makeTower({ id: "absolute_cold", family: "absolute_cold", level: 4, tier: "Уровень 4", name: "Башня Абсолютный холод", attributeType: "Интеллект", attackType: "Магическая по области", pattern: "splash", rangeCells: 5.5, cooldown: 1.0, baseDamage: 100, splashRadiusCells: 1.8, slowFactor: 0.8, slowDuration: 3, freezeChance: 0.10, freezeDuration: 1.0, shotColor: "#ecffff", bodyColor: "#5a9dc0", trimColor: "#ffffff", visual: "frost", talent: "Замедление 20%, заморозка 10%.", description: "Глубокий холод по области." }),
   makeTower({ id: "black_ivy", family: "black_ivy", level: 4, tier: "Уровень 4", name: "Чёрный плющ", attributeType: "Интеллект", attackType: "Магическая", pattern: "poison", rangeCells: 5.5, cooldown: 1.3, baseDamage: 95, poisonDamage: 45, poisonDuration: 5, shotColor: "#dbff9f", bodyColor: "#538e3a", trimColor: "#fbffe3", visual: "toxin", talent: "Яд 45/сек на 5 сек.", description: "Тяжелый одиночный яд." }),
-  makeTower({ id: "lightning_lord", family: "lightning_lord", level: 4, tier: "Уровень 4", name: "Молниеносец", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 6, cooldown: 0.8, baseDamage: 140, multiTargets: 5, chainFalloff: 0.25, shotColor: "#fff8b9", bodyColor: "#a5912c", trimColor: "#fffde8", visual: "flare", talent: "5 целей, -25% за прыжок.", description: "Мощная цепная магия." }),
+  makeTower({ id: "lightning_lord", family: "lightning_lord", level: 4, tier: "Уровень 4", name: "Молниеносец", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 6, cooldown: 0.8, baseDamage: 120, multiTargets: 5, chainFalloff: 0.25, shotColor: "#fff8b9", bodyColor: "#a5912c", trimColor: "#fffde8", visual: "flare", talent: "5 целей, -25% за прыжок.", description: "Мощная цепная магия." }),
   makeTower({ id: "war_banner", family: "war_banner", level: 4, tier: "Уровень 4", name: "Знамя войны", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 4.5, cooldown: 0.3, baseDamage: 30, auraDamageBoost: 0.10, auraAttackSpeedBoost: 0.15, shotColor: "#ffe184", bodyColor: "#8b3232", trimColor: "#ffef9b", visual: "banner", talent: "Урон +10%, скорость +15%.", description: "Сильная комбинированная аура." })
 ];
 
@@ -404,7 +404,7 @@ const LEGEND_TOWERS = [
   makeTower({ id: "cataclysm", family: "cataclysm", level: 5, tier: "Уровень 5", name: "Катаклизм", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 5, cooldown: 1.0, baseDamage: 360, pulseStunChance: 0.20, pulseStunRadiusCells: 2.5, pulseStunDuration: 0.8, shotColor: "#dbe2ea", bodyColor: "#88919f", trimColor: "#ffffff", visual: "mortar", talent: "20% шанс оглушить вокруг себя.", description: "Тяжелый удар с волной контроля." }),
   makeTower({ id: "ice_throne", family: "ice_throne", level: 5, tier: "Уровень 5", name: "Ледяной трон", attributeType: "Интеллект", attackType: "Магическая по области", pattern: "splash", rangeCells: 4, cooldown: 1.1, baseDamage: 190, splashRadiusCells: 1.5, slowFactor: 0.75, slowDuration: 3, freezeChance: 0.15, freezeDuration: 0.8, shotColor: "#f2ffff", bodyColor: "#62a8cb", trimColor: "#ffffff", visual: "frost", talent: "Замедление 25%, заморозка 15%.", description: "Поздний ледяной сплэш." }),
   makeTower({ id: "plague_lord", family: "plague_lord", level: 5, tier: "Уровень 5", name: "Чумной владыка", attributeType: "Интеллект", attackType: "Магическая", pattern: "poison", rangeCells: 4, cooldown: 1.3, baseDamage: 150, poisonDamage: 60, poisonDuration: 6, poisonSpreadCount: 2, shotColor: "#e6ffad", bodyColor: "#5ea144", trimColor: "#ffffff", visual: "toxin", talent: "Яд 60/сек, 2 доп. цели.", description: "Поздний заразный яд." }),
-  makeTower({ id: "sky_storm", family: "sky_storm", level: 5, tier: "Уровень 5", name: "Башня Небесный шторм", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 6.5, cooldown: 0.5, baseDamage: 220, multiTargets: 6, chainFalloff: 0.20, magicShredPercent: 0.10, critChance: 0.05, critMultiplier: 2, shotColor: "#fff9cc", bodyColor: "#b29d34", trimColor: "#ffffff", visual: "flare", talent: "6 целей, каждая цель с шансом на двойной урон.", description: "Пиковая цепная молния." }),
+  makeTower({ id: "sky_storm", family: "sky_storm", level: 5, tier: "Уровень 5", name: "Башня Небесный шторм", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 6.5, cooldown: 0.65, baseDamage: 190, multiTargets: 6, chainFalloff: 0.20, magicShredPercent: 0.10, critChance: 0.05, critMultiplier: 2, shotColor: "#fff9cc", bodyColor: "#b29d34", trimColor: "#ffffff", visual: "flare", talent: "6 целей, каждая цель с шансом на двойной урон.", description: "Пиковая цепная молния." }),
   makeTower({ id: "ancient_totem", family: "ancient_totem", level: 5, tier: "Уровень 5", name: "Древний тотем", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 5, cooldown: 0.3, baseDamage: 50, auraDamageBoost: 0.15, auraAttackSpeedBoost: 0.25, shotColor: "#ffeb9a", bodyColor: "#953c3c", trimColor: "#fff3b0", visual: "banner", talent: "Урон +15%, скорость +25%.", description: "Сильнейшая поддержка пятого уровня." })
 ];
 
@@ -448,9 +448,11 @@ const MINE_DEF = {
 };
 
 const ENEMIES_PER_WAVE = 20;
-const ENEMY_SPEED_CELLS = 1.35;
+const ENEMY_SPEED_CELLS = 1.2825;
 const SPAWN_INTERVAL = 0.7;
 const WAVE_BREAK = 2.0;
+const ROUND_DURATION = 60;
+const ENDLESS_START_DELAY = 5;
 const START_LIVES = 20;
 const TILE_SPEED = ENEMY_SPEED_CELLS * TILE;
 const TOOL_RE_ROLL_COST = 950;
@@ -479,11 +481,11 @@ const SHOP_ITEM_GROUPS = [
       level: 1,
       name: "Маятник времени",
       short: "Мв",
-      description: "20% шанс нанести 500 + атрибут*10 физического урона и оглушить на 1 сек.",
-      pendulumChance: 0.2,
+      description: "15% шанс нанести 500 + атрибут*10 физического урона и оглушить на 0.5 сек.",
+      pendulumChance: 0.15,
       pendulumDamage: 500,
       pendulumAttrScale: 10,
-      pendulumStun: 1,
+      pendulumStun: 0.5,
       sellValue: 100
     },
     {
@@ -689,6 +691,9 @@ const state = {
   waveKilled: 0,
   waveEscaped: 0,
   spawnTimer: 0,
+  roundTimeLeft: 0,
+  skipAvailable: false,
+  endlessStartDelay: 0,
   enemies: [],
   towers: [],
   shots: [],
@@ -1377,7 +1382,7 @@ function getTowerIntellectBonus(tower) {
 }
 
 function auraTouchesTowerCell(sourceTower, targetTower, radiusOverride = null) {
-  if (!sourceTower || !targetTower || sourceTower === targetTower) return false;
+  if (!sourceTower || !targetTower) return false;
   const base = cellToPixel(targetTower.cellC, targetTower.cellR);
   const rectLeft = base.x;
   const rectTop = base.y;
@@ -1394,41 +1399,88 @@ function auraTouchesTowerCell(sourceTower, targetTower, radiusOverride = null) {
 
 function getAppliedAuras(tower) {
   if (!tower || tower.kind !== "tower") return [];
-  const applied = [];
+  const bestAuraByKey = new Map();
+  const storeAura = (key, aura) => {
+    const score =
+      (aura.damageBoost || 0) * 100 +
+      (aura.flatDamage || 0) +
+      (aura.speedBoost || 0) * 100 +
+      (aura.critChanceBoost || 0) * 100 +
+      (aura.magicDamageBoost || 0) * 100;
+    const current = bestAuraByKey.get(key);
+    if (!current || score > current._score) {
+      bestAuraByKey.set(key, { ...aura, _score: score });
+    }
+  };
   for (const ally of state.towers) {
-    if (ally === tower || ally.kind !== "tower") {
+    if (ally.kind !== "tower") {
       continue;
     }
     const itemDef = getItemDefById(ally.equippedItem?.itemId);
-    const auraDamageBoost = (ally.auraDamageBoost || 0) + (itemDef?.auraDamageBoost || 0);
-    const auraFlatDamage = (ally.auraFlatDamage || 0);
-    const auraAttackSpeedBoost = (ally.auraAttackSpeedBoost || 0) + (itemDef?.auraAttackSpeedBoost || 0);
-    const auraCritChanceBoost = (ally.auraCritChanceBoost || 0);
-    const auraMagicDamageBoost = itemDef?.auraMagicDamageBoost || 0;
-    if (!auraDamageBoost && !auraAttackSpeedBoost && !auraFlatDamage && !auraCritChanceBoost && !auraMagicDamageBoost) {
-      continue;
+    const nativeAura = {
+      damageBoost: ally.auraDamageBoost || 0,
+      flatDamage: ally.auraFlatDamage || 0,
+      speedBoost: ally.auraAttackSpeedBoost || 0,
+      critChanceBoost: ally.auraCritChanceBoost || 0,
+      magicDamageBoost: 0
+    };
+    const hasNativeAura =
+      nativeAura.damageBoost || nativeAura.speedBoost || nativeAura.flatDamage || nativeAura.critChanceBoost || nativeAura.magicDamageBoost;
+    if (hasNativeAura && auraTouchesTowerCell(ally, tower)) {
+      const nativeKey = `tower:${ally.towerId}`;
+      const parts = [];
+      if (nativeAura.damageBoost) parts.push(`Урон +${Math.round(nativeAura.damageBoost * 100)}%`);
+      if (nativeAura.flatDamage) parts.push(`Урон +${Math.round(nativeAura.flatDamage)}`);
+      if (nativeAura.speedBoost) parts.push(`Скорость +${Math.round(nativeAura.speedBoost * 100)}%`);
+      if (nativeAura.critChanceBoost) parts.push(`Крит +${Math.round(nativeAura.critChanceBoost * 100)}%`);
+      storeAura(nativeKey, {
+        sourceId: `tower:${ally.instanceId}:native`,
+        sourceType: "tower",
+        sourceKey: nativeKey,
+        sourceName: ally.name,
+        sourceTier: ally.tier,
+        damageBoost: nativeAura.damageBoost,
+        flatDamage: nativeAura.flatDamage,
+        speedBoost: nativeAura.speedBoost,
+        critChanceBoost: nativeAura.critChanceBoost,
+        magicDamageBoost: 0,
+        summary: parts.join(", ") || "Аура поддержки"
+      });
     }
-    const auraRange = itemDef?.auraRangeCells ? itemDef.auraRangeCells * TILE : null;
+
+    if (!itemDef) continue;
+    const itemAura = {
+      damageBoost: itemDef.auraDamageBoost || 0,
+      flatDamage: 0,
+      speedBoost: itemDef.auraAttackSpeedBoost || 0,
+      critChanceBoost: 0,
+      magicDamageBoost: itemDef.auraMagicDamageBoost || 0
+    };
+    const hasItemAura =
+      itemAura.damageBoost || itemAura.speedBoost || itemAura.flatDamage || itemAura.critChanceBoost || itemAura.magicDamageBoost;
+    if (!hasItemAura) continue;
+    const auraRange = itemDef.auraRangeCells ? itemDef.auraRangeCells * TILE : null;
     if (!auraTouchesTowerCell(ally, tower, auraRange)) continue;
+    const itemKey = `item:${itemDef.baseId || itemDef.id}`;
     const parts = [];
-    if (auraDamageBoost) parts.push(`Урон +${Math.round(auraDamageBoost * 100)}%`);
-    if (auraFlatDamage) parts.push(`Урон +${Math.round(auraFlatDamage)}`);
-    if (auraAttackSpeedBoost) parts.push(`Скорость +${Math.round(auraAttackSpeedBoost * 100)}%`);
-    if (auraCritChanceBoost) parts.push(`Крит +${Math.round(auraCritChanceBoost * 100)}%`);
-    if (auraMagicDamageBoost) parts.push(`Магия +${Math.round(auraMagicDamageBoost * 100)}%`);
-    applied.push({
-      sourceId: ally.instanceId,
-      sourceName: ally.name,
-      sourceTier: ally.tier,
-      damageBoost: auraDamageBoost,
-      flatDamage: auraFlatDamage,
-      speedBoost: auraAttackSpeedBoost,
-      critChanceBoost: auraCritChanceBoost,
-      magicDamageBoost: auraMagicDamageBoost,
-      summary: parts.join(", ") || "Аура поддержки"
+    if (itemAura.damageBoost) parts.push(`Урон +${Math.round(itemAura.damageBoost * 100)}%`);
+    if (itemAura.speedBoost) parts.push(`Скорость +${Math.round(itemAura.speedBoost * 100)}%`);
+    if (itemAura.magicDamageBoost) parts.push(`Магия +${Math.round(itemAura.magicDamageBoost * 100)}%`);
+    storeAura(itemKey, {
+      sourceId: `tower:${ally.instanceId}:item:${itemDef.baseId || itemDef.id}`,
+      sourceType: "item",
+      sourceKey: itemKey,
+      sourceName: formatItemDisplayName(itemDef),
+      sourceTier: ally.name,
+      damageBoost: itemAura.damageBoost,
+      flatDamage: 0,
+      speedBoost: itemAura.speedBoost,
+      critChanceBoost: 0,
+      magicDamageBoost: itemAura.magicDamageBoost,
+      summary: parts.join(", ") || "Аура предмета"
     });
   }
-  return applied;
+  return [...bestAuraByKey.values()].map(({ _score, ...aura }) => aura);
 }
 
 function clearMenus() {
@@ -1443,11 +1495,17 @@ function spawnEnemy() {
   const stats = getWaveStats(progressionWave);
   const spawnIndex = state.waveSpawned + 1;
   const isBonus = !state.endlessMode && spawnIndex === 3;
+  const extraIndex = state.endlessMode ? state.extraWave + 1 : 0;
+  const speedMultiplier = state.endlessMode && extraIndex >= 250 ? 1.25 : 1;
+  const magicResist = state.endlessMode && extraIndex >= 500 ? 0.99 : getWaveMagicResist(progressionWave);
+  const physicalResist = state.endlessMode && extraIndex >= 850 ? 0.99 : 0;
   state.enemies.push(
     createEnemy({
       hp: stats.hp,
       armor: stats.armor,
-      magicResist: getWaveMagicResist(progressionWave),
+      magicResist,
+      physicalResist,
+      speedMultiplier,
       isBonus,
       rewardSilver: isBonus ? 75 + Math.min(30, progressionWave) * 2 : Math.min(30, progressionWave)
     })
@@ -1484,6 +1542,7 @@ function createEnemy(spec) {
     maxHp: spec.hp,
     armor: spec.armor,
     magicResist: spec.magicResist,
+    physicalResist: spec.physicalResist || 0,
     isBonus: !!spec.isBonus,
     isBoss: !!spec.isBoss,
     bossId: spec.bossId || null,
@@ -1492,6 +1551,7 @@ function createEnemy(spec) {
     castleDamage: spec.castleDamage || 1,
     color: spec.color || null,
     name: spec.name || null,
+    speedMultiplier: spec.speedMultiplier || 1,
     segment: 0,
     t: 0,
     slowFactor: 1,
@@ -1532,6 +1592,16 @@ function killEnemy(enemy, killer = null) {
     killer.permanentBonusDamage += killer.killGainDamage;
     killer.auraFlatDamage = killer.permanentBonusDamage * killer.killGainAuraShare;
   }
+  if (
+    !state.endlessMode &&
+    state.wave === 30 &&
+    state.waveActive &&
+    state.waveSpawned >= ENEMIES_PER_WAVE &&
+    state.enemies.length === 0 &&
+    state.endlessStartDelay <= 0
+  ) {
+    finishWaveThirtyAndQueueEndless();
+  }
 }
 
 function processMinesForWaveStart() {
@@ -1560,6 +1630,74 @@ function processMinesForWaveStart() {
   state.lastMineIncome = 0;
   state.lastNuggetValues = nuggetValues;
   state.goldNuggets += nuggets;
+}
+
+function cashOutRemainingMines() {
+  let extraNuggets = 0;
+  const bonusValues = [];
+  for (let i = state.towers.length - 1; i >= 0; i -= 1) {
+    const structure = state.towers[i];
+    if (structure.kind !== "mine") continue;
+    const remaining = Math.max(0, structure.remainingTurns || 0);
+    if (remaining > 0) {
+      const bonus = remaining * (structure.yieldNuggets || 0);
+      extraNuggets += bonus;
+      for (let j = 0; j < bonus; j += 1) {
+        bonusValues.push(state.currentNuggetPrice);
+      }
+    }
+    state.towers.splice(i, 1);
+    if (state.selectedCell && state.selectedCell.c === structure.cellC && state.selectedCell.r === structure.cellR) {
+      state.selectedCell = null;
+    }
+  }
+  if (!extraNuggets) return;
+  state.goldNuggets += extraNuggets;
+  state.lastMineYield += extraNuggets;
+  state.lastNuggetValues = state.lastNuggetValues.concat(bonusValues);
+}
+
+function beginWave() {
+  state.waveActive = true;
+  state.waveSpawned = 0;
+  state.waveKilled = 0;
+  state.waveEscaped = 0;
+  state.spawnTimer = 0;
+  state.roundTimeLeft = ROUND_DURATION;
+  state.skipAvailable = false;
+  rollCurrentNuggetPrice();
+  processMinesForWaveStart();
+  if (state.wave === 30) {
+    cashOutRemainingMines();
+  }
+  resetWaveDamage();
+}
+
+function finishCompletedWave() {
+  state.lastWaveTopDamage = getTopDamageEntries(5);
+  state.lastWaveRecorded = state.wave;
+  state.bestWave = Math.max(state.bestWave, state.wave);
+  storeBestWave(state.bestWave);
+  syncLeaderboardEntry();
+}
+
+function startNextWaveRound() {
+  finishCompletedWave();
+  state.wave += 1;
+  maybeAwardMysteryBag(state.wave);
+  state.intermission = 0;
+  if (state.wave <= 30) {
+    state.mineStock += 2;
+  }
+  beginWave();
+}
+
+function finishWaveThirtyAndQueueEndless() {
+  finishCompletedWave();
+  state.waveActive = false;
+  state.skipAvailable = false;
+  state.roundTimeLeft = 0;
+  state.endlessStartDelay = ENDLESS_START_DELAY;
 }
 
 function sellNuggets() {
@@ -2121,7 +2259,8 @@ function dealTowerHit(enemy, tower, baseDamageOverride, options = {}) {
     const effectiveArmor =
       enemy.armor * (1 - tower.armorPenPercent) * (1 - enemy.armorDebuffPercent) - enemy.armorBreakFlat;
     const armorMultiplier = 1 - (0.06 * effectiveArmor) / (1 + 0.06 * Math.abs(effectiveArmor));
-    dealt = Math.max(1, raw * armorMultiplier);
+    const effectivePhysicalResist = Math.max(0, (enemy.physicalResist || 0) - enemy.armorDebuffPercent);
+    dealt = Math.max(1, raw * armorMultiplier * (1 - effectivePhysicalResist));
   }
   if (tower.executeChance && Math.random() < tower.executeChance) {
     const thresholdHp = enemy.maxHp * tower.executeThreshold;
@@ -2403,8 +2542,26 @@ function updateEnemyEffects(dt) {
 
 function updateWave(dt) {
   if (!state.started) return;
+  if (state.endlessStartDelay > 0) {
+    state.endlessStartDelay = Math.max(0, state.endlessStartDelay - dt);
+    if (state.endlessStartDelay === 0) {
+      state.endlessMode = true;
+      state.waveActive = true;
+      state.waveSpawned = 0;
+      state.waveKilled = 0;
+      state.waveEscaped = 0;
+      state.spawnTimer = SPAWN_INTERVAL;
+      state.skipAvailable = false;
+      state.roundTimeLeft = 0;
+      resetWaveDamage();
+    }
+    return;
+  }
+
   if (state.endlessMode) {
     state.waveActive = true;
+    state.skipAvailable = false;
+    state.roundTimeLeft = 0;
     state.spawnTimer -= dt;
     while (state.spawnTimer <= 0) {
       spawnEnemy();
@@ -2412,19 +2569,17 @@ function updateWave(dt) {
     }
     return;
   }
+
   if (!state.waveActive) {
     state.intermission -= dt;
     if (state.intermission <= 0) {
-      state.waveActive = true;
-      state.waveSpawned = 0;
-      state.waveKilled = 0;
-      state.waveEscaped = 0;
-      state.spawnTimer = 0;
-      rollCurrentNuggetPrice();
-      processMinesForWaveStart();
-      resetWaveDamage();
+      beginWave();
     }
     return;
+  }
+
+  if (state.wave < 30) {
+    state.roundTimeLeft = Math.max(0, state.roundTimeLeft - dt);
   }
 
   state.spawnTimer -= dt;
@@ -2433,29 +2588,21 @@ function updateWave(dt) {
     state.spawnTimer += SPAWN_INTERVAL;
   }
 
-  if (state.waveSpawned >= ENEMIES_PER_WAVE && state.enemies.length === 0) {
-    state.lastWaveTopDamage = getTopDamageEntries(5);
-    state.lastWaveRecorded = state.wave;
-    state.bestWave = Math.max(state.bestWave, state.wave);
-    storeBestWave(state.bestWave);
-    syncLeaderboardEntry();
-    if (state.wave >= 30) {
-      state.endlessMode = true;
-      state.waveActive = true;
-      state.waveSpawned = 0;
-      state.waveKilled = 0;
-      state.waveEscaped = 0;
-      state.spawnTimer = SPAWN_INTERVAL;
-      resetWaveDamage();
-      return;
+  if (state.wave >= 30) {
+    if (state.waveSpawned >= ENEMIES_PER_WAVE && state.enemies.length === 0) {
+      finishWaveThirtyAndQueueEndless();
     }
-    state.wave += 1;
-    maybeAwardMysteryBag(state.wave);
-    state.waveActive = false;
-    state.intermission = WAVE_BREAK;
-    if (state.wave <= 30) {
-      state.mineStock += 2;
-    }
+    return;
+  }
+
+  if (state.waveSpawned >= ENEMIES_PER_WAVE && state.enemies.length === 0 && state.roundTimeLeft > 0) {
+    state.skipAvailable = true;
+  } else if (state.enemies.length > 0) {
+    state.skipAvailable = false;
+  }
+
+  if (state.roundTimeLeft <= 0) {
+    startNextWaveRound();
   }
 }
 
@@ -2464,7 +2611,7 @@ function updateEnemies(dt) {
     const enemy = state.enemies[i];
     if (enemy.dead) continue;
     if (state.time < enemy.stunUntil) continue;
-    let distance = TILE_SPEED * enemy.slowFactor * dt;
+    let distance = TILE_SPEED * enemy.slowFactor * (enemy.speedMultiplier || 1) * dt;
 
     while (distance > 0 && enemy.segment < PATH_LAST_INDEX) {
       const a = getPathPoint(enemy.segment);
@@ -2493,6 +2640,12 @@ function updateEnemies(dt) {
       state.lives = Math.max(0, state.lives - (enemy.castleDamage || 1));
       if (state.lives === 0) {
         state.mode = "defeat";
+        state.paused = true;
+        state.pauseMenuOpen = true;
+        state.mainMenuOpen = false;
+        state.pausePanel = "settings";
+        clearMenus();
+        hideInfoPanel();
       }
     }
   }
@@ -3131,6 +3284,11 @@ function drawBaseLives() {
   ctx.fillText(String(state.lives), x + 20, y + (LAYOUT.statsH - 12) / 2);
 }
 
+function getSkipButtonRect() {
+  if (!state.skipAvailable || state.endlessMode || state.endlessStartDelay > 0 || state.mode === "defeat") return null;
+  return { x: TOP_HUD_X + TOP_HUD_W - 92, y: TOP_HUD_Y + 6, w: 36, h: LAYOUT.statsH - 12 };
+}
+
 function getPauseButtonRect() {
   return { x: TOP_HUD_X + 6, y: TOP_HUD_Y + 6, w: 40, h: LAYOUT.statsH - 12 };
 }
@@ -3143,6 +3301,27 @@ function drawPauseButton() {
   ctx.textBaseline = "middle";
   ctx.font = "bold 15px Avenir Next";
   ctx.fillText(state.pauseMenuOpen ? "▶" : "Ⅱ", button.x + button.w / 2, button.y + button.h / 2 + 0.5);
+}
+
+function drawSkipButton() {
+  const button = getSkipButtonRect();
+  if (!button) return;
+  fillRoundedRect(button.x, button.y, button.w, button.h, 14, "rgba(15, 25, 38, 0.92)", "rgba(255,255,255,0.15)");
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  const cx = button.x + button.w / 2;
+  const cy = button.y + button.h / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, cy - 7);
+  ctx.lineTo(cx - 1, cy);
+  ctx.lineTo(cx - 8, cy + 7);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 7);
+  ctx.lineTo(cx + 7, cy);
+  ctx.lineTo(cx, cy + 7);
+  ctx.stroke();
 }
 
 function drawRiverLanes() {
@@ -3242,6 +3421,7 @@ function getInfoPanelSellButtonRect() {
 function drawStatsStrip() {
   fillRoundedRect(TOP_HUD_X, TOP_HUD_Y, TOP_HUD_W, LAYOUT.statsH, 16, COLORS.statsPanel, "rgba(255,255,255,0.12)");
   drawPauseButton();
+  drawSkipButton();
   drawBaseLives();
 
   const items = [
@@ -3252,7 +3432,8 @@ function drawStatsStrip() {
   ];
 
   const contentX = TOP_HUD_X + 56;
-  const contentW = TOP_HUD_W - 112;
+  const rightReserve = getSkipButtonRect() ? 96 : 56;
+  const contentW = TOP_HUD_W - 56 - rightReserve;
   const itemW = contentW / items.length;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -3304,7 +3485,8 @@ function drawStatsStrip() {
 
 function getTopHudMetricRects() {
   const contentX = TOP_HUD_X + 56;
-  const contentW = TOP_HUD_W - 112;
+  const rightReserve = getSkipButtonRect() ? 96 : 56;
+  const contentW = TOP_HUD_W - 56 - rightReserve;
   const itemW = contentW / 4;
   return {
     wave: { x: contentX, y: TOP_HUD_Y + 6, w: itemW, h: LAYOUT.statsH - 12 },
@@ -3359,10 +3541,21 @@ function getAuraPanelBadges() {
   const auras = getAppliedAuras(selected);
   return auras.map((aura, index) => ({
     ...aura,
-    x: AURA_X + 12 + index * 88,
-    y: AURA_Y + 10,
-    w: 80,
-    h: 22
+    icon:
+      aura.magicDamageBoost ? "✦" :
+      aura.critChanceBoost ? "!" :
+      aura.speedBoost ? "≫" :
+      "✹",
+    iconColor:
+      aura.magicDamageBoost ? "#d8ccff" :
+      aura.critChanceBoost ? "#ffe6a2" :
+      aura.speedBoost ? "#a8ecff" :
+      "#ffc98c",
+    detail: `${aura.sourceName}: ${aura.summary}`,
+    x: AURA_X + 12 + index * 36,
+    y: AURA_Y + 28,
+    w: 28,
+    h: 28
   }));
 }
 
@@ -3396,7 +3589,7 @@ function drawAuraPanel() {
     ctx.textBaseline = "top";
     ctx.font = "13px Avenir Next";
     ctx.fillStyle = COLORS.subtext;
-    ctx.fillText("Выбери башню, чтобы увидеть активные баффы.", AURA_X + 12, AURA_Y + 30);
+    ctx.fillText("Выбери башню, чтобы увидеть активные баффы.", AURA_X + 12, AURA_Y + 34);
     return;
   }
 
@@ -3406,7 +3599,7 @@ function drawAuraPanel() {
     ctx.textBaseline = "top";
     ctx.font = "13px Avenir Next";
     ctx.fillStyle = COLORS.subtext;
-    ctx.fillText("На выбранной башне нет активных аур.", AURA_X + 12, AURA_Y + 30);
+    ctx.fillText("На выбранной башне нет активных аур.", AURA_X + 12, AURA_Y + 34);
     return;
   }
 
@@ -3423,14 +3616,14 @@ function drawAuraPanel() {
     );
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 12px Avenir Next";
-    ctx.fillStyle = selectedBadge ? "#1f1702" : "#ffffff";
-    ctx.fillText(badge.sourceName, badge.x + badge.w / 2, badge.y + badge.h / 2 + 0.5);
+    ctx.font = "bold 15px Avenir Next";
+    ctx.fillStyle = selectedBadge ? "#1f1702" : badge.iconColor;
+    ctx.fillText(badge.icon, badge.x + badge.w / 2, badge.y + badge.h / 2 + 0.5);
   }
 
   const activeAura =
     badges.find((badge) => badge.sourceId === state.selectedAuraSourceId) || badges[0];
-  if (activeAura && !state.selectedAuraSourceId) {
+  if (activeAura && state.selectedAuraSourceId !== activeAura.sourceId) {
     state.selectedAuraSourceId = activeAura.sourceId;
   }
 
@@ -3439,7 +3632,7 @@ function drawAuraPanel() {
     ctx.textBaseline = "top";
     ctx.font = "12px Avenir Next";
     ctx.fillStyle = COLORS.subtext;
-    ctx.fillText(`${activeAura.sourceTier}: ${activeAura.summary}`, AURA_X + 12, AURA_Y + 36);
+    drawWrappedText(activeAura.detail, AURA_X + 12, AURA_Y + 62, AURA_W - 24, 16, "#d7e8f7", "12px Avenir Next", 2);
   }
 }
 
@@ -3536,7 +3729,7 @@ function getMenuButtons() {
   const menuW = canvas.width - 156;
   const buttonW = menuW - 32;
   const buttonH = 50;
-  const primaryLabel = state.started ? "Продолжить" : "Начать игру";
+  const primaryLabel = state.mode === "defeat" ? "Начать сначала" : state.started ? "Продолжить" : "Начать игру";
   return [
     { id: "primary", label: primaryLabel, x: menuX + 16, y: menuY + 76, w: buttonW, h: buttonH },
     { id: "leaders", label: "Таблица лидеров", x: menuX + 16, y: menuY + 134, w: buttonW, h: buttonH },
@@ -3544,6 +3737,10 @@ function getMenuButtons() {
     { id: "settings", label: "Настройки", x: menuX + 16, y: menuY + 250, w: buttonW, h: buttonH },
     { id: "tutorial", label: "Обучение", x: menuX + 16, y: menuY + 308, w: buttonW, h: buttonH }
   ];
+}
+
+function restartGameFromMenu() {
+  window.location.reload();
 }
 
 function startNormalGame() {
@@ -4589,10 +4786,12 @@ function drawPauseMenu() {
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.font = "bold 30px Avenir Next";
-  ctx.fillText(state.started ? "Пауза" : "Меню", menuX + 16, menuY + 18);
+  ctx.fillText(state.mode === "defeat" ? "Поражение" : state.started ? "Пауза" : "Меню", menuX + 16, menuY + 18);
   ctx.font = "16px Avenir Next";
   ctx.fillStyle = COLORS.subtext;
-  const menuCopy = state.started
+  const menuCopy = state.mode === "defeat"
+    ? "Замок пал. Можно начать новую попытку с тем же профилем."
+    : state.started
     ? "Игра остановлена. Выбери действие ниже."
     : state.nickname
       ? `Ник: ${state.nickname}. Выбери режим запуска.`
@@ -4658,13 +4857,15 @@ function drawPauseMenu() {
           ? `Текущий ник: ${state.nickname}. Нажми «Сменить ник», чтобы изменить его.`
           : state.pausePanel === "tutorial"
             ? "Обучение покажет базовый цикл: открыть строительство, выбрать башню, поставить ее и затем добавить шахту."
-            : "Нажми «Начать игру» или «Продолжить», чтобы перейти к обороне.";
+            : state.mode === "defeat"
+              ? "Нажми «Начать сначала», чтобы сразу запустить новую попытку."
+              : "Нажми «Начать игру» или «Продолжить», чтобы перейти к обороне.";
     drawWrappedText(copy, menuX + 28, infoY + 14, menuW - 56, 22, "#d6e6f4", "15px Avenir Next", 6);
   }
 }
 
 function drawDefeatOverlay() {
-  if (state.mode !== "defeat") return;
+  if (state.mode !== "defeat" || state.pauseMenuOpen) return;
   ctx.fillStyle = "rgba(7, 13, 20, 0.72)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   fillRoundedRect(84, 392, canvas.width - 168, 160, 22, "#1c2b39", "rgba(255,255,255,0.12)");
@@ -4895,6 +5096,12 @@ function findPauseButtonAt(clientX, clientY) {
     point.y >= button.y &&
     point.y <= button.y + button.h
   );
+}
+
+function findSkipButtonAt(clientX, clientY) {
+  const point = getCanvasPoint(clientX, clientY);
+  const button = getSkipButtonRect();
+  return pointInRect(point, button);
 }
 
 function findShopActionAt(clientX, clientY) {
@@ -5134,6 +5341,10 @@ function handleTap(event) {
           return;
         }
       }
+      if (state.mode === "defeat") {
+        restartGameFromMenu();
+        return;
+      }
       if (state.started) {
         state.pauseMenuOpen = false;
         state.paused = false;
@@ -5177,6 +5388,15 @@ function handleTap(event) {
       state.paused = state.pauseMenuOpen;
       state.pausePanel = "settings";
       state.mainMenuOpen = false;
+    }
+    draw();
+    return;
+  }
+
+  if (findSkipButtonAt(event.clientX, event.clientY)) {
+    hideInfoPanel();
+    if (state.skipAvailable && !state.endlessMode && state.wave < 30) {
+      startNextWaveRound();
     }
     draw();
     return;
@@ -5658,6 +5878,9 @@ function renderGameToText() {
       spawned: state.waveSpawned,
       remaining,
       enemiesAlive: state.enemies.length,
+      roundTimeLeft: state.roundTimeLeft,
+      skipAvailable: state.skipAvailable,
+      endlessStartDelay: state.endlessStartDelay,
       lives: state.lives,
       silver: state.silver,
       goldNuggets: state.goldNuggets,
@@ -5723,7 +5946,9 @@ function renderGameToText() {
           hp: selectedEnemy.hp,
           maxHp: selectedEnemy.maxHp,
           armor: selectedEnemy.armor,
-          magicResist: selectedEnemy.magicResist
+          magicResist: selectedEnemy.magicResist,
+          physicalResist: selectedEnemy.physicalResist || 0,
+          speedMultiplier: selectedEnemy.speedMultiplier || 1
         }
       : null,
     appliedAuras:
@@ -5732,8 +5957,10 @@ function renderGameToText() {
             sourceId: aura.sourceId,
             sourceName: aura.sourceName,
             sourceTier: aura.sourceTier,
+            sourceType: aura.sourceType,
             damageBoost: aura.damageBoost,
             speedBoost: aura.speedBoost,
+            magicDamageBoost: aura.magicDamageBoost || 0,
             summary: aura.summary
           }))
         : [],
