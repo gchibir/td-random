@@ -256,3 +256,10 @@ Update:
 - Reduced base enemy movement speed by 5%, added extra-wave speed/magic/physical resistance thresholds, and made wave 30 auto-cash out any remaining mine durability.
 - Reworked the aura HUD from text pills into icon badges with tap-to-read details in the aura strip, and made defeat open the menu with a restart action.
 - Ran the required Playwright client again after the change set, but Chromium still cannot launch in this environment (`MachPortRendezvousServer ... Permission denied`), so validation remained limited to syntax checks and served-JS inspection.
+
+Update:
+- Moved active round/start timers into a dedicated pill above the top HUD and reduced round duration from 60s to 50s.
+- Skip button now pulses when a cleared wave can be skipped.
+- Reduced the river to one lane and expanded the inventory to 12 slots laid out as 2 rows of 6 with larger cells.
+- Tightened random build odds for 170-silver and 1500-silver tower purchases.
+- Synced main-ui-test.js with main.js after these UI/probability changes.

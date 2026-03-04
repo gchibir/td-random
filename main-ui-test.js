@@ -7,7 +7,7 @@ canvas.height = 1040;
 const GRID_COLS = 12;
 const GRID_ROWS = 13;
 const TILE = 40;
-const RIVER_ROWS = 2;
+const RIVER_ROWS = 1;
 const BASE_TOP_UI_OFFSET = 36;
 
 const LAYOUT = {
@@ -15,6 +15,7 @@ const LAYOUT = {
   gap: 6,
   auraH: 96,
   statsH: 48,
+  inventoryH: 154,
   controlH: 106
 };
 
@@ -132,7 +133,7 @@ function recalculateLayout() {
   STATS_Y = AURA_Y + LAYOUT.auraH + LAYOUT.gap;
   STATS_W = canvas.width - LAYOUT.padding * 2;
   CONTROL_X = LAYOUT.padding;
-  CONTROL_Y = STATS_Y + LAYOUT.statsH + LAYOUT.gap;
+  CONTROL_Y = STATS_Y + LAYOUT.inventoryH + LAYOUT.gap;
   CONTROL_W = canvas.width - LAYOUT.padding * 2;
   CONTROL_H = LAYOUT.controlH;
   INFO_W = 0;
@@ -451,7 +452,7 @@ const ENEMIES_PER_WAVE = 20;
 const ENEMY_SPEED_CELLS = 1.2825;
 const SPAWN_INTERVAL = 0.7;
 const WAVE_BREAK = 2.0;
-const ROUND_DURATION = 60;
+const ROUND_DURATION = 50;
 const ENDLESS_START_DELAY = 5;
 const START_LIVES = 20;
 const TILE_SPEED = ENEMY_SPEED_CELLS * TILE;
@@ -464,7 +465,7 @@ const BOSS_DEFS = [
   { id: "boss3", name: "Босс 3", hp: 25000, armor: 20, magicResist: 0.45, cost: 220, cooldown: 240, maxBuys: 4, rewardMines: 8, castleDamage: 5, color: "#4c1d95" }
 ];
 const TOWER_SELL_VALUES = { 1: 75, 2: 170, 3: 340, 4: 680, 5: 1360, 6: 2720 };
-const INVENTORY_SLOT_COUNT = 9;
+const INVENTORY_SLOT_COUNT = 12;
 const ITEM_DEFS = {
   mystery_bag: {
     id: "mystery_bag",
@@ -3309,9 +3310,18 @@ function drawPauseButton() {
 function drawSkipButton() {
   const button = getSkipButtonRect();
   if (!button) return;
-  fillRoundedRect(button.x, button.y, button.w, button.h, 14, "rgba(15, 25, 38, 0.92)", "rgba(255,255,255,0.15)");
+  const pulse = 0.55 + ((Math.sin(state.time * 8) + 1) * 0.225);
+  fillRoundedRect(
+    button.x,
+    button.y,
+    button.w,
+    button.h,
+    14,
+    `rgba(15, 25, 38, ${0.72 + pulse * 0.25})`,
+    `rgba(255,255,255,${0.18 + pulse * 0.28})`
+  );
   ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3 + pulse * 0.8;
   ctx.lineCap = "round";
   const cx = button.x + button.w / 2;
   const cy = button.y + button.h / 2;
@@ -3333,7 +3343,38 @@ function drawRiverLanes() {
   const laneH = TILE;
 
   fillRoundedRect(BOARD_X, riverY, riverW, laneH, 6, "rgba(111, 209, 237, 0.72)", "rgba(201, 244, 255, 0.28)");
-  fillRoundedRect(BOARD_X, riverY + TILE, riverW, laneH, 6, "rgba(82, 193, 226, 0.72)", "rgba(201, 244, 255, 0.24)");
+}
+
+function getTopTimerState() {
+  if (!state.started || state.mainMenuOpen) return null;
+  if (state.startCountdown > 0) {
+    return { label: "До 1-й волны", seconds: Math.ceil(state.startCountdown), color: "#ffffff" };
+  }
+  if (state.endlessStartDelay > 0) {
+    return { label: "Экстра волны", seconds: Math.ceil(state.endlessStartDelay), color: "#d3e5ff" };
+  }
+  if (!state.endlessMode && state.waveActive && state.wave <= 30 && state.roundTimeLeft > 0) {
+    return { label: "До след. волны", seconds: Math.ceil(state.roundTimeLeft), color: "#f3fff0" };
+  }
+  return null;
+}
+
+function drawTopTimerBanner() {
+  const timer = getTopTimerState();
+  if (!timer) return;
+  const w = 172;
+  const h = 30;
+  const x = Math.floor((canvas.width - w) / 2);
+  const y = Math.max(8, TOP_HUD_Y - h - 10);
+  fillRoundedRect(x, y, w, h, 15, "rgba(8, 18, 28, 0.78)", "rgba(255,255,255,0.14)");
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#b4c9da";
+  ctx.font = "600 11px Avenir Next";
+  ctx.fillText(timer.label, x + w / 2, y + 10);
+  ctx.fillStyle = timer.color;
+  ctx.font = "bold 15px Avenir Next";
+  ctx.fillText(`${timer.seconds}с`, x + w / 2, y + 21.5);
 }
 
 function getStartButtonRect() {
@@ -3502,21 +3543,24 @@ function getTopHudMetricRects() {
 
 function getInventorySlotRects() {
   const gap = 6;
-  const slotSize = 42;
-  const totalW = slotSize * INVENTORY_SLOT_COUNT + gap * (INVENTORY_SLOT_COUNT - 1);
+  const slotSize = 72;
+  const columns = 6;
+  const rows = 2;
+  const totalW = slotSize * columns + gap * (columns - 1);
+  const totalH = slotSize * rows + gap * (rows - 1);
   const startX = STATS_X + Math.floor((STATS_W - totalW) / 2);
-  const y = STATS_Y + Math.floor((LAYOUT.statsH - slotSize) / 2);
+  const startY = STATS_Y + Math.floor((LAYOUT.inventoryH - totalH) / 2);
   return Array.from({ length: INVENTORY_SLOT_COUNT }, (_, index) => ({
     index,
-    x: startX + index * (slotSize + gap),
-    y,
+    x: startX + (index % columns) * (slotSize + gap),
+    y: startY + Math.floor(index / columns) * (slotSize + gap),
     w: slotSize,
     h: slotSize
   }));
 }
 
 function drawInventoryStrip() {
-  fillRoundedRect(STATS_X, STATS_Y, STATS_W, LAYOUT.statsH, 16, "#21435f", "rgba(255,255,255,0.12)");
+  fillRoundedRect(STATS_X, STATS_Y, STATS_W, LAYOUT.inventoryH, 16, "#21435f", "rgba(255,255,255,0.12)");
   for (const slot of getInventorySlotRects()) {
     const item = state.inventory[slot.index];
     const selected = state.selectedItemSlot === slot.index;
@@ -3534,7 +3578,7 @@ function drawInventoryStrip() {
     ctx.fillStyle = selected ? "#1f1702" : "#ffffff";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 12px Avenir Next";
+    ctx.font = "bold 13px Avenir Next";
     ctx.fillText(formatItemShortLabel(def), slot.x + slot.w / 2, slot.y + slot.h / 2 + 0.5);
   }
 }
@@ -3707,13 +3751,7 @@ function drawEventText(text, centerY, options = {}) {
 }
 
 function drawStartOverlay() {
-  if (!state.started || state.startCountdown <= 0) return;
-
-  drawEventText(`Волна через ${Math.ceil(state.startCountdown)}`, BOARD_Y + 24, {
-    color: "#ffffff",
-    font: "bold 26px Avenir Next",
-    boxH: 42
-  });
+  return;
 }
 
 function isMenuOpen() {
@@ -4928,6 +4966,7 @@ function draw() {
   drawPendingBagHint();
   drawTowerAnnouncement();
   drawDamagePanel();
+  drawTopTimerBanner();
   drawStatsStrip();
   drawAuraPanel();
   drawInventoryStrip();
@@ -5282,17 +5321,24 @@ function tryPlaceOnSlot(slot) {
     towerDef = getTowerDefByIdentity(state.tutorial.forcedTowerId, state.tutorial.forcedTowerLevel) || rollRandomFrom(pool);
   } else if (mode === "simple") {
     const roll = Math.random();
-    if (roll < 0.01) {
+    if (roll < 0.001) {
       towerDef = rollRandomFrom(getPoolForLevel(4));
-    } else if (roll < 0.04) {
+    } else if (roll < 0.006) {
       towerDef = rollRandomFrom(getPoolForLevel(3));
-    } else if (roll < 0.09) {
+    } else if (roll < 0.016) {
       towerDef = rollRandomFrom(getPoolForLevel(2));
     } else {
       towerDef = rollRandomFrom(pool);
     }
   } else {
-    towerDef = rollRandomFrom(pool);
+    const roll = Math.random();
+    if (roll < 0.0001) {
+      towerDef = rollRandomFrom(getPoolForLevel(6));
+    } else if (roll < 0.0051) {
+      towerDef = rollRandomFrom(getPoolForLevel(5));
+    } else {
+      towerDef = rollRandomFrom(pool);
+    }
   }
   const buildCost = mode === "master" ? MASTER_TOWER_COST : SIMPLE_TOWER_COST;
   if (state.silver < buildCost) return;
