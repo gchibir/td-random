@@ -13,7 +13,7 @@ const BASE_TOP_UI_OFFSET = 36;
 const LAYOUT = {
   padding: 16,
   gap: 6,
-  auraH: 58,
+  auraH: 96,
   statsH: 48,
   controlH: 106
 };
@@ -3362,8 +3362,9 @@ function getFloatingInfoRect() {
   const selected = getSelectedStructure();
   const selectedEnemy = getSelectedEnemy();
   const selectedItemDef = getSelectedTransferItemDef();
+  const selectedAura = getSelectedAuraBadge();
   const selectedTower = selected?.kind === "tower" ? selected : null;
-  if (!state.infoPanelVisible || (!selectedTower && !selectedEnemy && !selectedItemDef)) return null;
+  if (!state.infoPanelVisible || (!selectedTower && !selectedEnemy && !selectedItemDef && !selectedAura)) return null;
   return {
     x: BOARD_X + 2,
     y: BOARD_Y + MAP_VISUAL_H - 146,
@@ -3552,11 +3553,17 @@ function getAuraPanelBadges() {
       aura.speedBoost ? "#a8ecff" :
       "#ffc98c",
     detail: `${aura.sourceName}: ${aura.summary}`,
-    x: AURA_X + 12 + index * 36,
+    x: AURA_X + 12 + index * 64,
     y: AURA_Y + 28,
-    w: 28,
-    h: 28
+    w: 56,
+    h: 56
   }));
+}
+
+function getSelectedAuraBadge() {
+  const badges = getAuraPanelBadges();
+  if (!badges.length) return null;
+  return badges.find((badge) => badge.sourceId === state.selectedAuraSourceId) || badges[0];
 }
 
 function drawAuraPanel() {
@@ -3616,23 +3623,9 @@ function drawAuraPanel() {
     );
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 15px Avenir Next";
+    ctx.font = "bold 26px Avenir Next";
     ctx.fillStyle = selectedBadge ? "#1f1702" : badge.iconColor;
     ctx.fillText(badge.icon, badge.x + badge.w / 2, badge.y + badge.h / 2 + 0.5);
-  }
-
-  const activeAura =
-    badges.find((badge) => badge.sourceId === state.selectedAuraSourceId) || badges[0];
-  if (activeAura && state.selectedAuraSourceId !== activeAura.sourceId) {
-    state.selectedAuraSourceId = activeAura.sourceId;
-  }
-
-  if (activeAura) {
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.font = "12px Avenir Next";
-    ctx.fillStyle = COLORS.subtext;
-    drawWrappedText(activeAura.detail, AURA_X + 12, AURA_Y + 62, AURA_W - 24, 16, "#d7e8f7", "12px Avenir Next", 2);
   }
 }
 
@@ -4170,6 +4163,7 @@ function drawInfoPanel() {
   const selected = getSelectedStructure();
   const selectedEnemy = getSelectedEnemy();
   const selectedItemDef = getSelectedTransferItemDef();
+  const selectedAura = getSelectedAuraBadge();
   const body = getInfoBodyRect();
   const closeRect = getInfoPanelCloseRect();
   const selectedTower = selected?.kind === "tower" ? selected : null;
@@ -4188,6 +4182,31 @@ function drawInfoPanel() {
   drawCloseButton(closeRect);
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
+
+  if (selectedAura && !selectedItemDef) {
+    const scopeLine =
+      selectedAura.sourceType === "item"
+        ? "Аура предмета. Действует на все башни, чьи клетки задеты радиусом, включая носителя."
+        : "Аура башни. Действует на все башни, чьи клетки задеты радиусом, включая саму башню-источник.";
+    const detailLineCount = countWrappedLines(selectedAura.summary, body.w, "16px Avenir Next");
+    const scopeLineCount = countWrappedLines(scopeLine, body.w, "15px Avenir Next");
+    contentHeight = 26 + detailLineCount * lineHeights.body + 12 + scopeLineCount * lineHeights.detail;
+    state.infoScrollMax = Math.max(0, contentHeight - body.h);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(body.x, body.y, body.w, body.h);
+    ctx.clip();
+    const scrollY = body.y - state.infoScroll;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 19px Avenir Next";
+    ctx.fillText(selectedAura.sourceName, body.x, scrollY);
+    drawWrappedText(selectedAura.summary, body.x, scrollY + 30, body.w, lineHeights.body, "#f5fbff", "16px Avenir Next", 8);
+    drawWrappedText(scopeLine, body.x, scrollY + 42 + detailLineCount * lineHeights.body, body.w, lineHeights.detail, "#ffffff", "15px Avenir Next", 8);
+    ctx.restore();
+    return;
+  }
 
   if (selectedItemDef) {
     const itemAbility = selectedItemDef.description || "Без дополнительного эффекта.";
@@ -5502,8 +5521,11 @@ function handleTap(event) {
 
   const auraBadge = findAuraBadgeAt(event.clientX, event.clientY);
   if (auraBadge) {
-    hideInfoPanel();
     state.selectedAuraSourceId = auraBadge;
+    state.selectedEnemyId = null;
+    clearItemSelection();
+    state.infoScroll = 0;
+    state.infoPanelVisible = true;
     draw();
     return;
   }
