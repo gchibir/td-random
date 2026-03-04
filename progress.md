@@ -269,3 +269,8 @@ Update:
 
 Update:
 - Reduced the aura strip height and resized aura badges to 40px (roughly 3/4 of the 54px inventory slots).
+
+Update:
+- Added global attribute upgrade purchases in the shop (+1 to matching towers, cost 500, capped at 20).
+- Reworked the shop into grouped square buttons (attributes, bosses, item) and raised the popup higher.
+- Enlarged the tools menu buttons, reordered them to Upgrade / Move / Reroll / Sell, with yellow reroll and red sell styling.

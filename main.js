@@ -81,7 +81,7 @@ let BUTTON_GAP = 10;
 let ACTION_BUTTON_W = 0;
 let ACTION_BUTTON_H = 0;
 let SHOP_W = 0;
-let SHOP_H = 112;
+let SHOP_H = 340;
 let SHOP_X = 0;
 let SHOP_Y = 0;
 
@@ -459,6 +459,7 @@ const TILE_SPEED = ENEMY_SPEED_CELLS * TILE;
 const TOOL_RE_ROLL_COST = 950;
 const TOOL_MOVE_COST = 100;
 const ITEM_PURCHASE_COST = 500;
+const ATTRIBUTE_UPGRADE_COST = 500;
 const BOSS_DEFS = [
   { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 240, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
   { id: "boss2", name: "Босс 2", hp: 15000, armor: 15, magicResist: 0.35, cost: 150, cooldown: 240, maxBuys: 4, rewardMines: 4, castleDamage: 5, color: "#7c2d12" },
@@ -723,6 +724,11 @@ const state = {
   auraInfoOpen: false,
   selectedShopItem: "boss1",
   selectedToolAction: null,
+  attributeLevels: {
+    "Сила": 1,
+    "Ловкость": 1,
+    "Интеллект": 1
+  },
   damagePanelOpen: false,
   inventory: Array.from({ length: INVENTORY_SLOT_COUNT }, () => null),
   selectedItemSlot: null,
@@ -1237,7 +1243,7 @@ function createTower(cellC, cellR, towerDef) {
     tier: towerDef.tier,
     name: towerDef.name,
     attributeType: towerDef.attributeType,
-    attributeLevel: towerDef.attributeLevel || 1,
+    attributeLevel: Math.max(towerDef.attributeLevel || 1, state.attributeLevels[towerDef.attributeType] || 1),
     attackType: towerDef.attackType,
     pattern: towerDef.pattern,
     cost: towerDef.cost,
@@ -1914,6 +1920,28 @@ function buyRandomItem() {
   const itemId = rollRandomShopItemId();
   state.inventory[slotIndex] = { itemId };
   clearItemSelection();
+  return true;
+}
+
+function getAttributeLevel(attributeType) {
+  return state.attributeLevels[attributeType] || 1;
+}
+
+function canBuyAttributeUpgrade(attributeType) {
+  if (!attributeType) return false;
+  if (getAttributeLevel(attributeType) >= 20) return false;
+  return state.silver >= ATTRIBUTE_UPGRADE_COST;
+}
+
+function buyAttributeUpgrade(attributeType) {
+  if (!canBuyAttributeUpgrade(attributeType)) return false;
+  state.silver -= ATTRIBUTE_UPGRADE_COST;
+  state.attributeLevels[attributeType] = Math.min(20, getAttributeLevel(attributeType) + 1);
+  for (const tower of state.towers) {
+    if (tower.kind === "tower" && tower.attributeType === attributeType) {
+      tower.attributeLevel = Math.min(20, (tower.attributeLevel || 1) + 1);
+    }
+  }
   return true;
 }
 
@@ -4672,38 +4700,72 @@ function drawItemMenu() {
 }
 
 function getShopButtons() {
-  const buttons = [
-    {
-      id: "buy_item",
-      x: SHOP_X + 12,
-      y: SHOP_Y + 40,
-      w: SHOP_W - 24,
-      h: 44,
-      label: `Купить предмет ${ITEM_PURCHASE_COST}`,
-      sublabel: state.inventory.some((slot) => slot === null) ? "рандом" : "нет места",
-      ready: state.inventory.some((slot) => slot === null) && state.silver >= ITEM_PURCHASE_COST
-    }
+  const buttons = [];
+  const size = 68;
+  const gap = 8;
+  const groupStartX = SHOP_X + 12;
+  const attrY = SHOP_Y + 56;
+  const bossY = SHOP_Y + 154;
+  const itemY = SHOP_Y + 252;
+
+  const attrDefs = [
+    { id: "attr_strength", attributeType: "Сила", title: "Сила" },
+    { id: "attr_agility", attributeType: "Ловкость", title: "Ловк." },
+    { id: "attr_intellect", attributeType: "Интеллект", title: "Интел." }
   ];
-  return buttons.concat(BOSS_DEFS.map((boss, index) => {
+
+  for (let i = 0; i < attrDefs.length; i += 1) {
+    const def = attrDefs[i];
+    const level = getAttributeLevel(def.attributeType);
+    buttons.push({
+      id: def.id,
+      x: groupStartX + i * (size + gap),
+      y: attrY,
+      w: size,
+      h: size,
+      title: def.title,
+      line1: `${level}/20`,
+      line2: level >= 20 ? "MAX" : `${ATTRIBUTE_UPGRADE_COST}`,
+      ready: level < 20 && state.silver >= ATTRIBUTE_UPGRADE_COST
+    });
+  }
+
+  for (let i = 0; i < BOSS_DEFS.length; i += 1) {
+    const boss = BOSS_DEFS[i];
     const status = getBossShopStatus(boss.id);
     const cooldownLeft = getBossCooldownLeft(boss.id);
     const ready = cooldownLeft <= 0 && status.bought < boss.maxBuys && state.silver >= boss.cost;
-    return {
+    buttons.push({
       id: boss.id,
-      x: SHOP_X + 12,
-      y: SHOP_Y + 92 + index * 50,
-      w: SHOP_W - 24,
-      h: 44,
-      label: `${boss.name} ${boss.cost}`,
-      sublabel:
+      x: groupStartX + i * (size + gap),
+      y: bossY,
+      w: size,
+      h: size,
+      title: `Босс ${i + 1}`,
+      line1: `${boss.cost}`,
+      line2:
         status.bought >= boss.maxBuys
           ? "лимит"
           : cooldownLeft > 0
             ? `${Math.ceil(cooldownLeft)}с`
-            : `шахты +${boss.rewardMines}`,
+            : `+${boss.rewardMines}`,
       ready
-    };
-  }));
+    });
+  }
+
+  buttons.push({
+    id: "buy_item",
+    x: SHOP_X + Math.floor((SHOP_W - size) / 2),
+    y: itemY,
+    w: size,
+    h: size,
+    title: "Предм.",
+    line1: `${ITEM_PURCHASE_COST}`,
+    line2: state.inventory.some((slot) => slot === null) ? "рандом" : "нет места",
+    ready: state.inventory.some((slot) => slot === null) && state.silver >= ITEM_PURCHASE_COST
+  });
+
+  return buttons;
 }
 
 function getShopCloseRect() {
@@ -4731,13 +4793,18 @@ function drawShopPopup() {
   if (!state.shopOpen) return;
 
   const buttons = getShopButtons();
-  const popupH = 56 + buttons.length * 50;
+  const popupH = 338;
   fillRoundedRect(SHOP_X, SHOP_Y, SHOP_W, popupH, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillStyle = COLORS.text;
   ctx.font = "bold 16px Avenir Next";
   ctx.fillText("Магазин", SHOP_X + 12, SHOP_Y + 10);
+  ctx.font = "600 11px Avenir Next";
+  ctx.fillStyle = COLORS.subtext;
+  ctx.fillText("Атрибуты", SHOP_X + 12, SHOP_Y + 40);
+  ctx.fillText("Боссы", SHOP_X + 12, SHOP_Y + 138);
+  ctx.fillText("Предмет", SHOP_X + 12, SHOP_Y + 236);
   const close = getShopCloseRect();
   drawCloseButton(close);
 
@@ -4748,18 +4815,19 @@ function drawShopPopup() {
       button.y,
       button.w,
       button.h,
-      12,
+      14,
       selected ? "#d4a93d" : button.ready ? "#253f53" : "#364552",
       selected ? "#ffe7a2" : "rgba(255,255,255,0.1)"
     );
     ctx.fillStyle = selected ? "#1f1702" : button.ready ? "#ffffff" : COLORS.disabledText;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 14px Avenir Next";
-    ctx.fillText(button.label, button.x + 10, button.y + button.h / 2);
-    ctx.textAlign = "right";
-    ctx.font = "13px Avenir Next";
-    ctx.fillText(button.sublabel, button.x + button.w - 10, button.y + button.h / 2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.font = "bold 12px Avenir Next";
+    ctx.fillText(button.title, button.x + button.w / 2, button.y + 10);
+    ctx.font = "bold 11px Avenir Next";
+    ctx.fillText(button.line1, button.x + button.w / 2, button.y + 29);
+    ctx.font = "10px Avenir Next";
+    ctx.fillText(button.line2, button.x + button.w / 2, button.y + 46);
   }
 }
 
@@ -4768,33 +4836,33 @@ function getToolsMenuButtons() {
   if (!state.toolsOpen || !selected || selected.kind !== "tower") return [];
   return [
     { id: "upgrade", label: "Апгрейд", sub: canUpgradeTower(selected) ? "готов" : "нет пары" },
-    { id: "sell_tower", label: "Продать башню", sub: `${getTowerSellValue(selected.level)}` },
+    { id: "move", label: "Переместить", sub: `${TOOL_MOVE_COST}` },
     { id: "reroll", label: "Реролл", sub: `${TOOL_RE_ROLL_COST}` },
-    { id: "move", label: "Переместить", sub: `${TOOL_MOVE_COST}` }
+    { id: "sell_tower", label: "Продать башню", sub: `${getTowerSellValue(selected.level)}` }
   ].map((button, index) => ({
     ...button,
     x: BUTTONS_X - 8,
-    y: CONTROL_Y - 214 + index * 50,
+    y: CONTROL_Y - 244 + index * 58,
     w: BUTTONS_W + 8,
-    h: 44
+    h: 52
   }));
 }
 
 function getToolsCloseRect() {
   if (!getToolsMenuButtons().length) return null;
-  return { x: BUTTONS_X + BUTTONS_W - 28, y: CONTROL_Y - 250, w: 24, h: 24 };
+  return { x: BUTTONS_X + BUTTONS_W - 28, y: CONTROL_Y - 280, w: 24, h: 24 };
 }
 
 function drawToolsPopup() {
   const buttons = getToolsMenuButtons();
   if (!buttons.length) return;
 
-  fillRoundedRect(BUTTONS_X - 12, CONTROL_Y - 258, BUTTONS_W + 16, 248, 18, "#173246", "rgba(255,255,255,0.12)");
+  fillRoundedRect(BUTTONS_X - 12, CONTROL_Y - 288, BUTTONS_W + 16, 278, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.font = "bold 16px Avenir Next";
-  ctx.fillText("Меню башни", BUTTONS_X, CONTROL_Y - 248);
+  ctx.fillText("Меню башни", BUTTONS_X, CONTROL_Y - 278);
   const close = getToolsCloseRect();
   drawCloseButton(close);
 
@@ -4805,19 +4873,33 @@ function drawToolsPopup() {
       (button.id === "reroll" && state.silver >= TOOL_RE_ROLL_COST) ||
       (button.id === "move" && state.silver >= TOOL_MOVE_COST);
     const selected = state.selectedToolAction === button.id;
+    const baseFill =
+      button.id === "reroll"
+        ? "#8a7423"
+        : button.id === "sell_tower"
+          ? "#7b2b2b"
+          : active
+            ? "#284a63"
+            : "#32485a";
+    const selectedFill =
+      button.id === "reroll"
+        ? "#d4a93d"
+        : button.id === "sell_tower"
+          ? "#d05050"
+          : "#d4a93d";
     fillRoundedRect(
       button.x,
       button.y,
       button.w,
       button.h,
       12,
-      selected && active ? "#d4a93d" : active ? "#284a63" : "#32485a",
+      selected && active ? selectedFill : baseFill,
       selected && active ? "#ffe7a2" : "rgba(255,255,255,0.08)"
     );
     ctx.fillStyle = !active ? COLORS.disabledText : selected ? "#1f1702" : "#ffffff";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 14px Avenir Next";
+    ctx.font = "bold 15px Avenir Next";
     ctx.fillText(button.label, button.x + 10, button.y + button.h / 2);
     ctx.textAlign = "right";
     ctx.font = "13px Avenir Next";
@@ -5549,7 +5631,13 @@ function handleTap(event) {
       return;
     }
     state.selectedShopItem = shopAction;
-    if (shopAction === "buy_item") {
+    if (shopAction === "attr_strength") {
+      buyAttributeUpgrade("Сила");
+    } else if (shopAction === "attr_agility") {
+      buyAttributeUpgrade("Ловкость");
+    } else if (shopAction === "attr_intellect") {
+      buyAttributeUpgrade("Интеллект");
+    } else if (shopAction === "buy_item") {
       buyRandomItem();
     } else {
       const bossDef = BOSS_DEFS.find((boss) => boss.id === shopAction);
@@ -6015,6 +6103,7 @@ function renderGameToText() {
     },
     leaderboard: state.leaderboard,
     modifiers: {
+      attributeLevels: state.attributeLevels,
       globalDamageBoost: state.globalDamageBoost,
       nuggetSaleBonus: state.nuggetSaleBonus
     },
