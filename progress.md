@@ -282,3 +282,17 @@ Update:
 - Critical shots are now rendered with a brighter glow, thicker beam, and an impact flash to stand out from normal attacks.
 - Synced the same changes into main-ui-test.js.
 - `node --check` passed; Playwright rerun failed again due the existing Chromium MachPort permission crash in this environment.
+
+Update:
+- Fixed menu click-through: added popup-layer hit testing for Build picker, Shop, Tools, and Item popup backgrounds so taps on popup empty space are consumed and no longer pass through to the map/board.
+- Added helper rect functions: getBuildPickerRect/getItemMenuRect/getShopPopupRect/getToolsPopupRect and unified isPointInOverlayPopup(point).
+- Updated handleTap to return early when tap is inside an open overlay popup background.
+- Updated pointerdown board gating to treat overlay popups as non-board area, preventing accidental camera drag/pan through menu overlays.
+- Synced changes into main-ui-test.js.
+- node --check passed; Playwright rerun attempted and failed with the known Chromium MachPort permission crash in this environment.
+
+Update:
+- Added a global cap for tower attack radius: `MAX_TOWER_ATTACK_RANGE_CELLS = 5`.
+- Applied cap at tower instantiation (`createTower`): any tower with configured attack range above 5 now attacks at 5 cells.
+- Aura radius remains independent and is not clamped by this change.
+- Synced change into main-ui-test.js.

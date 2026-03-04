@@ -286,6 +286,7 @@ const TURN_MARKERS = [
 
 const SIMPLE_TOWER_COST = 170;
 const MASTER_TOWER_COST = 1500;
+const MAX_TOWER_ATTACK_RANGE_CELLS = 5;
 function makeTower(spec) {
   return {
     cost: 0,
@@ -1230,6 +1231,8 @@ function createTower(cellC, cellR, towerDef) {
   const base = cellToPixel(cellC, cellR);
   const x = base.x + TILE * 0.5;
   const y = base.y + TILE * 0.5;
+  const attackRangeCells = Math.min(MAX_TOWER_ATTACK_RANGE_CELLS, towerDef.rangeCells || 0);
+  const auraRangeCells = towerDef.rangeCellsAura || towerDef.rangeCells || 0;
   return {
     kind: "tower",
     instanceId: state.nextTowerInstanceId++,
@@ -1247,10 +1250,10 @@ function createTower(cellC, cellR, towerDef) {
     attackType: towerDef.attackType,
     pattern: towerDef.pattern,
     cost: towerDef.cost,
-    range: towerDef.rangeCells * TILE,
-    rangeCells: towerDef.rangeCells,
-    auraRange: (towerDef.rangeCellsAura || towerDef.rangeCells) * TILE,
-    rangeCellsAura: towerDef.rangeCellsAura || towerDef.rangeCells,
+    range: attackRangeCells * TILE,
+    rangeCells: attackRangeCells,
+    auraRange: auraRangeCells * TILE,
+    rangeCellsAura: auraRangeCells,
     cooldown: towerDef.cooldown,
     nextShotAt: 0,
     damage: towerDef.baseDamage,
@@ -4741,6 +4744,11 @@ function drawBuildPicker() {
   }
 }
 
+function getBuildPickerRect() {
+  if (!state.buildPickerOpen) return null;
+  return { x: BUTTONS_X - 8, y: CONTROL_Y - 140, w: 236, h: 104 };
+}
+
 function getItemMenuButtons() {
   const itemDef = getSelectedTransferItemDef();
   if (!state.itemMenuOpen || !itemDef) return [];
@@ -4781,6 +4789,16 @@ function drawItemMenu() {
     ctx.textAlign = "right";
     ctx.fillText(button.sub, button.x + button.w - 10, button.y + button.h / 2);
   }
+}
+
+function getItemMenuRect() {
+  const itemDef = getSelectedTransferItemDef();
+  if (!state.itemMenuOpen || !itemDef) return null;
+  const popupX = CONTROL_X;
+  const popupY = CONTROL_Y - 156;
+  const popupW = CONTROL_W;
+  const popupH = itemDef?.id === "mystery_bag" ? 192 : 90;
+  return { x: popupX, y: popupY, w: popupW, h: popupH };
 }
 
 function getShopButtons() {
@@ -4855,6 +4873,11 @@ function getShopButtons() {
 function getShopCloseRect() {
   if (!state.shopOpen) return null;
   return { x: SHOP_X + SHOP_W - 34, y: SHOP_Y + 8, w: 24, h: 24 };
+}
+
+function getShopPopupRect() {
+  if (!state.shopOpen) return null;
+  return { x: SHOP_X, y: SHOP_Y, w: SHOP_W, h: 338 };
 }
 
 function drawCloseButton(rect) {
@@ -4935,6 +4958,20 @@ function getToolsMenuButtons() {
 function getToolsCloseRect() {
   if (!getToolsMenuButtons().length) return null;
   return { x: BUTTONS_X + BUTTONS_W - 28, y: CONTROL_Y - 280, w: 24, h: 24 };
+}
+
+function getToolsPopupRect() {
+  if (!getToolsMenuButtons().length) return null;
+  return { x: BUTTONS_X - 12, y: CONTROL_Y - 288, w: BUTTONS_W + 16, h: 278 };
+}
+
+function isPointInOverlayPopup(point) {
+  return (
+    pointInRect(point, getBuildPickerRect()) ||
+    pointInRect(point, getItemMenuRect()) ||
+    pointInRect(point, getShopPopupRect()) ||
+    pointInRect(point, getToolsPopupRect())
+  );
 }
 
 function drawToolsPopup() {
@@ -5784,6 +5821,11 @@ function handleTap(event) {
     return;
   }
 
+  if (isPointInOverlayPopup(point)) {
+    draw();
+    return;
+  }
+
   const actionButton = findActionButtonAt(event.clientX, event.clientY);
   if (actionButton) {
     hideInfoPanel();
@@ -5931,6 +5973,7 @@ function getActiveBoardPointers() {
 canvas.addEventListener("pointerdown", (event) => {
   const point = getCanvasPoint(event.clientX, event.clientY);
   const insideInfoPanel = isPointInInfoPanel(point);
+  const insideOverlayPopup = isPointInOverlayPopup(point);
   if (state.tutorial.active && isPointInTutorialModalBody(point)) {
     pointerState.tutorialPointerId = event.pointerId;
     pointerState.lastTutorialY = point.y;
@@ -5941,7 +5984,7 @@ canvas.addEventListener("pointerdown", (event) => {
     pointerState.lastInfoY = point.y;
     pointerState.infoMoved = false;
   }
-  const board = isPointInBoard(point) && !insideInfoPanel;
+  const board = isPointInBoard(point) && !insideInfoPanel && !insideOverlayPopup;
   pointerState.pointers.set(event.pointerId, {
     x: point.x,
     y: point.y,
