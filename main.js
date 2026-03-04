@@ -3092,6 +3092,9 @@ function drawPolygon(cx, cy, radius, sides, rotation, fill, stroke) {
 }
 
 function drawTowerSprite(tower) {
+  if (tower.level <= 5) {
+    drawTowerLevelRing(tower);
+  }
   if (drawTowerImageSprite(tower)) return;
 
   const size = tower.level >= 3 ? 13 : tower.level === 2 ? 11 : 9;
@@ -3296,12 +3299,30 @@ function drawEnemies() {
 
 function drawShots() {
   for (const shot of state.shots) {
-    ctx.strokeStyle = shot.crit ? COLORS.crit : shot.color || COLORS.shot;
-    ctx.lineWidth = shot.crit ? Math.max(3.2, shot.width || 2) : shot.width || 2;
+    const isCrit = !!shot.crit;
+    ctx.save();
+    ctx.strokeStyle = isCrit ? COLORS.crit : shot.color || COLORS.shot;
+    ctx.lineWidth = isCrit ? Math.max(4.6, (shot.width || 2) + 1.6) : shot.width || 2;
+    if (isCrit) {
+      ctx.shadowColor = COLORS.crit;
+      ctx.shadowBlur = 12;
+      ctx.lineCap = "round";
+    }
     ctx.beginPath();
     ctx.moveTo(shot.fromX, shot.fromY);
     ctx.lineTo(shot.toX, shot.toY);
     ctx.stroke();
+    if (isCrit) {
+      ctx.fillStyle = COLORS.crit;
+      ctx.beginPath();
+      ctx.arc(shot.toX, shot.toY, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff7cf";
+      ctx.beginPath();
+      ctx.arc(shot.toX, shot.toY, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 }
 
@@ -3489,6 +3510,36 @@ function getInfoPanelSellButtonRect() {
     w: 110,
     h: 26
   };
+}
+
+function getTowerLevelAccent(level) {
+  if (level === 1) return "#9fa7b3";
+  if (level === 2) return "#72d46e";
+  if (level === 3) return "#6dd9ff";
+  if (level === 4) return "#b174ff";
+  if (level === 5) return "#ff9a3d";
+  if (level >= 6) return "#ffd86f";
+  return "#ffffff";
+}
+
+function getAttributeAccent(attributeType) {
+  if (attributeType === "Сила") return "#ff7777";
+  if (attributeType === "Ловкость") return "#72e37a";
+  if (attributeType === "Интеллект") return "#76b8ff";
+  return "#ffffff";
+}
+
+function drawTowerLevelRing(tower) {
+  const color = getTowerLevelAccent(tower.level);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = tower.level >= 5 ? 4 : 3;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = tower.level >= 4 ? 8 : 4;
+  ctx.beginPath();
+  ctx.arc(tower.x, tower.y, tower.level >= 6 ? 17 : 15, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawStatsStrip() {
@@ -4352,12 +4403,23 @@ function drawInfoPanel() {
   const aura = getAuraBonuses(selectedTower);
   const effectiveDamage = Math.round(getTowerAttackDamage(selectedTower, aura));
   const effectiveCooldown = getTowerEffectiveCooldown(selectedTower, aura);
-  const statLine = `${selectedTower.tier} • ${selectedTower.attackType} • Урон ${effectiveDamage} • ${effectiveCooldown.toFixed(2)}с • Рэндж ${selectedTower.rangeCells.toFixed(1)}`;
+  const levelLine = `Уровень ${selectedTower.level} • ${selectedTower.attackType}`;
+  const attributeLine = `${selectedTower.attributeType} ${selectedTower.attributeLevel || 1}`;
+  const statLine = `Урон ${effectiveDamage} • ${effectiveCooldown.toFixed(2)}с • Рэндж ${selectedTower.rangeCells.toFixed(1)}`;
   const abilityLines = getTowerAbilityDescriptions(selectedTower);
   const detailText = abilityLines.length ? abilityLines[0] : selectedTower.talent || "Без особой способности.";
+  const levelLineCount = countWrappedLines(levelLine, textW, "16px Avenir Next");
   const statLineCount = countWrappedLines(statLine, textW, "16px Avenir Next");
   const detailLineCount = countWrappedLines(`Способность: ${detailText}`, textW, "15px Avenir Next");
-  contentHeight = 26 + statLineCount * lineHeights.body + 12 + detailLineCount * lineHeights.detail;
+  contentHeight =
+    26 +
+    18 +
+    10 +
+    levelLineCount * lineHeights.body +
+    8 +
+    statLineCount * lineHeights.body +
+    12 +
+    detailLineCount * lineHeights.detail;
   state.infoScrollMax = Math.max(0, contentHeight - body.h);
 
   ctx.save();
@@ -4369,8 +4431,30 @@ function drawInfoPanel() {
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 19px Avenir Next";
   ctx.fillText(selectedTower.name, body.x, scrollY);
-  drawWrappedText(statLine, body.x, scrollY + 30, textW, lineHeights.body, "#f5fbff", "16px Avenir Next", 8);
-  drawWrappedText(`Способность: ${detailText}`, body.x, scrollY + 30 + statLineCount * lineHeights.body + 12, textW, lineHeights.detail, "#ffffff", "15px Avenir Next", 10);
+  ctx.fillStyle = getAttributeAccent(selectedTower.attributeType);
+  ctx.font = "bold 16px Avenir Next";
+  ctx.fillText(attributeLine, body.x, scrollY + 30);
+  drawWrappedText(levelLine, body.x, scrollY + 58, textW, lineHeights.body, getTowerLevelAccent(selectedTower.level), "16px Avenir Next", 8);
+  drawWrappedText(
+    statLine,
+    body.x,
+    scrollY + 58 + levelLineCount * lineHeights.body + 8,
+    textW,
+    lineHeights.body,
+    "#f5fbff",
+    "16px Avenir Next",
+    8
+  );
+  drawWrappedText(
+    `Способность: ${detailText}`,
+    body.x,
+    scrollY + 58 + levelLineCount * lineHeights.body + 8 + statLineCount * lineHeights.body + 12,
+    textW,
+    lineHeights.detail,
+    "#ffffff",
+    "15px Avenir Next",
+    10
+  );
   ctx.restore();
 }
 

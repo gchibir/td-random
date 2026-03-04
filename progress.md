@@ -274,3 +274,11 @@ Update:
 - Added global attribute upgrade purchases in the shop (+1 to matching towers, cost 500, capped at 20).
 - Reworked the shop into grouped square buttons (attributes, bosses, item) and raised the popup higher.
 - Enlarged the tools menu buttons, reordered them to Upgrade / Move / Reroll / Sell, with yellow reroll and red sell styling.
+
+Update:
+- Tower info panel now shows the tower's attribute and current attribute level with color coding: strength red, agility green, intellect blue.
+- Replaced tier text in tower info with an explicit `Уровень N` line based on the runtime tower level, so rerolls/upgrades always display the correct level.
+- Added permanent level accent rings around tower models for levels 1-5 (gray, green, cyan, purple, orange) to make tower levels more obvious on the board.
+- Critical shots are now rendered with a brighter glow, thicker beam, and an impact flash to stand out from normal attacks.
+- Synced the same changes into main-ui-test.js.
+- `node --check` passed; Playwright rerun failed again due the existing Chromium MachPort permission crash in this environment.
