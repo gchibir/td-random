@@ -1520,9 +1520,9 @@ function spawnEnemy() {
   const spawnIndex = state.waveSpawned + 1;
   const isBonus = !state.endlessMode && spawnIndex === 3;
   const extraIndex = state.endlessMode ? state.extraWave + 1 : 0;
-  const speedMultiplier = state.endlessMode && extraIndex >= 250 ? 1.25 : 1;
-  const magicResist = state.endlessMode && extraIndex >= 500 ? 0.99 : getWaveMagicResist(progressionWave);
-  const physicalResist = state.endlessMode && extraIndex >= 850 ? 0.99 : 0;
+  const speedMultiplier = state.endlessMode && extraIndex >= 850 ? 1.25 : 1;
+  const magicResist = state.endlessMode && extraIndex >= 250 ? 0.90 : getWaveMagicResist(progressionWave);
+  const physicalResist = state.endlessMode && extraIndex >= 500 ? 0.90 : 0;
   state.enemies.push(
     createEnemy({
       hp: stats.hp,
@@ -1531,7 +1531,7 @@ function spawnEnemy() {
       physicalResist,
       speedMultiplier,
       isBonus,
-      rewardSilver: isBonus ? 75 + Math.min(30, progressionWave) * 2 : Math.min(30, progressionWave)
+      rewardSilver: isBonus ? 75 + progressionWave * 35 : Math.min(30, progressionWave)
     })
   );
   state.waveSpawned += 1;
@@ -4782,14 +4782,18 @@ function getItemMenuButtons() {
   const itemDef = getSelectedTransferItemDef();
   if (!state.itemMenuOpen || !itemDef) return [];
   const popupX = CONTROL_X;
-  const popupY = CONTROL_Y - 156;
+  const popupY = CONTROL_Y - 248;
   const popupW = CONTROL_W;
   if (itemDef.id !== "mystery_bag") return [];
+  const buttonH = 42;
+  const buttonGap = 8;
+  const firstButtonY = popupY + 42;
+  const buttonW = popupW - 20;
   return [
-    { id: "bag_tower", label: "Случайная башня", sub: "4/3/5/6 ур.", x: popupX + 10, y: popupY + 42, w: popupW - 20, h: 32 },
-    { id: "bag_upgrade", label: "Поднять уровень", sub: "1 башня", x: popupX + 10, y: popupY + 80, w: popupW - 20, h: 32 },
-    { id: "bag_damage", label: "Урон всех башен", sub: `+${Math.round((state.globalDamageBoost + 0.2) * 100)}%`, x: popupX + 10, y: popupY + 118, w: popupW - 20, h: 32 },
-    { id: "bag_nuggets", label: "Цена слитков", sub: `+${Math.round((state.nuggetSaleBonus + 0.3) * 100)}%`, x: popupX + 10, y: popupY + 156, w: popupW - 20, h: 32 }
+    { id: "bag_tower", label: "Случайная башня", sub: "4/3/5/6 ур.", x: popupX + 10, y: firstButtonY, w: buttonW, h: buttonH },
+    { id: "bag_upgrade", label: "Поднять уровень", sub: "1 башня", x: popupX + 10, y: firstButtonY + (buttonH + buttonGap) * 1, w: buttonW, h: buttonH },
+    { id: "bag_damage", label: "Урон всех башен", sub: `+${Math.round((state.globalDamageBoost + 0.2) * 100)}%`, x: popupX + 10, y: firstButtonY + (buttonH + buttonGap) * 2, w: buttonW, h: buttonH },
+    { id: "bag_nuggets", label: "Цена слитков", sub: `+${Math.round((state.nuggetSaleBonus + 0.3) * 100)}%`, x: popupX + 10, y: firstButtonY + (buttonH + buttonGap) * 3, w: buttonW, h: buttonH }
   ];
 }
 
@@ -4797,15 +4801,15 @@ function drawItemMenu() {
   const buttons = getItemMenuButtons();
   if (!buttons.length) return;
   const popupX = CONTROL_X;
-  const popupY = CONTROL_Y - 156;
+  const popupY = CONTROL_Y - 248;
   const popupW = CONTROL_W;
   const itemDef = getSelectedTransferItemDef();
-  const popupH = itemDef?.id === "mystery_bag" ? 192 : 90;
+  const popupH = itemDef?.id === "mystery_bag" ? 236 : 90;
   fillRoundedRect(popupX, popupY, popupW, popupH, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.font = "bold 15px Avenir Next";
+  ctx.font = "bold 17px Avenir Next";
   ctx.fillText(itemDef?.name || "Предмет", popupX + 12, popupY + 10);
 
   for (const button of buttons) {
@@ -4813,9 +4817,10 @@ function drawItemMenu() {
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "13px Avenir Next";
+    ctx.font = "bold 15px Avenir Next";
     ctx.fillText(button.label, button.x + 10, button.y + button.h / 2);
     ctx.textAlign = "right";
+    ctx.font = "14px Avenir Next";
     ctx.fillText(button.sub, button.x + button.w - 10, button.y + button.h / 2);
   }
 }
@@ -4824,9 +4829,9 @@ function getItemMenuRect() {
   const itemDef = getSelectedTransferItemDef();
   if (!state.itemMenuOpen || !itemDef) return null;
   const popupX = CONTROL_X;
-  const popupY = CONTROL_Y - 156;
+  const popupY = CONTROL_Y - 248;
   const popupW = CONTROL_W;
-  const popupH = itemDef?.id === "mystery_bag" ? 192 : 90;
+  const popupH = itemDef?.id === "mystery_bag" ? 236 : 90;
   return { x: popupX, y: popupY, w: popupW, h: popupH };
 }
 
@@ -5938,7 +5943,11 @@ function handleTap(event) {
 
   const infoClose = getInfoPanelCloseRect();
   if (pointInRect(point, infoClose)) {
-    hideInfoPanel();
+    if (state.pendingItemTransfer || state.selectedItemSlot != null || state.selectedTowerItemTowerId != null) {
+      clearItemSelection();
+    } else {
+      hideInfoPanel();
+    }
     draw();
     return;
   }
@@ -6000,6 +6009,13 @@ function getActiveBoardPointers() {
 }
 
 canvas.addEventListener("pointerdown", (event) => {
+  if (typeof canvas.setPointerCapture === "function") {
+    try {
+      canvas.setPointerCapture(event.pointerId);
+    } catch (_error) {
+      // Ignore capture failures on unsupported platforms.
+    }
+  }
   const point = getCanvasPoint(event.clientX, event.clientY);
   const insideInfoPanel = isPointInInfoPanel(point);
   const insideOverlayPopup = isPointInOverlayPopup(point);
@@ -6019,6 +6035,8 @@ canvas.addEventListener("pointerdown", (event) => {
     y: point.y,
     startX: point.x,
     startY: point.y,
+    startClientX: event.clientX,
+    startClientY: event.clientY,
     board
   });
   state.hoveredSlot = findBuildSlotAt(event.clientX, event.clientY);
@@ -6087,10 +6105,10 @@ canvas.addEventListener("pointermove", (event) => {
   if (pointerState.panPointerId !== event.pointerId || !pointer.board) return;
   const dx = point.x - pointerState.lastX;
   const dy = point.y - pointerState.lastY;
-  const totalDx = point.x - pointer.startX;
-  const totalDy = point.y - pointer.startY;
+  const totalDx = event.clientX - pointer.startClientX;
+  const totalDy = event.clientY - pointer.startClientY;
 
-  if (Math.hypot(totalDx, totalDy) > 6) {
+  if (Math.hypot(totalDx, totalDy) > 9) {
     pointerState.moved = true;
   }
 
@@ -6108,6 +6126,15 @@ canvas.addEventListener("pointermove", (event) => {
 function finishPointer(event) {
   const pointer = pointerState.pointers.get(event.pointerId);
   if (!pointer) return;
+  if (typeof canvas.releasePointerCapture === "function") {
+    try {
+      if (!canvas.hasPointerCapture || canvas.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+    } catch (_error) {
+      // Ignore release failures if capture was not active.
+    }
+  }
   const tapPointerId = pointerState.tapPointerId;
   const blockedByInfo = pointerState.infoPointerId === event.pointerId && pointerState.infoMoved;
   const blockedByTutorial = pointerState.tutorialPointerId === event.pointerId && pointerState.tutorialMoved;
@@ -6143,7 +6170,7 @@ function finishPointer(event) {
   }
 
   if (shouldTap && !blockedByInfo && !blockedByTutorial) {
-    handleTap(event);
+    handleTap({ clientX: pointer.startClientX, clientY: pointer.startClientY });
   }
 }
 

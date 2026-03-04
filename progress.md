@@ -301,3 +301,22 @@ Update:
 - Switched mine visuals to image sprite loading from `/assets/towers/mine.png` with cache-busting query (`MINE_SPRITE_VERSION`).
 - Added `drawMineSprite` and wired mine rendering to use image first; legacy geometric mine drawing remains as fallback when image is unavailable.
 - Synced changes into main-ui-test.js.
+
+Update:
+- Fixed tap reliability for UI controls by capturing pointer input on `pointerdown` (`setPointerCapture`) and releasing on `pointerup`/`pointercancel`, so button taps are no longer dropped when the finger drifts outside the canvas before release.
+- Tap actions now resolve by initial touch coordinates (`startClientX/startClientY`) instead of release coordinates, improving hit consistency for action/menu buttons (including `Апгрейд`, `Переместить`, `Продать`).
+- Switched drag-threshold measurement to client-space pixels and increased tap-to-drag threshold from 6 to 9 px for more stable mobile taps.
+- Fixed item-transfer lock: pressing `X` on the floating info panel now exits transfer mode via `clearItemSelection()` (not just hiding the panel).
+- Synced `main-ui-test.js` with `main.js` and re-ran syntax checks (`node --check`) successfully.
+- Playwright loop could not be re-run in this sandbox because local HTTP bind is blocked (`PermissionError: [Errno 1] Operation not permitted`).
+
+Update:
+- Rebalanced endless buffs in `spawnEnemy()`:
+  - Extra monsters now gain `magicResist = 90%` starting at extra wave 250 (was 99% at 500).
+  - Extra monsters now gain `physicalResist = 90%` starting at extra wave 500 (was 99% at 850).
+  - Extra monsters now gain speed boost `x1.25` starting at extra wave 850 (was 250).
+- Increased bonus (gold) creep reward scaling:
+  - Formula changed to `75 + wave * 35` (using progression wave) for the 3rd creep in normal waves.
+- Increased size/readability of Mystery Bag action buttons:
+  - Larger popup, larger button height (42), larger fonts, and adjusted vertical placement to fit the new layout.
+- Synced `main-ui-test.js` from `main.js` and validated syntax with `node --check`.
