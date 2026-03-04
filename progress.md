@@ -266,3 +266,6 @@ Update:
 
 Update:
 - Reduced inventory slot size by 25% (72 -> 54) and tightened the inventory strip height to match.
+
+Update:
+- Reduced the aura strip height and resized aura badges to 40px (roughly 3/4 of the 54px inventory slots).

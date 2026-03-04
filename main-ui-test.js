@@ -13,7 +13,7 @@ const BASE_TOP_UI_OFFSET = 36;
 const LAYOUT = {
   padding: 16,
   gap: 6,
-  auraH: 96,
+  auraH: 74,
   statsH: 48,
   inventoryH: 124,
   controlH: 106
@@ -3587,6 +3587,8 @@ function getAuraPanelBadges() {
   const selected = getSelectedStructure();
   if (!selected || selected.kind !== "tower") return [];
   const auras = getAppliedAuras(selected);
+  const badgeSize = 40;
+  const badgeGap = 8;
   return auras.map((aura, index) => ({
     ...aura,
     icon:
@@ -3600,10 +3602,10 @@ function getAuraPanelBadges() {
       aura.speedBoost ? "#a8ecff" :
       "#ffc98c",
     detail: `${aura.sourceName}: ${aura.summary}`,
-    x: AURA_X + 12 + index * 64,
-    y: AURA_Y + 28,
-    w: 56,
-    h: 56
+    x: AURA_X + 12 + index * (badgeSize + badgeGap),
+    y: AURA_Y + 26,
+    w: badgeSize,
+    h: badgeSize
   }));
 }
 
@@ -3644,7 +3646,7 @@ function drawAuraPanel() {
     ctx.textBaseline = "top";
     ctx.font = "13px Avenir Next";
     ctx.fillStyle = COLORS.subtext;
-    ctx.fillText("Выбери башню, чтобы увидеть активные баффы.", AURA_X + 12, AURA_Y + 34);
+    ctx.fillText("Выбери башню, чтобы увидеть активные баффы.", AURA_X + 12, AURA_Y + 32);
     return;
   }
 
@@ -3654,7 +3656,7 @@ function drawAuraPanel() {
     ctx.textBaseline = "top";
     ctx.font = "13px Avenir Next";
     ctx.fillStyle = COLORS.subtext;
-    ctx.fillText("На выбранной башне нет активных аур.", AURA_X + 12, AURA_Y + 34);
+    ctx.fillText("На выбранной башне нет активных аур.", AURA_X + 12, AURA_Y + 32);
     return;
   }
 
@@ -3671,7 +3673,7 @@ function drawAuraPanel() {
     );
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 26px Avenir Next";
+    ctx.font = "bold 22px Avenir Next";
     ctx.fillStyle = selectedBadge ? "#1f1702" : badge.iconColor;
     ctx.fillText(badge.icon, badge.x + badge.w / 2, badge.y + badge.h / 2 + 0.5);
   }
