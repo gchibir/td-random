@@ -727,6 +727,9 @@ const state = {
   pauseMenuOpen: false,
   mainMenuOpen: true,
   pausePanel: "settings",
+  encyclopediaTab: "towers",
+  encyclopediaScroll: 0,
+  encyclopediaScrollMax: 0,
   started: false,
   startCountdown: 0,
   globalDamageBoost: 0,
@@ -791,10 +794,13 @@ const pointerState = {
   tapPointerId: null,
   infoPointerId: null,
   tutorialPointerId: null,
+  encyclopediaPointerId: null,
   lastInfoY: 0,
   lastTutorialY: 0,
+  lastEncyclopediaY: 0,
   infoMoved: false,
   tutorialMoved: false,
+  encyclopediaMoved: false,
   pinchDistance: 0,
   lastX: 0,
   lastY: 0,
@@ -3871,20 +3877,71 @@ function isMenuOpen() {
   return state.mainMenuOpen || state.pauseMenuOpen;
 }
 
-function getMenuButtons() {
+function getPauseMenuLayout() {
   const menuX = 78;
   const menuY = 144;
   const menuW = canvas.width - 156;
+  const menuH = 560;
+  return {
+    menuX,
+    menuY,
+    menuW,
+    menuH,
+    infoY: menuY + 376,
+    infoH: menuH - (menuY + 376 - menuY) - 16
+  };
+}
+
+function getPauseInfoRect() {
+  const layout = getPauseMenuLayout();
+  return {
+    x: layout.menuX + 16,
+    y: layout.infoY,
+    w: layout.menuW - 32,
+    h: layout.infoH
+  };
+}
+
+function getMenuButtons() {
+  const { menuX, menuY, menuW } = getPauseMenuLayout();
   const buttonW = menuW - 32;
-  const buttonH = 50;
+  const buttonH = 46;
+  const stepY = 50;
   const primaryLabel = state.mode === "defeat" ? "Начать сначала" : state.started ? "Продолжить" : "Начать игру";
   return [
     { id: "primary", label: primaryLabel, x: menuX + 16, y: menuY + 76, w: buttonW, h: buttonH },
-    { id: "leaders", label: "Таблица лидеров", x: menuX + 16, y: menuY + 134, w: buttonW, h: buttonH },
-    { id: "nickname", label: "Сменить ник", x: menuX + 16, y: menuY + 192, w: buttonW, h: buttonH },
-    { id: "settings", label: "Настройки", x: menuX + 16, y: menuY + 250, w: buttonW, h: buttonH },
-    { id: "tutorial", label: "Обучение", x: menuX + 16, y: menuY + 308, w: buttonW, h: buttonH }
+    { id: "leaders", label: "Таблица лидеров", x: menuX + 16, y: menuY + 76 + stepY, w: buttonW, h: buttonH },
+    { id: "nickname", label: "Сменить ник", x: menuX + 16, y: menuY + 76 + stepY * 2, w: buttonW, h: buttonH },
+    { id: "settings", label: "Настройки", x: menuX + 16, y: menuY + 76 + stepY * 3, w: buttonW, h: buttonH },
+    { id: "tutorial", label: "Обучение", x: menuX + 16, y: menuY + 76 + stepY * 4, w: buttonW, h: buttonH },
+    { id: "encyclopedia", label: "Энциклопедия", x: menuX + 16, y: menuY + 76 + stepY * 5, w: buttonW, h: buttonH }
   ];
+}
+
+function getEncyclopediaTabButtons() {
+  if (!isMenuOpen() || state.pausePanel !== "encyclopedia") return [];
+  const info = getPauseInfoRect();
+  const tabY = info.y + 12;
+  const tabW = Math.floor((info.w - 20) / 2);
+  return [
+    { id: "towers", label: "Башни", x: info.x + 10, y: tabY, w: tabW, h: 34 },
+    { id: "items", label: "Предметы", x: info.x + info.w - tabW - 10, y: tabY, w: tabW, h: 34 }
+  ];
+}
+
+function getEncyclopediaContentRect() {
+  if (!isMenuOpen() || state.pausePanel !== "encyclopedia") return null;
+  const info = getPauseInfoRect();
+  return {
+    x: info.x + 10,
+    y: info.y + 54,
+    w: info.w - 20,
+    h: info.h - 64
+  };
+}
+
+function isPointInEncyclopediaContent(point) {
+  return pointInRect(point, getEncyclopediaContentRect());
 }
 
 function restartGameFromMenu() {
@@ -5071,15 +5128,260 @@ function drawControlPanel() {
   drawToolsPopup();
 }
 
+function getTowerAbilityDescriptionsFromDef(towerDef) {
+  if (!towerDef) return [];
+  const previewTower = {
+    kind: "tower",
+    level: towerDef.level,
+    towerId: towerDef.id,
+    visual: towerDef.visual,
+    bodyColor: towerDef.bodyColor,
+    trimColor: towerDef.trimColor,
+    rangeCells: towerDef.rangeCells || 0,
+    rangeCellsAura: towerDef.rangeCellsAura || towerDef.rangeCells || 0,
+    attackType: towerDef.attackType || "",
+    pattern: towerDef.pattern || "single",
+    damage: towerDef.baseDamage || 0,
+    cooldown: towerDef.cooldown || 0,
+    critChance: towerDef.critChance || 0,
+    critMultiplier: towerDef.critMultiplier || 2,
+    multiTargets: towerDef.multiTargets || 1,
+    chainFalloff: towerDef.chainFalloff || 0,
+    splashRadius: (towerDef.splashRadiusCells || 0) * TILE,
+    auraDamageBoost: towerDef.auraDamageBoost || 0,
+    auraFlatDamage: towerDef.auraFlatDamage || 0,
+    auraAttackSpeedBoost: towerDef.auraAttackSpeedBoost || 0,
+    auraCritChanceBoost: towerDef.auraCritChanceBoost || 0,
+    burnDamage: towerDef.burnDamage || 0,
+    burnDuration: towerDef.burnDuration || 0,
+    poisonDamage: towerDef.poisonDamage || 0,
+    poisonDuration: towerDef.poisonDuration || 0,
+    poisonSpreadCount: towerDef.poisonSpreadCount || 0,
+    slowFactor: towerDef.slowFactor || 1,
+    slowDuration: towerDef.slowDuration || 0,
+    armorPenPercent: towerDef.armorPenPercent || 0,
+    armorBreakFlat: towerDef.armorBreakFlat || 0,
+    armorBreakDuration: towerDef.armorBreakDuration || 0,
+    percentCurrentHpDamage: towerDef.percentCurrentHpDamage || 0,
+    percentCurrentHpChance: towerDef.percentCurrentHpChance || 0,
+    percentMaxHpDamage: towerDef.percentMaxHpDamage || 0,
+    percentMaxHpChance: towerDef.percentMaxHpChance || 0,
+    stunChance: towerDef.stunChance || 0,
+    stunDuration: towerDef.stunDuration || 0,
+    freezeChance: towerDef.freezeChance || 0,
+    freezeDuration: towerDef.freezeDuration || 0,
+    magicShredPercent: towerDef.magicShredPercent || 0,
+    executeChance: towerDef.executeChance || 0,
+    executeThreshold: towerDef.executeThreshold || 0,
+    beamChance: towerDef.beamChance || 0,
+    beamMultiplier: towerDef.beamMultiplier || 1,
+    globalStunChance: towerDef.globalStunChance || 0,
+    globalStunDuration: towerDef.globalStunDuration || 0,
+    speedBurstChance: towerDef.speedBurstChance || 0,
+    speedBurstBoost: towerDef.speedBurstBoost || 0,
+    speedBurstDuration: towerDef.speedBurstDuration || 0,
+    allTargetsChance: towerDef.allTargetsChance || 0,
+    pulseStunChance: towerDef.pulseStunChance || 0,
+    pulseStunRadiusCells: towerDef.pulseStunRadiusCells || 0,
+    pulseStunDuration: towerDef.pulseStunDuration || 0,
+    specialShotEvery: towerDef.specialShotEvery || 0,
+    specialShotMultiplier: towerDef.specialShotMultiplier || 1,
+    mapProcChance: towerDef.mapProcChance || 0,
+    mapProcDamage: towerDef.mapProcDamage || 0,
+    mapProcPercentMaxHp: towerDef.mapProcPercentMaxHp || 0,
+    mapBlastEvery: towerDef.mapBlastEvery || 0,
+    mapBlastDamage: towerDef.mapBlastDamage || 0,
+    cannotKill: !!towerDef.cannotKill,
+    silverSplashChance: towerDef.silverSplashChance || 0,
+    silverSplashSilverPerTarget: towerDef.silverSplashSilverPerTarget || 0,
+    tripleShotEvery: towerDef.tripleShotEvery || 0,
+    killGainDamage: towerDef.killGainDamage || 0
+  };
+  return getTowerAbilityDescriptions(previewTower);
+}
+
+function drawEncyclopediaTowerIcon(towerDef, cx, cy) {
+  const previewTower = {
+    kind: "tower",
+    x: cx,
+    y: cy,
+    level: towerDef.level,
+    towerId: towerDef.id,
+    visual: towerDef.visual,
+    bodyColor: towerDef.bodyColor,
+    trimColor: towerDef.trimColor
+  };
+  drawTowerSprite(previewTower);
+}
+
+function drawEncyclopediaItemIcon(itemDef, x, y, size) {
+  const level = itemDef?.level || 1;
+  const fill = level >= 2 ? "#7b5bcf" : "#476a83";
+  const stroke = level >= 2 ? "#d6c4ff" : "#b7d7ee";
+  fillRoundedRect(x, y, size, size, 10, fill, stroke);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 13px Avenir Next";
+  ctx.fillText(formatItemShortLabel(itemDef), x + size / 2, y + size / 2 + 0.5);
+}
+
+function drawEncyclopediaPanel(infoRect) {
+  const tabButtons = getEncyclopediaTabButtons();
+  const contentRect = getEncyclopediaContentRect();
+  if (!tabButtons.length || !contentRect) return;
+
+  for (const tab of tabButtons) {
+    const active = state.encyclopediaTab === tab.id;
+    fillRoundedRect(
+      tab.x,
+      tab.y,
+      tab.w,
+      tab.h,
+      10,
+      active ? "#d4a93d" : "#2d4861",
+      active ? "#ffe7a2" : "rgba(255,255,255,0.08)"
+    );
+    ctx.fillStyle = active ? "#1f1702" : "#d9e7f4";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 15px Avenir Next";
+    ctx.fillText(tab.label, tab.x + tab.w / 2, tab.y + tab.h / 2 + 0.5);
+  }
+
+  fillRoundedRect(contentRect.x, contentRect.y, contentRect.w, contentRect.h, 12, "#1c3347", "rgba(255,255,255,0.08)");
+
+  const isTowerTab = state.encyclopediaTab === "towers";
+  const entries = isTowerTab
+    ? ALL_TOWERS.map((tower) => ({ type: "tower", tower }))
+    : Object.values(ITEM_DEFS)
+        .sort((a, b) => (a.level || 1) - (b.level || 1) || a.name.localeCompare(b.name, "ru"))
+        .map((item) => ({ type: "item", item }));
+
+  if (!entries.length) {
+    state.encyclopediaScrollMax = 0;
+    state.encyclopediaScroll = 0;
+    ctx.fillStyle = "#d4e1ee";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.font = "15px Avenir Next";
+    ctx.fillText("Пока пусто.", contentRect.x + 12, contentRect.y + 10);
+    return;
+  }
+
+  state.encyclopediaScroll = Math.max(0, Math.min(state.encyclopediaScroll, state.encyclopediaScrollMax));
+
+  const rowGap = 8;
+  const rowX = contentRect.x + 6;
+  const rowW = contentRect.w - 12;
+  const iconSize = 40;
+  const textX = rowX + iconSize + 12;
+  const textW = rowW - (iconSize + 18);
+  let y = contentRect.y + 8 - state.encyclopediaScroll;
+  let totalContentHeight = 0;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(contentRect.x, contentRect.y, contentRect.w, contentRect.h);
+  ctx.clip();
+
+  for (const entry of entries) {
+    let rowH = 96;
+    let line2 = "";
+    let line3 = "";
+    let line4 = "";
+    let line5 = "";
+    let lineCount2 = 1;
+    let lineCount3 = 1;
+    let lineCount4 = 1;
+    let lineCount5 = 1;
+
+    if (entry.type === "tower") {
+      const tower = entry.tower;
+      const attackRange = Math.min(MAX_TOWER_ATTACK_RANGE_CELLS, tower.rangeCells || 0);
+      const abilityText = getTowerAbilityDescriptionsFromDef(tower);
+      line2 = `${tower.tier} • ${tower.attackType}`;
+      line3 = `Атрибут: ${tower.attributeType} ${tower.attributeLevel || 1}`;
+      line4 = `Урон ${Math.round(tower.baseDamage || 0)} • ${(tower.cooldown || 0).toFixed(2)}с/выстр • Рэндж ${attackRange.toFixed(1)}`;
+      line5 = `${tower.description || ""} ${abilityText.join(" ") || tower.talent || ""}`.trim();
+      lineCount2 = countWrappedLines(line2, textW, "13px Avenir Next");
+      lineCount3 = countWrappedLines(line3, textW, "13px Avenir Next");
+      lineCount4 = countWrappedLines(line4, textW, "13px Avenir Next");
+      lineCount5 = countWrappedLines(line5, textW, "12px Avenir Next");
+      rowH = 14 + 18 + lineCount2 * 15 + lineCount3 * 15 + lineCount4 * 15 + lineCount5 * 14 + 10;
+    } else {
+      const item = entry.item;
+      const details = [];
+      if (item.level) details.push(`Уровень предмета: ${item.level}`);
+      if (Number.isFinite(item.sellValue) && item.sellValue > 0) details.push(`Цена продажи: ${item.sellValue}`);
+      if (item.description) details.push(`Эффект: ${item.description}`);
+      line2 = item.level >= 2 ? "Улучшенный предмет" : "Базовый предмет";
+      line3 = details.join(" • ");
+      lineCount2 = countWrappedLines(line2, textW, "13px Avenir Next");
+      lineCount3 = countWrappedLines(line3, textW, "12px Avenir Next");
+      rowH = 14 + 18 + lineCount2 * 15 + lineCount3 * 14 + 10;
+    }
+
+    totalContentHeight += rowH + rowGap;
+    if (y + rowH < contentRect.y || y > contentRect.y + contentRect.h) {
+      y += rowH + rowGap;
+      continue;
+    }
+
+    fillRoundedRect(rowX, y, rowW, rowH, 12, "#234158", "rgba(255,255,255,0.08)");
+    if (entry.type === "tower") {
+      drawEncyclopediaTowerIcon(entry.tower, rowX + iconSize / 2 + 4, y + 28);
+      ctx.fillStyle = "#f2f8ff";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.font = "bold 15px Avenir Next";
+      ctx.fillText(entry.tower.name, textX, y + 10);
+      let ty = y + 30;
+      drawWrappedText(line2, textX, ty, textW, 15, "#c5d6e5", "13px Avenir Next", 20);
+      ty += lineCount2 * 15;
+      drawWrappedText(line3, textX, ty, textW, 15, getAttributeAccent(entry.tower.attributeType), "13px Avenir Next", 20);
+      ty += lineCount3 * 15;
+      drawWrappedText(line4, textX, ty, textW, 15, "#d9e9f7", "13px Avenir Next", 20);
+      ty += lineCount4 * 15;
+      drawWrappedText(line5, textX, ty, textW, 14, "#ffffff", "12px Avenir Next", 60);
+    } else {
+      drawEncyclopediaItemIcon(entry.item, rowX + 8, y + 10, iconSize);
+      ctx.fillStyle = "#f2f8ff";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.font = "bold 15px Avenir Next";
+      ctx.fillText(formatItemDisplayName(entry.item), textX, y + 10);
+      let ty = y + 30;
+      drawWrappedText(line2, textX, ty, textW, 15, "#c5d6e5", "13px Avenir Next", 20);
+      ty += lineCount2 * 15;
+      drawWrappedText(line3, textX, ty, textW, 14, "#ffffff", "12px Avenir Next", 40);
+    }
+
+    y += rowH + rowGap;
+  }
+  ctx.restore();
+
+  state.encyclopediaScrollMax = Math.max(0, totalContentHeight - contentRect.h);
+  state.encyclopediaScroll = Math.max(0, Math.min(state.encyclopediaScroll, state.encyclopediaScrollMax));
+
+  if (state.encyclopediaScrollMax > 0) {
+    const trackX = infoRect.x + infoRect.w - 6;
+    const trackY = contentRect.y;
+    const trackH = contentRect.h;
+    fillRoundedRect(trackX, trackY, 3, trackH, 2, "rgba(255,255,255,0.1)");
+    const ratio = contentRect.h / (contentRect.h + state.encyclopediaScrollMax);
+    const thumbH = Math.max(28, Math.round(trackH * ratio));
+    const thumbY = trackY + Math.round((trackH - thumbH) * (state.encyclopediaScroll / state.encyclopediaScrollMax));
+    fillRoundedRect(trackX - 1, thumbY, 5, thumbH, 3, "#d4a93d");
+  }
+}
+
 function drawPauseMenu() {
   if (!isMenuOpen()) return;
   ctx.fillStyle = "rgba(6, 12, 19, 0.68)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  const menuX = 78;
-  const menuY = 144;
-  const menuW = canvas.width - 156;
-  const menuH = 560;
+  const { menuX, menuY, menuW, menuH, infoY, infoH } = getPauseMenuLayout();
   fillRoundedRect(menuX, menuY, menuW, menuH, 22, "#1a2f44", "rgba(255,255,255,0.14)");
 
   ctx.fillStyle = "#ffffff";
@@ -5109,14 +5411,17 @@ function drawPauseMenu() {
     ctx.fillText(button.label, button.x + 12, button.y + button.h / 2);
   }
 
-  const infoY = menuY + 376;
-  const infoH = menuH - (infoY - menuY) - 16;
   fillRoundedRect(menuX + 16, infoY, menuW - 32, infoH, 16, "#223a4f", "rgba(255,255,255,0.08)");
+  const infoRect = getPauseInfoRect();
 
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillStyle = "#d6e6f4";
-  if (state.pausePanel === "leaders") {
+  if (state.pausePanel === "encyclopedia") {
+    ctx.font = "bold 18px Avenir Next";
+    ctx.fillText("Энциклопедия", menuX + 28, infoY + 14);
+    drawEncyclopediaPanel(infoRect);
+  } else if (state.pausePanel === "leaders") {
     ctx.font = "bold 18px Avenir Next";
     ctx.fillText("Таблица лидеров", menuX + 28, infoY + 14);
     if (state.leaderboardLoading) {
@@ -5157,6 +5462,8 @@ function drawPauseMenu() {
           ? `Текущий ник: ${state.nickname}. Нажми «Сменить ник», чтобы изменить его.`
           : state.pausePanel === "tutorial"
             ? "Обучение покажет базовый цикл: открыть строительство, выбрать башню, поставить ее и затем добавить шахту."
+            : state.pausePanel === "encyclopedia"
+              ? "Здесь отображаются все текущие башни и предметы с актуальными описаниями."
             : state.mode === "defeat"
               ? "Нажми «Начать сначала», чтобы сразу запустить новую попытку."
               : "Нажми «Начать игру» или «Продолжить», чтобы перейти к обороне.";
@@ -5472,6 +5779,21 @@ function findPauseMenuActionAt(clientX, clientY) {
   return null;
 }
 
+function findEncyclopediaTabAt(clientX, clientY) {
+  const point = getCanvasPoint(clientX, clientY);
+  for (const tab of getEncyclopediaTabButtons()) {
+    if (
+      point.x >= tab.x &&
+      point.x <= tab.x + tab.w &&
+      point.y >= tab.y &&
+      point.y <= tab.y + tab.h
+    ) {
+      return tab.id;
+    }
+  }
+  return null;
+}
+
 function tryPlaceOnSlot(slot) {
   const existing = getStructureAt(slot.c, slot.r);
   if (state.tutorial.active && ["place_simple", "place_mine"].includes(state.tutorial.step)) {
@@ -5682,9 +6004,24 @@ function handleTap(event) {
       syncLeaderboardEntry();
       state.pausePanel = "leaders";
       void refreshLeaderboardFromServer();
+    } else if (menuAction === "encyclopedia") {
+      state.pausePanel = "encyclopedia";
+      state.encyclopediaTab = state.encyclopediaTab === "items" ? "items" : "towers";
+      state.encyclopediaScroll = 0;
+      state.encyclopediaScrollMax = 0;
     } else {
       state.pausePanel = menuAction;
     }
+    draw();
+    return;
+  }
+
+  const encyclopediaTab = findEncyclopediaTabAt(event.clientX, event.clientY);
+  if (encyclopediaTab) {
+    state.pausePanel = "encyclopedia";
+    state.encyclopediaTab = encyclopediaTab;
+    state.encyclopediaScroll = 0;
+    state.encyclopediaScrollMax = 0;
     draw();
     return;
   }
@@ -6024,12 +6361,17 @@ canvas.addEventListener("pointerdown", (event) => {
     pointerState.lastTutorialY = point.y;
     pointerState.tutorialMoved = false;
   }
+  if (isMenuOpen() && state.pausePanel === "encyclopedia" && isPointInEncyclopediaContent(point)) {
+    pointerState.encyclopediaPointerId = event.pointerId;
+    pointerState.lastEncyclopediaY = point.y;
+    pointerState.encyclopediaMoved = false;
+  }
   if (insideInfoPanel) {
     pointerState.infoPointerId = event.pointerId;
     pointerState.lastInfoY = point.y;
     pointerState.infoMoved = false;
   }
-  const board = isPointInBoard(point) && !insideInfoPanel && !insideOverlayPopup;
+  const board = !isMenuOpen() && isPointInBoard(point) && !insideInfoPanel && !insideOverlayPopup;
   pointerState.pointers.set(event.pointerId, {
     x: point.x,
     y: point.y,
@@ -6086,6 +6428,15 @@ canvas.addEventListener("pointermove", (event) => {
     }
     pointerState.lastTutorialY = point.y;
   }
+  if (pointerState.encyclopediaPointerId === event.pointerId) {
+    const dy = point.y - pointerState.lastEncyclopediaY;
+    if (Math.abs(dy) > 2) {
+      pointerState.encyclopediaMoved = true;
+      state.encyclopediaScroll = Math.max(0, Math.min(state.encyclopediaScrollMax, state.encyclopediaScroll - dy));
+      draw();
+    }
+    pointerState.lastEncyclopediaY = point.y;
+  }
 
   const activeBoardPointers = getActiveBoardPointers();
   if (activeBoardPointers.length >= 2) {
@@ -6138,6 +6489,8 @@ function finishPointer(event) {
   const tapPointerId = pointerState.tapPointerId;
   const blockedByInfo = pointerState.infoPointerId === event.pointerId && pointerState.infoMoved;
   const blockedByTutorial = pointerState.tutorialPointerId === event.pointerId && pointerState.tutorialMoved;
+  const blockedByEncyclopedia =
+    pointerState.encyclopediaPointerId === event.pointerId && pointerState.encyclopediaMoved;
   const shouldTap = tapPointerId === event.pointerId && !pointerState.moved;
   pointerState.pointers.delete(event.pointerId);
 
@@ -6148,6 +6501,10 @@ function finishPointer(event) {
   if (pointerState.tutorialPointerId === event.pointerId) {
     pointerState.tutorialPointerId = null;
     pointerState.tutorialMoved = false;
+  }
+  if (pointerState.encyclopediaPointerId === event.pointerId) {
+    pointerState.encyclopediaPointerId = null;
+    pointerState.encyclopediaMoved = false;
   }
 
   const activeBoardPointers = getActiveBoardPointers();
@@ -6169,7 +6526,7 @@ function finishPointer(event) {
     pointerState.board = false;
   }
 
-  if (shouldTap && !blockedByInfo && !blockedByTutorial) {
+  if (shouldTap && !blockedByInfo && !blockedByTutorial && !blockedByEncyclopedia) {
     handleTap({ clientX: pointer.startClientX, clientY: pointer.startClientY });
   }
 }

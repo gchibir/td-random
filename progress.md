@@ -320,3 +320,27 @@ Update:
 - Increased size/readability of Mystery Bag action buttons:
   - Larger popup, larger button height (42), larger fonts, and adjusted vertical placement to fit the new layout.
 - Synced `main-ui-test.js` from `main.js` and validated syntax with `node --check`.
+
+Update:
+- Added a new pause/menu button: `Энциклопедия`.
+- Implemented encyclopedia panel with two tabs: `Башни` and `Предметы`.
+- Built both encyclopedia lists dynamically from runtime data sources:
+  - Towers from `ALL_TOWERS`.
+  - Items from `ITEM_DEFS`.
+  This keeps encyclopedia content automatically aligned with future balance/content edits.
+- `Башни` tab now renders per-tower entries with:
+  - visual tower icon/sprite,
+  - tier/attack type,
+  - attribute + attribute level,
+  - damage, cooldown, range,
+  - detailed skill/ability text (generated via tower ability description logic).
+- `Предметы` tab now renders per-item entries with:
+  - item icon,
+  - level/sell value metadata,
+  - full effect description.
+- Added vertical scroll support for encyclopedia content via pointer drag inside the list area.
+- Added tab click handling inside menu (`Башни`/`Предметы`) with scroll reset on tab switch.
+- Refactored pause menu geometry into shared helpers (`getPauseMenuLayout`, `getPauseInfoRect`) and reused it for encyclopedia hitboxes/rendering.
+- Synced `main-ui-test.js` with `main.js`; syntax checks pass (`node --check`).
+- Follow-up fix: while menu overlays are open (including Encyclopedia), board drag/pan is now blocked to prevent accidental map movement during menu scrolling.
+- Attempted required Playwright run (`web_game_playwright_client.js`), but Chromium launch still fails in this environment with `MachPortRendezvousServer ... Permission denied`.
