@@ -719,6 +719,7 @@ const state = {
   selectedCell: null,
   selectedEnemyId: null,
   selectedAuraSourceId: null,
+  auraInfoOpen: false,
   selectedShopItem: "boss1",
   selectedToolAction: null,
   damagePanelOpen: false,
@@ -1750,11 +1751,13 @@ function clearItemSelection() {
   state.selectedTowerItemTowerId = null;
   state.pendingItemTransfer = null;
   state.itemMenuOpen = false;
+  state.auraInfoOpen = false;
   state.infoPanelVisible = false;
   state.infoScroll = 0;
 }
 
 function hideInfoPanel() {
+  state.auraInfoOpen = false;
   state.infoPanelVisible = false;
   state.infoScroll = 0;
   state.infoScrollMax = 0;
@@ -3561,6 +3564,7 @@ function getAuraPanelBadges() {
 }
 
 function getSelectedAuraBadge() {
+  if (!state.auraInfoOpen) return null;
   const badges = getAuraPanelBadges();
   if (!badges.length) return null;
   return badges.find((badge) => badge.sourceId === state.selectedAuraSourceId) || badges[0];
@@ -5209,6 +5213,7 @@ function tryPlaceOnSlot(slot) {
       state.selectedCell = { c: slot.c, r: slot.r };
       state.selectedEnemyId = null;
       state.selectedAuraSourceId = null;
+      state.auraInfoOpen = false;
       state.infoScroll = 0;
       state.infoPanelVisible = existing.kind === "tower";
       return;
@@ -5227,6 +5232,7 @@ function tryPlaceOnSlot(slot) {
       state.selectedCell = { c: slot.c, r: slot.r };
       state.selectedEnemyId = null;
       state.selectedAuraSourceId = null;
+      state.auraInfoOpen = false;
       state.infoScroll = 0;
       state.infoPanelVisible = existing.kind === "tower";
     }
@@ -5238,6 +5244,7 @@ function tryPlaceOnSlot(slot) {
     state.selectedCell = { c: slot.c, r: slot.r };
     state.selectedEnemyId = null;
     state.selectedAuraSourceId = null;
+    state.auraInfoOpen = false;
     state.infoScroll = 0;
     state.infoPanelVisible = existing.kind === "tower";
     return;
@@ -5256,6 +5263,7 @@ function tryPlaceOnSlot(slot) {
     state.selectedCell = { c: mine.cellC, r: mine.cellR };
     state.selectedEnemyId = null;
     state.selectedAuraSourceId = null;
+    state.auraInfoOpen = false;
     state.infoScroll = 0;
     state.infoPanelVisible = false;
     advanceTutorialAfterPlacement("mine");
@@ -5297,6 +5305,7 @@ function tryPlaceOnSlot(slot) {
   state.selectedCell = { c: tower.cellC, r: tower.cellR };
   state.selectedEnemyId = null;
   state.selectedAuraSourceId = null;
+  state.auraInfoOpen = false;
   state.infoScroll = 0;
   state.infoPanelVisible = false;
   if (state.tutorial.active && mode === "simple" && ["after_mine_hint", "after_first_extra_tower"].includes(state.tutorial.step)) {
@@ -5450,6 +5459,7 @@ function handleTap(event) {
     if (state.selectedItemSlot === inventorySlot) {
       clearItemSelection();
     } else {
+      state.auraInfoOpen = false;
       state.selectedTowerItemTowerId = null;
       state.selectedItemSlot = inventorySlot;
       state.pendingItemTransfer = { source: "inventory", slotIndex: inventorySlot };
@@ -5469,6 +5479,7 @@ function handleTap(event) {
       if (sameSelected) {
         clearItemSelection();
       } else {
+        state.auraInfoOpen = false;
         state.selectedTowerItemTowerId = selectedTower.instanceId;
         state.selectedItemSlot = null;
         state.pendingItemTransfer = { source: "tower", towerInstanceId: selectedTower.instanceId };
@@ -5521,9 +5532,10 @@ function handleTap(event) {
 
   const auraBadge = findAuraBadgeAt(event.clientX, event.clientY);
   if (auraBadge) {
+    clearItemSelection();
+    state.auraInfoOpen = true;
     state.selectedAuraSourceId = auraBadge;
     state.selectedEnemyId = null;
-    clearItemSelection();
     state.infoScroll = 0;
     state.infoPanelVisible = true;
     draw();
@@ -5664,6 +5676,7 @@ function handleTap(event) {
       state.selectedEnemyId = hitEnemy.id;
       state.selectedCell = null;
       state.selectedAuraSourceId = null;
+      state.auraInfoOpen = false;
       state.infoScroll = 0;
       state.infoPanelVisible = true;
       draw();
@@ -5681,6 +5694,7 @@ function handleTap(event) {
       state.selectedCell = null;
       state.selectedEnemyId = null;
       state.selectedAuraSourceId = null;
+      state.auraInfoOpen = false;
       state.infoScroll = 0;
       state.moveMode = false;
     }
