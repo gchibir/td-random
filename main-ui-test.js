@@ -52,6 +52,8 @@ const TOWER_SPRITE_IDS = [
 const TOWER_SPRITE_PATHS = Object.fromEntries(
   TOWER_SPRITE_IDS.map((id) => [id, `/assets/towers/level6/${id}.png?v=${TOWER_SPRITE_VERSION}`])
 );
+const MINE_SPRITE_VERSION = "20260304a";
+const MINE_SPRITE_PATH = `/assets/towers/mine.png?v=${MINE_SPRITE_VERSION}`;
 
 let TOP_UI_OFFSET = BASE_TOP_UI_OFFSET;
 let STACK_TOP = 0;
@@ -114,6 +116,17 @@ function loadTowerSprites() {
 }
 
 const TOWER_SPRITES = loadTowerSprites();
+
+function loadMineSprite() {
+  const img = new Image();
+  img.src = MINE_SPRITE_PATH;
+  img.onload = () => {
+    if (typeof render === "function") render();
+  };
+  return img;
+}
+
+const MINE_SPRITE = loadMineSprite();
 
 function recalculateLayout() {
   STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
@@ -1803,10 +1816,10 @@ function getEmptyBuildCells() {
 
 function rollMysteryBagTowerLevel() {
   const entries = [
-    { level: 4, weight: 85 },
-    { level: 3, weight: 15 },
-    { level: 5, weight: 8 },
-    { level: 6, weight: 2 }
+    { level: 4, weight: 97 },
+    { level: 3, weight: 1.5 },
+    { level: 5, weight: 1 },
+    { level: 6, weight: 0.5 }
   ];
   const total = entries.reduce((sum, item) => sum + item.weight, 0);
   let roll = Math.random() * total;
@@ -3212,6 +3225,20 @@ function drawTowerImageSprite(tower) {
   return true;
 }
 
+function drawMineSprite(mine) {
+  const img = MINE_SPRITE;
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return false;
+
+  const maxSize = TILE - 6;
+  const scale = Math.min(maxSize / img.naturalWidth, maxSize / img.naturalHeight);
+  const drawW = Math.max(1, Math.round(img.naturalWidth * scale));
+  const drawH = Math.max(1, Math.round(img.naturalHeight * scale));
+  const drawX = Math.round(mine.x - drawW / 2);
+  const drawY = Math.round(mine.y - drawH / 2);
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  return true;
+}
+
 function drawSelection() {
   const selected = getSelectedStructure();
   if (!selected) return;
@@ -3265,15 +3292,17 @@ function drawTowers() {
 
   for (const tower of state.towers) {
     if (tower.kind === "mine") {
-      ctx.fillStyle = COLORS.mineShell;
-      ctx.fillRect(tower.x - 9, tower.y - 9, 18, 18);
-      ctx.strokeStyle = "#ffcf56";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(tower.x - 9, tower.y - 9, 18, 18);
-      ctx.fillStyle = COLORS.mineCore;
-      ctx.beginPath();
-      ctx.arc(tower.x, tower.y, 4.5, 0, Math.PI * 2);
-      ctx.fill();
+      if (!drawMineSprite(tower)) {
+        ctx.fillStyle = COLORS.mineShell;
+        ctx.fillRect(tower.x - 9, tower.y - 9, 18, 18);
+        ctx.strokeStyle = "#ffcf56";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(tower.x - 9, tower.y - 9, 18, 18);
+        ctx.fillStyle = COLORS.mineCore;
+        ctx.beginPath();
+        ctx.arc(tower.x, tower.y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
       continue;
     }
     drawTowerSprite(tower);

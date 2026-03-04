@@ -296,3 +296,8 @@ Update:
 - Applied cap at tower instantiation (`createTower`): any tower with configured attack range above 5 now attacks at 5 cells.
 - Aura radius remains independent and is not clamped by this change.
 - Synced change into main-ui-test.js.
+
+Update:
+- Switched mine visuals to image sprite loading from `/assets/towers/mine.png` with cache-busting query (`MINE_SPRITE_VERSION`).
+- Added `drawMineSprite` and wired mine rendering to use image first; legacy geometric mine drawing remains as fallback when image is unavailable.
+- Synced changes into main-ui-test.js.
