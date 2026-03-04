@@ -15,7 +15,7 @@ const LAYOUT = {
   gap: 6,
   auraH: 96,
   statsH: 48,
-  inventoryH: 154,
+  inventoryH: 124,
   controlH: 106
 };
 
@@ -3543,7 +3543,7 @@ function getTopHudMetricRects() {
 
 function getInventorySlotRects() {
   const gap = 6;
-  const slotSize = 72;
+  const slotSize = 54;
   const columns = 6;
   const rows = 2;
   const totalW = slotSize * columns + gap * (columns - 1);

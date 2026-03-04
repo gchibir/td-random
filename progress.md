@@ -263,3 +263,6 @@ Update:
 - Reduced the river to one lane and expanded the inventory to 12 slots laid out as 2 rows of 6 with larger cells.
 - Tightened random build odds for 170-silver and 1500-silver tower purchases.
 - Synced main-ui-test.js with main.js after these UI/probability changes.
+
+Update:
+- Reduced inventory slot size by 25% (72 -> 54) and tightened the inventory strip height to match.
