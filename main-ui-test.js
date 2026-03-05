@@ -354,6 +354,7 @@ function makeTower(spec) {
     mapBlastEvery: 0,
     mapBlastDamage: 0,
     mapBlastBossMultiplier: 1,
+    abilityAttackType: "",
     cannotKill: false,
     silverSplashChance: 0,
     silverSplashAttrBonus: 0,
@@ -424,21 +425,21 @@ const LEGEND_TOWERS = [
 ];
 
 const MYTHIC_TOWERS = [
-  makeTower({ id: "soul_reaper", family: "soul_reaper", level: 6, tier: "Уровень 6", name: "ЖНЕЦ ДУШ", attributeType: "Интеллект", attackType: "Магическая", pattern: "single", rangeCells: 6, cooldown: 0.7, baseDamage: 400, executeChance: 0.20, executeThreshold: 0.20, executeNonBossOnly: true, shotColor: "#c7e1ff", bodyColor: "#22364f", trimColor: "#f0f7ff", visual: "flare", talent: "20% шанс добить обычного врага ниже 20% HP.", description: "Точечная магия с казнью ослабленных целей." }),
-  makeTower({ id: "heaven_archon", family: "heaven_archon", level: 6, tier: "Уровень 6", name: "НЕБЕСНЫЙ АРХОНТ", attributeType: "Интеллект", attackType: "Магическая по области", pattern: "splash", rangeCells: 6, cooldown: 0.8, baseDamage: 250, splashRadiusCells: 2, beamChance: 0.25, beamMultiplier: 1.5, shotColor: "#fff2b8", bodyColor: "#675d1f", trimColor: "#fff8de", visual: "flare", talent: "25% шанс выпустить световой залп на 1.5x урона всем в радиусе.", description: "Сильный световой сплэш." }),
+  makeTower({ id: "soul_reaper", family: "soul_reaper", level: 6, tier: "Уровень 6", name: "ЖНЕЦ ДУШ", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 6, cooldown: 0.7, baseDamage: 400, executeChance: 0.20, executeThreshold: 0.20, executeNonBossOnly: true, abilityAttackType: "Магическая", shotColor: "#c7e1ff", bodyColor: "#22364f", trimColor: "#f0f7ff", visual: "flare", talent: "20% шанс добить обычного врага ниже 20% HP.", description: "Точечная магия с казнью ослабленных целей." }),
+  makeTower({ id: "heaven_archon", family: "heaven_archon", level: 6, tier: "Уровень 6", name: "НЕБЕСНЫЙ АРХОНТ", attributeType: "Сила", attackType: "Физическая по области", pattern: "splash", rangeCells: 6, cooldown: 0.8, baseDamage: 250, splashRadiusCells: 2, beamChance: 0.25, beamMultiplier: 1.5, abilityAttackType: "Магическая", shotColor: "#fff2b8", bodyColor: "#675d1f", trimColor: "#fff8de", visual: "flare", talent: "25% шанс выпустить световой залп на 1.5x урона всем в радиусе.", description: "Сильный световой сплэш." }),
   makeTower({ id: "time_keeper", family: "time_keeper", level: 6, tier: "Уровень 6", name: "ХРАНИТЕЛЬ ВРЕМЕНИ", attributeType: "Интеллект", attackType: "Магическая", pattern: "single", rangeCells: 5.5, cooldown: 1.5, baseDamage: 850, globalStunChance: 0.20, globalStunDuration: 1.5, shotColor: "#d8f4ff", bodyColor: "#2c6f7d", trimColor: "#ffffff", visual: "frost", talent: "20% шанс оглушить всех врагов в своем радиусе на 1.5 сек.", description: "Редкие, но чудовищно сильные выстрелы." }),
   makeTower({ id: "plague_master", family: "plague_master", level: 6, tier: "Уровень 6", name: "ПОВЕЛИТЕЛЬ ЧУМЫ", attributeType: "Интеллект", attackType: "Магическая", pattern: "poison", rangeCells: 4.5, cooldown: 0.6, baseDamage: 450, poisonDamage: 80, poisonDuration: 4, speedBurstChance: 0.30, speedBurstBoost: 0.80, speedBurstDuration: 3, shotColor: "#d7ff96", bodyColor: "#417d31", trimColor: "#fbffd8", visual: "toxin", talent: "30% шанс ускориться на 80% на 3 сек. Эффект стакается по времени.", description: "Ядовитый бешеный DPS." }),
   makeTower({ id: "thunderer", family: "thunderer", level: 6, tier: "Уровень 6", name: "ГРОМОВЕРЖЕЦ", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 6.5, cooldown: 0.6, baseDamage: 440, multiTargets: 7, chainFalloff: 0.20, specialShotEvery: 5, specialShotMultiplier: 2, specialShotStunDuration: 0.6, shotColor: "#fff4a0", bodyColor: "#8f7a16", trimColor: "#fffbd5", visual: "flare", talent: "Каждый 5-й выстрел: двойной урон и стан 0.6 сек.", description: "Стабильная цепь с сильным ритмом проков." }),
-  makeTower({ id: "small_but_strong", family: "small_but_strong", level: 6, tier: "Уровень 6", name: "Маленькая, но сильная", attributeType: "Интеллект", attackType: "Магическая", pattern: "single", rangeCells: 5, cooldown: 0.5, baseDamage: 420, mapProcChance: 0.10, mapProcPercentMaxHp: 0.045, shotColor: "#ffd5ef", bodyColor: "#7b3c66", trimColor: "#fff0fb", visual: "flare", talent: "10% шанс задеть всех врагов в радиусе на 4.5% от их макс HP.", description: "Компактная башня с редким массовым взрывом." }),
+  makeTower({ id: "small_but_strong", family: "small_but_strong", level: 6, tier: "Уровень 6", name: "Маленькая, но сильная", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 5, cooldown: 0.5, baseDamage: 420, mapProcChance: 0.10, mapProcPercentMaxHp: 0.045, abilityAttackType: "Магическая", shotColor: "#ffd5ef", bodyColor: "#7b3c66", trimColor: "#fff0fb", visual: "flare", talent: "10% шанс задеть всех врагов в радиусе на 4.5% от их макс HP.", description: "Компактная башня с редким массовым взрывом." }),
   makeTower({ id: "archiarcher", family: "archiarcher", level: 6, tier: "Уровень 6", name: "АРХИСТРЕЛОК", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 7, cooldown: 0.5, baseDamage: 190, critChance: 0.25, critMultiplier: 10, shotColor: "#f5e7c8", bodyColor: "#6e553d", trimColor: "#ffffff", visual: "ballista", talent: "25% шанс крита x10.", description: "Запредельные криты на дальнем радиусе." }),
   makeTower({ id: "anglosax", family: "anglosax", level: 6, tier: "Уровень 6", name: "Англосакс", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 6, cooldown: 1.2, baseDamage: 1200, cannotKill: true, shotColor: "#ffd08a", bodyColor: "#75411c", trimColor: "#fff1cb", visual: "spike", talent: "Не может убить: оставляет врага на 1 HP.", description: "Колоссальный удар для подготовки добивания." }),
   makeTower({ id: "money_doctor", family: "money_doctor", level: 6, tier: "Уровень 6", name: "Денежный доктор", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 4.5, cooldown: 0.4, baseDamage: 210, silverSplashChance: 0.30, silverSplashAttrBonus: 10, silverSplashSilverPerTarget: 5, splashTargetsMin: 1, splashTargetsMax: 10, shotColor: "#ffd36b", bodyColor: "#6b5b1f", trimColor: "#fff4bd", visual: "ballista", talent: "30% шанс задеть 1-10 целей и принести серебро.", description: "Экономический стрелок высокого тира." }),
   makeTower({ id: "flame_of_fate", family: "flame_of_fate", level: 6, tier: "Уровень 6", name: "ПЛАМЯ СУДЬБЫ", attributeType: "Интеллект", attackType: "Магическая", pattern: "all", rangeCells: 3.5, cooldown: 0.25, baseDamage: 120, stackingBurnDamage: 40, shotColor: "#ff9d5c", bodyColor: "#8a3f1d", trimColor: "#ffe2b8", visual: "flare", talent: "Бьет всех в радиусе и стакает горение по 40/сек за попадание.", description: "Частый массовый магический обжиг." }),
   makeTower({ id: "shadow_altar", family: "shadow_altar", level: 6, tier: "Уровень 6", name: "ТЕНЕВОЙ АЛТАРЬ", attributeType: "Интеллект", attackType: "Магическая", pattern: "single", rangeCells: 5, cooldown: 0.25, baseDamage: 100, mapProcChance: 0.05, mapProcDamage: 2500, shotColor: "#d9c6ff", bodyColor: "#452d72", trimColor: "#f4eeff", visual: "toxin", talent: "5% шанс нанести 2500 урона дополнительно.", description: "Очень частые удары с редким огромным проком." }),
-  makeTower({ id: "colossus", family: "colossus", level: 6, tier: "Уровень 6", name: "КОЛОСС", attributeType: "Сила", attackType: "Физическая по области", pattern: "splash", rangeCells: 4.5, cooldown: 1.6, baseDamage: 600, splashRadiusCells: 3, stunChance: 0.25, stunDuration: 1, shotColor: "#d9d9d9", bodyColor: "#5f5f68", trimColor: "#ffffff", visual: "mortar", talent: "25% шанс оглушить на 1 сек.", description: "Гигантский сплэш с мощным контролем." }),
+  makeTower({ id: "colossus", family: "colossus", level: 6, tier: "Уровень 6", name: "КОЛОСС", attributeType: "Сила", attackType: "Физическая по области", pattern: "splash", rangeCells: 4.5, cooldown: 1.6, baseDamage: 600, splashRadiusCells: 2.0, stunChance: 0.25, stunDuration: 1, shotColor: "#d9d9d9", bodyColor: "#5f5f68", trimColor: "#ffffff", visual: "mortar", talent: "25% шанс оглушить на 1 сек.", description: "Гигантский сплэш с мощным контролем." }),
   makeTower({ id: "heaven_oracle", family: "heaven_oracle", level: 6, tier: "Уровень 6", name: "НЕБЕСНЫЙ ОРАКУЛ", attributeType: "Интеллект", attackType: "Магическая", pattern: "single", rangeCells: 6, cooldown: 0.6, baseDamage: 160, auraCritChanceBoost: 0.15, tripleShotEvery: 3, shotColor: "#fff6bf", bodyColor: "#6f6427", trimColor: "#ffffff", visual: "flare", talent: "Союзникам +15% к шансу крита, каждая 3-я атака x3.", description: "Поддержка критов и ритмичный burst." }),
   makeTower({ id: "devourer", family: "devourer", level: 6, tier: "Уровень 6", name: "ПОГЛОТИТЕЛЬ", attributeType: "Интеллект", attackType: "Магическая", pattern: "single", rangeCells: 5, cooldown: 0.9, baseDamage: 240, killGainDamage: 5, killGainAuraShare: 0.5, auraFlatDamage: 0, auraDamageBoost: 0, rangeCellsAura: 5, shotColor: "#d1fffb", bodyColor: "#2b5c58", trimColor: "#f3ffff", visual: "toxin", talent: "За убийства постоянно растит свой урон и раздает половину прироста аурой.", description: "Снежный ком урона с поддержкой команды." }),
-  makeTower({ id: "star_judgment", family: "star_judgment", level: 6, tier: "Уровень 6", name: "ЗВЁЗДНЫЙ СУД", attributeType: "Интеллект", attackType: "Магическая по области", pattern: "splash", rangeCells: 6, cooldown: 0.7, baseDamage: 300, splashRadiusCells: 2.5, mapBlastEvery: 8, mapBlastDamage: 400, mapBlastBossMultiplier: 1.5, shotColor: "#ffdcae", bodyColor: "#6a5772", trimColor: "#fff4dd", visual: "flare", talent: "Каждая 8-я атака наносит 400 урона всем врагам на карте, по боссам +50%.", description: "Поздний глобальный массовый burst." })
+  makeTower({ id: "star_judgment", family: "star_judgment", level: 6, tier: "Уровень 6", name: "ЗВЁЗДНЫЙ СУД", attributeType: "Ловкость", attackType: "Физическая по области", pattern: "splash", rangeCells: 6, cooldown: 0.7, baseDamage: 300, splashRadiusCells: 2.0, mapBlastEvery: 8, mapBlastDamage: 400, mapBlastBossMultiplier: 1.5, abilityAttackType: "Магическая", shotColor: "#ffdcae", bodyColor: "#6a5772", trimColor: "#fff4dd", visual: "flare", talent: "Каждая 8-я атака наносит 400 урона всем врагам на карте, по боссам +50%.", description: "Поздний глобальный массовый burst." })
 ];
 
 const TOWER_POOLS = {
@@ -473,6 +474,8 @@ const TILE_SPEED = ENEMY_SPEED_CELLS * TILE;
 const TOOL_RE_ROLL_COST = 950;
 const TOOL_MOVE_COST = 100;
 const ITEM_PURCHASE_COST = 500;
+const MYSTERY_BAG_COST = 500;
+const MYSTERY_BAG_SHOP_LIMIT = 30;
 const ATTRIBUTE_UPGRADE_COST = 500;
 const BOSS_DEFS = [
   { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 240, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
@@ -571,8 +574,8 @@ const SHOP_ITEM_GROUPS = [
       level: 1,
       name: "Излучатель энергии",
       short: "Иэ",
-      description: "В радиусе 4 клеток увеличивает скорость атаки союзников на 10%.",
-      auraRangeCells: 4,
+      description: "В радиусе 4.5 клетки увеличивает скорость атаки союзников на 10%.",
+      auraRangeCells: 4.5,
       auraAttackSpeedBoost: 0.1,
       sellValue: 100
     },
@@ -582,8 +585,8 @@ const SHOP_ITEM_GROUPS = [
       level: 2,
       name: "Продвинутый излучатель энергии",
       short: "ИЭ",
-      description: "В радиусе 4 клеток увеличивает скорость атаки союзников на 20%.",
-      auraRangeCells: 4,
+      description: "В радиусе 4.5 клетки увеличивает скорость атаки союзников на 20%.",
+      auraRangeCells: 4.5,
       auraAttackSpeedBoost: 0.2,
       sellValue: 200
     }
@@ -623,7 +626,7 @@ const SHOP_ITEM_GROUPS = [
       level: 1,
       name: "Сфера порчи",
       short: "Сп",
-      description: "В радиусе 4.5 клетки увеличивает весь урон союзных башен на 10%.",
+      description: "В радиусе 4.5 клетки увеличивает получаемый монстрами урон (магический и физический) на 10%.",
       auraRangeCells: 4.5,
       auraDamageBoost: 0.1,
       sellValue: 100
@@ -634,7 +637,7 @@ const SHOP_ITEM_GROUPS = [
       level: 2,
       name: "Разлагающаяся сфера порчи",
       short: "СП",
-      description: "В радиусе 4.5 клетки увеличивает весь урон союзных башен на 20%.",
+      description: "В радиусе 4.5 клетки увеличивает получаемый монстрами урон (магический и физический) на 20%.",
       auraRangeCells: 4.5,
       auraDamageBoost: 0.2,
       sellValue: 200
@@ -685,6 +688,56 @@ const SHOP_ITEM_GROUPS = [
       description: "20% шанс нанести тройной урон.",
       critProcChance: 0.2,
       critProcMultiplier: 3,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "justice_hammer_1",
+      baseId: "justice_hammer",
+      level: 1,
+      name: "Молот правосудия",
+      short: "Мп",
+      description: "20% шанс нанести физический сплэш в радиусе 2 клеток от цели: урон + атрибут*10.",
+      justiceSplashChance: 0.2,
+      justiceSplashRadiusCells: 2,
+      justiceAttrScale: 10,
+      sellValue: 100
+    },
+    {
+      id: "justice_hammer_2",
+      baseId: "justice_hammer",
+      level: 2,
+      name: "Зачарованный молот правосудия",
+      short: "МП",
+      description: "20% шанс нанести физический сплэш в радиусе 2 клеток от цели: урон + атрибут*15.",
+      justiceSplashChance: 0.2,
+      justiceSplashRadiusCells: 2,
+      justiceAttrScale: 15,
+      sellValue: 200
+    }
+  ],
+  [
+    {
+      id: "rage_sword_1",
+      baseId: "rage_sword",
+      level: 1,
+      name: "Меч ярости",
+      short: "Мя",
+      description: "10% шанс нанести критический урон 300% сквозь броню.",
+      rageProcChance: 0.1,
+      rageCritMultiplier: 3,
+      sellValue: 100
+    },
+    {
+      id: "rage_sword_2",
+      baseId: "rage_sword",
+      level: 2,
+      name: "Окровавленный меч ярости",
+      short: "МЯ",
+      description: "10% шанс нанести критический урон 600% сквозь броню.",
+      rageProcChance: 0.1,
+      rageCritMultiplier: 6,
       sellValue: 200
     }
   ]
@@ -740,6 +793,7 @@ const state = {
   selectedAuraSourceId: null,
   auraInfoOpen: false,
   selectedShopItem: "boss1",
+  mysteryBagsBought: 0,
   selectedToolAction: null,
   attributeLevels: {
     "Сила": 1,
@@ -1328,6 +1382,7 @@ function createTower(cellC, cellR, towerDef) {
     mapBlastEvery: towerDef.mapBlastEvery || 0,
     mapBlastDamage: towerDef.mapBlastDamage || 0,
     mapBlastBossMultiplier: towerDef.mapBlastBossMultiplier || 1,
+    abilityAttackType: towerDef.abilityAttackType || "",
     cannotKill: !!towerDef.canKill ? false : !!towerDef.cannotKill,
     silverSplashChance: towerDef.silverSplashChance || 0,
     silverSplashAttrBonus: towerDef.silverSplashAttrBonus || 0,
@@ -1934,6 +1989,21 @@ function activateMysteryBagChoice(choiceId) {
   return consumed;
 }
 
+function canBuyMysteryBag() {
+  if (state.mysteryBagsBought >= MYSTERY_BAG_SHOP_LIMIT) return false;
+  if (state.silver < MYSTERY_BAG_COST) return false;
+  return state.inventory.some((slot) => slot === null);
+}
+
+function buyMysteryBag() {
+  if (!canBuyMysteryBag()) return false;
+  state.silver -= MYSTERY_BAG_COST;
+  state.mysteryBagsBought += 1;
+  addItemToInventory("mystery_bag");
+  clearItemSelection();
+  return true;
+}
+
 function buyRandomItem() {
   const slotIndex = state.inventory.findIndex((slot) => slot === null);
   if (slotIndex < 0) return false;
@@ -2335,6 +2405,21 @@ function dealTowerHit(enemy, tower, baseDamageOverride, options = {}) {
     killEnemy(enemy, tower);
   }
   return crit;
+}
+
+function dealArmorPiercingPhysicalHit(enemy, tower, rawDamage) {
+  if (!enemy || enemy.dead) return 0;
+  const effectivePhysicalResist = Math.max(0, (enemy.physicalResist || 0) - enemy.armorDebuffPercent);
+  let dealt = Math.max(1, rawDamage * (1 - effectivePhysicalResist));
+  if (tower.cannotKill && dealt >= enemy.hp) {
+    dealt = Math.max(0, enemy.hp - 1);
+  }
+  enemy.hp -= dealt;
+  addTowerDamage(tower, dealt);
+  if (enemy.hp <= 0) {
+    killEnemy(enemy, tower);
+  }
+  return dealt;
 }
 
 function applyBurn(enemy, tower) {
@@ -2741,6 +2826,11 @@ function updateTowers() {
     const globalStunTriggered = tower.globalStunChance && Math.random() < tower.globalStunChance;
     const mapProcTriggered = tower.mapProcChance && Math.random() < tower.mapProcChance;
     const mapBlastTriggered = tower.mapBlastEvery && tower.attackCounter % tower.mapBlastEvery === 0;
+    const abilityAttackType = tower.abilityAttackType || tower.attackType;
+    const abilityTower = tower.abilityAttackType ? { ...tower, attackType: tower.abilityAttackType } : tower;
+    const abilityMultiplier = getTowerAbilityMultiplier(tower, aura, {
+      magical: abilityAttackType.includes("Магическая")
+    });
 
     if (globalStunTriggered) {
       for (const entry of targets) {
@@ -2820,21 +2910,23 @@ function updateTowers() {
 
     if (tower.beamChance && beamTriggered) {
       for (const entry of targets) {
-        const crit = dealTowerHit(entry.enemy, tower, baseDamage * (tower.beamMultiplier || 1), { critChanceBonus: 0 });
+        const crit = dealTowerHit(entry.enemy, abilityTower, baseDamage * (tower.beamMultiplier || 1), {
+          critChanceBonus: 0
+        });
         addShot(tower.x, tower.y, entry.pos.x, entry.pos.y, "#fff7cf", tower.shotWidth + 0.6, crit);
       }
     }
 
     if (tower.mapProcChance && mapProcTriggered) {
-      const procDamage = (tower.mapProcDamage || 0) * getTowerAbilityMultiplier(tower);
+      const procDamage = (tower.mapProcDamage || 0) * abilityMultiplier;
       const pctDamage = tower.mapProcPercentMaxHp || 0;
       for (const entry of targets) {
         let extraDamage = procDamage;
         if (pctDamage > 0) {
-          extraDamage += entry.enemy.maxHp * pctDamage * getTowerAbilityMultiplier(tower);
+          extraDamage += entry.enemy.maxHp * pctDamage * abilityMultiplier;
         }
         if (extraDamage > 0) {
-          dealTowerHit(entry.enemy, tower, extraDamage, { critChanceBonus: 0 });
+          dealTowerHit(entry.enemy, abilityTower, extraDamage, { critChanceBonus: 0 });
           addShot(tower.x, tower.y, entry.pos.x, entry.pos.y, "#fff3c9", tower.shotWidth + 0.2, false);
         }
       }
@@ -2846,8 +2938,8 @@ function updateTowers() {
         const blastDamage =
           tower.mapBlastDamage *
           (enemy.isBoss ? tower.mapBlastBossMultiplier || 1 : 1) *
-          getTowerAbilityMultiplier(tower);
-        dealTowerHit(enemy, tower, blastDamage, { critChanceBonus: 0 });
+          abilityMultiplier;
+        dealTowerHit(enemy, abilityTower, blastDamage, { critChanceBonus: 0 });
       }
     }
 
@@ -2874,6 +2966,27 @@ function updateTowers() {
       const pendulumTower = { ...tower, attackType: "Физическая", critChance: 0 };
       dealTowerHit(primaryTarget, pendulumTower, itemDef.pendulumDamage + attrLevel * itemDef.pendulumAttrScale, { critChanceBonus: 0 });
       applyStun(primaryTarget, itemDef.pendulumStun || 0);
+    }
+    if (primaryTarget && !primaryTarget.dead && itemDef?.justiceSplashChance && Math.random() < itemDef.justiceSplashChance) {
+      const splashTower = { ...tower, attackType: "Физическая", critChance: 0 };
+      const splashRadius = (itemDef.justiceSplashRadiusCells || 0) * TILE;
+      const splashDamage = getTowerAttackDamage(tower, aura) + (tower.attributeLevel || 1) * (itemDef.justiceAttrScale || 0);
+      const centerPos = enemyPixel(primaryTarget);
+      for (const enemy of [...state.enemies]) {
+        if (enemy.dead) continue;
+        const pos = enemyPixel(enemy);
+        if (Math.hypot(pos.x - centerPos.x, pos.y - centerPos.y) > splashRadius) continue;
+        const crit = dealTowerHit(enemy, splashTower, splashDamage, { critChanceBonus: 0 });
+        addShot(tower.x, tower.y, pos.x, pos.y, "#ffdcb3", tower.shotWidth + 0.2, crit);
+      }
+    }
+    if (primaryTarget && itemDef?.rageProcChance && Math.random() < itemDef.rageProcChance) {
+      const rageDamage = getTowerAttackDamage(tower, aura) * (itemDef.rageCritMultiplier || 1);
+      const dealt = dealArmorPiercingPhysicalHit(primaryTarget, tower, rageDamage);
+      if (dealt > 0) {
+        const pos = enemyPixel(primaryTarget);
+        addShot(tower.x, tower.y, pos.x, pos.y, "#ffb3b3", Math.max(2.8, tower.shotWidth + 1), true);
+      }
     }
     if (itemDef?.chaosChance && Math.random() < itemDef.chaosChance) {
       const attrLevel = tower.attributeLevel || 1;
@@ -4946,16 +5059,32 @@ function getShopButtons() {
     });
   }
 
+  const pairW = size * 2 + gap;
+  const pairStartX = SHOP_X + Math.floor((SHOP_W - pairW) / 2);
+  const bagLeft = Math.max(0, MYSTERY_BAG_SHOP_LIMIT - state.mysteryBagsBought);
+  const hasInventorySpace = state.inventory.some((slot) => slot === null);
+  buttons.push({
+    id: "buy_bag",
+    x: pairStartX,
+    y: itemY,
+    w: size,
+    h: size,
+    title: "Мешок",
+    line1: `${MYSTERY_BAG_COST}`,
+    line2: bagLeft > 0 ? `${bagLeft} шт` : "лимит",
+    ready: hasInventorySpace && state.silver >= MYSTERY_BAG_COST && bagLeft > 0
+  });
+
   buttons.push({
     id: "buy_item",
-    x: SHOP_X + Math.floor((SHOP_W - size) / 2),
+    x: pairStartX + size + gap,
     y: itemY,
     w: size,
     h: size,
     title: "Предм.",
     line1: `${ITEM_PURCHASE_COST}`,
-    line2: state.inventory.some((slot) => slot === null) ? "рандом" : "нет места",
-    ready: state.inventory.some((slot) => slot === null) && state.silver >= ITEM_PURCHASE_COST
+    line2: hasInventorySpace ? "рандом" : "нет места",
+    ready: hasInventorySpace && state.silver >= ITEM_PURCHASE_COST
   });
 
   return buttons;
@@ -5254,7 +5383,7 @@ function drawEncyclopediaPanel(infoRect) {
   const isTowerTab = state.encyclopediaTab === "towers";
   const entries = isTowerTab
     ? ALL_TOWERS.map((tower) => ({ type: "tower", tower }))
-    : Object.values(ITEM_DEFS)
+    : Object.values(ITEM_BY_ID)
         .sort((a, b) => (a.level || 1) - (b.level || 1) || a.name.localeCompare(b.name, "ru"))
         .map((item) => ({ type: "item", item }));
 
@@ -6129,6 +6258,8 @@ function handleTap(event) {
       buyAttributeUpgrade("Ловкость");
     } else if (shopAction === "attr_intellect") {
       buyAttributeUpgrade("Интеллект");
+    } else if (shopAction === "buy_bag") {
+      buyMysteryBag();
     } else if (shopAction === "buy_item") {
       buyRandomItem();
     } else {

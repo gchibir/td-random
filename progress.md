@@ -344,3 +344,43 @@ Update:
 - Synced `main-ui-test.js` with `main.js`; syntax checks pass (`node --check`).
 - Follow-up fix: while menu overlays are open (including Encyclopedia), board drag/pan is now blocked to prevent accidental map movement during menu scrolling.
 - Attempted required Playwright run (`web_game_playwright_client.js`), but Chromium launch still fails in this environment with `MachPortRendezvousServer ... Permission denied`.
+
+Update:
+- Adjusted splash radii on two level-6 towers:
+  - `КОЛОСС`: `splashRadiusCells` 3.0 -> 2.0
+  - `ЗВЁЗДНЫЙ СУД`: `splashRadiusCells` 2.5 -> 2.0
+- Synced `main-ui-test.js` and validated syntax (`node --check`).
+
+Update:
+- Updated level-6 splash radii:
+  - `КОЛОСС`: 2.0
+  - `ЗВЁЗДНЫЙ СУД`: 2.0
+- Updated item tuning per latest spec:
+  - `Излучатель энергии` / `Продвинутый излучатель энергии`: aura radius changed to 4.5.
+  - `Сфера порчи` descriptions updated to reflect monster incoming-damage amplification (phys+mag); effect remains implemented through shared damage aura scaling.
+- Added two new item pairs:
+  - `Молот правосудия` / `Зачарованный молот правосудия`.
+  - `Меч ярости` / `Окровавленный меч ярости`.
+- Added combat logic for new items:
+  - Justice hammer proc: physical splash around primary target (radius 2 cells), damage = tower attack damage + attribute*scale.
+  - Rage sword proc: armor-piercing physical crit hit on primary target (x3/x6 from item tier), with dedicated shot feedback.
+- Added helper `dealArmorPiercingPhysicalHit()` for physical hits that bypass armor (still affected by physical resistance modifiers).
+- Added mystery bag shop stock mechanic:
+  - New constants: `MYSTERY_BAG_COST = 500`, `MYSTERY_BAG_SHOP_LIMIT = 30`.
+  - New state counter: `mysteryBagsBought`.
+  - New shop action/button: `buy_bag` with remaining stock display (`N шт` / `лимит`).
+  - Buying disabled once stock reaches 30.
+- Encyclopedia items tab now uses `ITEM_BY_ID` (shows all current shop items + base items), keeping encyclopedia synchronized with balance/content changes.
+- Synced `main-ui-test.js` with `main.js`; syntax checks pass (`node --check`).
+
+Update:
+- Level 6 tower role conversion applied per request:
+  - ЖНЕЦ ДУШ and НЕБЕСНЫЙ АРХОНТ: attribute changed to Сила, base attack changed to Физическая/Физическая по области.
+  - ЗВЁЗДНЫЙ СУД and Маленькая, но сильная: attribute changed to Ловкость, base attack changed to Физическая/Физическая по области.
+- Added `abilityAttackType` handling so special procs can use a separate damage school from base attacks.
+  - For towers with `abilityAttackType: "Магическая"`, beam/map proc/map blast now apply magical damage while basic shots remain physical.
+- Synced the same changes in `main-ui-test.js` so test/main logic stay aligned.
+- Validation:
+  - `node --check main.js` passed.
+  - `node --check main-ui-test.js` passed.
+  - Playwright run attempted via develop-web-game skill client, but Chromium launch failed in this environment (`MachPortRendezvousServer ... Permission denied`).
