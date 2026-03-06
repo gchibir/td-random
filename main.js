@@ -575,7 +575,6 @@ const START_LIVES = readNumber(WAVE_CONSTANTS.startLives, 20);
 const TILE_SPEED = ENEMY_SPEED_CELLS * TILE;
 const TOOL_RE_ROLL_COST = readNumber(WAVE_CONSTANTS.toolRerollCost, 950);
 const TOOL_MOVE_COST = readNumber(WAVE_CONSTANTS.toolMoveCost, 100);
-const ITEM_PURCHASE_COST = readNumber(WAVE_CONSTANTS.itemPurchaseCost, 500);
 const ITEM_BAG_COST = readNumber(WAVE_CONSTANTS.itemBagCost, readNumber(WAVE_CONSTANTS.mysteryBagCost, 500));
 const ITEM_BAG_SHOP_LIMIT = readNumber(WAVE_CONSTANTS.itemBagShopLimit, readNumber(WAVE_CONSTANTS.mysteryBagShopLimit, 30));
 const MYSTERY_BAG_DROP_LIMIT = readNumber(WAVE_CONSTANTS.mysteryBagDropLimit, 6);
@@ -2237,17 +2236,6 @@ function buyItemBag() {
   const slotIndex = state.inventory.findIndex((slot) => slot === null);
   if (slotIndex < 0) return false;
   state.inventory[slotIndex] = { itemId: rollRandomShopItemId() };
-  clearItemSelection();
-  return true;
-}
-
-function buyRandomItem() {
-  const slotIndex = state.inventory.findIndex((slot) => slot === null);
-  if (slotIndex < 0) return false;
-  if (state.silver < ITEM_PURCHASE_COST) return false;
-  state.silver -= ITEM_PURCHASE_COST;
-  const itemId = rollRandomShopItemId();
-  state.inventory[slotIndex] = { itemId };
   clearItemSelection();
   return true;
 }
@@ -5466,8 +5454,7 @@ function getShopButtons() {
     });
   }
 
-  const pairW = size * 2 + gap;
-  const pairStartX = SHOP_X + Math.floor((SHOP_W - pairW) / 2);
+  const pairStartX = SHOP_X + Math.floor((SHOP_W - size) / 2);
   const bagLeft = Math.max(0, ITEM_BAG_SHOP_LIMIT - state.itemBagsBought);
   const hasInventorySpace = state.inventory.some((slot) => slot === null);
   buttons.push({
@@ -5480,18 +5467,6 @@ function getShopButtons() {
     line1: `${ITEM_BAG_COST}`,
     line2: bagLeft > 0 ? `${bagLeft} шт` : "лимит",
     ready: hasInventorySpace && state.silver >= ITEM_BAG_COST && bagLeft > 0
-  });
-
-  buttons.push({
-    id: "buy_item",
-    x: pairStartX + size + gap,
-    y: itemY,
-    w: size,
-    h: size,
-    title: "Предм.",
-    line1: `${ITEM_PURCHASE_COST}`,
-    line2: hasInventorySpace ? "рандом" : "нет места",
-    ready: hasInventorySpace && state.silver >= ITEM_PURCHASE_COST
   });
 
   return buttons;
@@ -6853,8 +6828,6 @@ function handleTap(event) {
       buyAttributeUpgrade("Интеллект");
     } else if (shopAction === "buy_bag") {
       buyItemBag();
-    } else if (shopAction === "buy_item") {
-      buyRandomItem();
     } else {
       const bossDef = BOSS_DEFS.find((boss) => boss.id === shopAction);
       if (bossDef) buyBoss(bossDef);
