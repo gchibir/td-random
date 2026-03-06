@@ -511,3 +511,9 @@ Update:
 Update:
 - Increased level-1 sprite scale further by +10% (2.0 -> 2.2) in both main and ui-test builds.
 - Validation: `node --check main.js` and `node --check main-ui-test.js` passed.
+
+Update:
+- Added one-time camera zoom hint at game start (main + ui-test): map auto-zooms to 1.2x and returns to 1.0x to demonstrate pinch/zoom capability.
+- Implemented as `cameraZoomHint` state with smooth sine pulse over ~1.3s.
+- Hint starts on normal game start and is cancelled immediately if player touches the board.
+- Validation: `node --check main.js` and `node --check main-ui-test.js` passed.

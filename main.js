@@ -1057,7 +1057,13 @@ const state = {
     scroll: 0,
     scrollMax: 0
   },
-  camera: { zoom: 1, panX: 0, panY: 0 }
+  camera: { zoom: 1, panX: 0, panY: 0 },
+  cameraZoomHint: {
+    active: false,
+    elapsed: 0,
+    duration: 1.3,
+    maxZoom: 1.2
+  }
 };
 
 const pointerState = {
@@ -1521,6 +1527,40 @@ function screenToWorld(point) {
     x: BOARD_X + (point.x - BOARD_X - state.camera.panX) / state.camera.zoom,
     y: BOARD_Y + (point.y - BOARD_Y - state.camera.panY) / state.camera.zoom
   };
+}
+
+function stopCameraZoomHint(resetView = false) {
+  state.cameraZoomHint.active = false;
+  state.cameraZoomHint.elapsed = 0;
+  if (resetView) {
+    state.camera.zoom = 1;
+    state.camera.panX = 0;
+    state.camera.panY = 0;
+  }
+}
+
+function startCameraZoomHint() {
+  state.cameraZoomHint.active = true;
+  state.cameraZoomHint.elapsed = 0;
+  state.camera.zoom = 1;
+  state.camera.panX = 0;
+  state.camera.panY = 0;
+}
+
+function updateCameraZoomHint(dt) {
+  if (!state.cameraZoomHint.active) return;
+  state.cameraZoomHint.elapsed += dt;
+  const duration = Math.max(0.2, state.cameraZoomHint.duration || 1.3);
+  const t = Math.min(1, state.cameraZoomHint.elapsed / duration);
+  const wave = Math.sin(Math.PI * t);
+  const zoom = 1 + wave * Math.max(0, (state.cameraZoomHint.maxZoom || 1.2) - 1);
+  state.camera.zoom = zoom;
+  state.camera.panX = (BOARD_W - BOARD_W * zoom) / 2;
+  state.camera.panY = (BOARD_H - BOARD_H * zoom) / 2;
+  clampCamera();
+  if (t >= 1) {
+    stopCameraZoomHint(true);
+  }
 }
 
 function worldToScreen(x, y) {
@@ -3240,6 +3280,7 @@ function updateShots(dt) {
 
 function update(dt) {
   if (state.mode !== "running") return;
+  updateCameraZoomHint(dt);
   if (!state.paused) state.time += dt;
   updateTutorial(dt);
   if (state.paused) return;
@@ -4475,6 +4516,7 @@ function startNormalGame() {
   if (!state.started) {
     state.started = true;
     state.startCountdown = 5;
+    startCameraZoomHint();
   }
   state.selectedCell = null;
   state.selectedEnemyId = null;
@@ -7054,6 +7096,9 @@ canvas.addEventListener("pointerdown", (event) => {
     }
   }
   const point = getCanvasPoint(event.clientX, event.clientY);
+  if (state.cameraZoomHint.active && isPointInBoard(point)) {
+    stopCameraZoomHint(true);
+  }
   const insideInfoPanel = isPointInInfoPanel(point);
   const insideOverlayPopup = isPointInOverlayPopup(point);
   if (state.tutorial.active && isPointInTutorialModalBody(point)) {
