@@ -31,6 +31,15 @@ const UI_ICON_PATHS = {
   shop: "/assets/ui/bascet.png",
   tools: "/assets/ui/tools.png"
 };
+const MAP_TILE_PATHS = {
+  grass: [
+    "/assets/tiles/grass/grass_1.png",
+    "/assets/tiles/grass/grass_2.png",
+    "/assets/tiles/grass/grass_3.png"
+  ],
+  road: "/assets/tiles/road/road_1.png",
+  water: "/assets/tiles/water/water_1.jpeg"
+};
 const TOWER_SPRITE_VERSION = "20260303b";
 const TOWER_SPRITE_IDS = [
   "soul_reaper",
@@ -112,6 +121,25 @@ function loadUiIcons() {
 
 const UI_ICONS = loadUiIcons();
 
+function loadMapTiles() {
+  const loadOne = (src) => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      boardStaticCacheDirty = true;
+      if (typeof render === "function") render();
+    };
+    return img;
+  };
+  return {
+    grass: MAP_TILE_PATHS.grass.map((src) => loadOne(src)),
+    road: loadOne(MAP_TILE_PATHS.road),
+    water: loadOne(MAP_TILE_PATHS.water)
+  };
+}
+
+const MAP_TILES = loadMapTiles();
+
 function loadTowerSprites() {
   const sprites = {};
   for (const [id, src] of Object.entries(TOWER_SPRITE_PATHS)) {
@@ -137,6 +165,24 @@ function loadMineSprite() {
 }
 
 const MINE_SPRITE = loadMineSprite();
+
+function getGrassTileForCell(c, r) {
+  const pool = MAP_TILES.grass;
+  if (!pool?.length) return null;
+  const hash = ((c + 1) * 73856093) ^ ((r + 1) * 19349663);
+  const idx = Math.abs(hash) % pool.length;
+  return pool[idx];
+}
+
+function drawTileImage(renderCtx, img, x, y, size, fallbackFill) {
+  if (img && img.complete && img.naturalWidth && img.naturalHeight) {
+    renderCtx.drawImage(img, x, y, size, size);
+    return true;
+  }
+  renderCtx.fillStyle = fallbackFill;
+  renderCtx.fillRect(x, y, size, size);
+  return false;
+}
 
 function recalculateLayout() {
   STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
@@ -530,8 +576,9 @@ const TILE_SPEED = ENEMY_SPEED_CELLS * TILE;
 const TOOL_RE_ROLL_COST = readNumber(WAVE_CONSTANTS.toolRerollCost, 950);
 const TOOL_MOVE_COST = readNumber(WAVE_CONSTANTS.toolMoveCost, 100);
 const ITEM_PURCHASE_COST = readNumber(WAVE_CONSTANTS.itemPurchaseCost, 500);
-const MYSTERY_BAG_COST = readNumber(WAVE_CONSTANTS.mysteryBagCost, 500);
-const MYSTERY_BAG_SHOP_LIMIT = readNumber(WAVE_CONSTANTS.mysteryBagShopLimit, 30);
+const ITEM_BAG_COST = readNumber(WAVE_CONSTANTS.itemBagCost, readNumber(WAVE_CONSTANTS.mysteryBagCost, 500));
+const ITEM_BAG_SHOP_LIMIT = readNumber(WAVE_CONSTANTS.itemBagShopLimit, readNumber(WAVE_CONSTANTS.mysteryBagShopLimit, 30));
+const MYSTERY_BAG_DROP_LIMIT = readNumber(WAVE_CONSTANTS.mysteryBagDropLimit, 6);
 const ATTRIBUTE_UPGRADE_COST = readNumber(WAVE_CONSTANTS.attributeUpgradeCost, 500);
 const DEFAULT_BOSS_DEFS = [
   { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 240, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
@@ -958,7 +1005,8 @@ const state = {
   selectedAuraSourceId: null,
   auraInfoOpen: false,
   selectedShopItem: "boss1",
-  mysteryBagsBought: 0,
+  itemBagsBought: 0,
+  mysteryBagsDropped: 0,
   selectedToolAction: null,
   attributeLevels: {
     "Сила": 1,
@@ -2050,7 +2098,10 @@ function rollRandomShopItemId() {
 
 function maybeAwardMysteryBag(nextWave) {
   if (nextWave <= 0 || nextWave % 5 !== 0) return;
-  addItemToInventory("mystery_bag");
+  if (state.mysteryBagsDropped >= MYSTERY_BAG_DROP_LIMIT) return;
+  if (addItemToInventory("mystery_bag")) {
+    state.mysteryBagsDropped += 1;
+  }
 }
 
 function getEmptyBuildCells() {
@@ -2173,17 +2224,19 @@ function activateMysteryBagChoice(choiceId) {
   return consumed;
 }
 
-function canBuyMysteryBag() {
-  if (state.mysteryBagsBought >= MYSTERY_BAG_SHOP_LIMIT) return false;
-  if (state.silver < MYSTERY_BAG_COST) return false;
+function canBuyItemBag() {
+  if (state.itemBagsBought >= ITEM_BAG_SHOP_LIMIT) return false;
+  if (state.silver < ITEM_BAG_COST) return false;
   return state.inventory.some((slot) => slot === null);
 }
 
-function buyMysteryBag() {
-  if (!canBuyMysteryBag()) return false;
-  state.silver -= MYSTERY_BAG_COST;
-  state.mysteryBagsBought += 1;
-  addItemToInventory("mystery_bag");
+function buyItemBag() {
+  if (!canBuyItemBag()) return false;
+  state.silver -= ITEM_BAG_COST;
+  state.itemBagsBought += 1;
+  const slotIndex = state.inventory.findIndex((slot) => slot === null);
+  if (slotIndex < 0) return false;
+  state.inventory[slotIndex] = { itemId: rollRandomShopItemId() };
   clearItemSelection();
   return true;
 }
@@ -3353,19 +3406,27 @@ function ensureBoardStaticCache() {
 }
 
 function drawBoardStaticLayer(renderCtx) {
+  const prevSmoothing = renderCtx.imageSmoothingEnabled;
+  renderCtx.imageSmoothingEnabled = false;
+
   for (let r = 0; r < GRID_ROWS; r += 1) {
     for (let c = 0; c < GRID_COLS; c += 1) {
       const x = c * TILE;
       const y = r * TILE;
       const road = isRoad(c, r);
-      renderCtx.fillStyle = road ? COLORS.road : COLORS.build;
-      renderCtx.fillRect(x, y, TILE, TILE);
-      renderCtx.strokeStyle = road ? COLORS.roadStroke : COLORS.buildStroke;
+
+      if (road) {
+        drawTileImage(renderCtx, MAP_TILES.road, x, y, TILE, COLORS.road);
+      } else {
+        drawTileImage(renderCtx, getGrassTileForCell(c, r), x, y, TILE, COLORS.build);
+      }
+
+      renderCtx.strokeStyle = road ? "rgba(117, 122, 126, 0.34)" : "rgba(32, 88, 22, 0.26)";
       renderCtx.lineWidth = 1;
       renderCtx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
 
       if (!road) {
-        renderCtx.strokeStyle = COLORS.grid;
+        renderCtx.strokeStyle = "rgba(18, 80, 15, 0.25)";
         renderCtx.lineWidth = 1;
         renderCtx.beginPath();
         renderCtx.moveTo(x + TILE / 2, y + 4);
@@ -3425,9 +3486,15 @@ function drawBoardStaticLayer(renderCtx) {
   renderCtx.fillText("монстров", exitX, exitY + 2);
 
   const riverY = BOARD_H;
-  const riverW = BOARD_W;
-  const laneH = TILE;
-  fillRoundedRect(0, riverY, riverW, laneH, 6, "rgba(111, 209, 237, 0.72)", "rgba(201, 244, 255, 0.28)", renderCtx);
+  for (let c = 0; c < GRID_COLS; c += 1) {
+    const x = c * TILE;
+    drawTileImage(renderCtx, MAP_TILES.water, x, riverY, TILE, "rgba(111, 209, 237, 0.72)");
+    renderCtx.strokeStyle = "rgba(201, 244, 255, 0.20)";
+    renderCtx.lineWidth = 1;
+    renderCtx.strokeRect(x + 0.5, riverY + 0.5, TILE - 1, TILE - 1);
+  }
+
+  renderCtx.imageSmoothingEnabled = prevSmoothing;
 }
 
 function renderBoardStaticLayerIfNeeded() {
@@ -5401,7 +5468,7 @@ function getShopButtons() {
 
   const pairW = size * 2 + gap;
   const pairStartX = SHOP_X + Math.floor((SHOP_W - pairW) / 2);
-  const bagLeft = Math.max(0, MYSTERY_BAG_SHOP_LIMIT - state.mysteryBagsBought);
+  const bagLeft = Math.max(0, ITEM_BAG_SHOP_LIMIT - state.itemBagsBought);
   const hasInventorySpace = state.inventory.some((slot) => slot === null);
   buttons.push({
     id: "buy_bag",
@@ -5409,10 +5476,10 @@ function getShopButtons() {
     y: itemY,
     w: size,
     h: size,
-    title: "Мешок",
-    line1: `${MYSTERY_BAG_COST}`,
+    title: "Мешок предм.",
+    line1: `${ITEM_BAG_COST}`,
     line2: bagLeft > 0 ? `${bagLeft} шт` : "лимит",
-    ready: hasInventorySpace && state.silver >= MYSTERY_BAG_COST && bagLeft > 0
+    ready: hasInventorySpace && state.silver >= ITEM_BAG_COST && bagLeft > 0
   });
 
   buttons.push({
@@ -6785,7 +6852,7 @@ function handleTap(event) {
     } else if (shopAction === "attr_intellect") {
       buyAttributeUpgrade("Интеллект");
     } else if (shopAction === "buy_bag") {
-      buyMysteryBag();
+      buyItemBag();
     } else if (shopAction === "buy_item") {
       buyRandomItem();
     } else {

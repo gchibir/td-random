@@ -449,3 +449,36 @@ Update:
   - `node --check main.js` passed.
   - `node --check main-ui-test.js` passed.
   - Playwright run attempted via `develop-web-game` client, but still blocked by this environment’s Chromium launch restriction (`MachPortRendezvousServer ... Permission denied`).
+
+Update:
+- Test-only map skinning implemented in `/Users/chibir/Documents/TDRandom/main-ui-test.js`.
+- Added map tile loading for grass (variants 1-3), road, water, and portal from `/assets/tiles/...`.
+- Replaced static board coloring with tile-based rendering:
+  - green build cells now use deterministic mix of `grass_1..3`;
+  - road cells use `road_1`;
+  - water row uses `water_1` tiled by cell;
+  - spawn portal cell (`START_CELL`) now uses `portal_1` sprite.
+- Kept all gameplay logic unchanged and did not modify `main.js`.
+- Validation: `node --check main-ui-test.js` passed.
+
+Update:
+- Fixed portal in test build to be animated instead of static image:
+  - portal tile source switched to the actual existing file path (`portal_1 (фон удален).png`, URL-encoded);
+  - portal is now drawn in dynamic board pass (`drawAnimatedPortal`) with time-based pulse/glow/particles;
+  - static cache no longer bakes portal image, so animation is visible every frame.
+- Updated bag economy logic in both `main.js` and `main-ui-test.js`:
+  - shop `buy_bag` now means **item bag** (random item), with hard shop limit of 30;
+  - mystery bags are no longer sold in shop;
+  - mystery bags now drop only every 5 waves and at most 6 times per run.
+- Validation: `node --check main.js` and `node --check main-ui-test.js` passed.
+
+Update:
+- Removed portal tile/animation from test build (`main-ui-test.js`) per request; map now uses only grass/road/water tiles.
+- Ported tile-based map skin from test to main game (`main.js`):
+  - build cells use mixed grass tiles 1-3,
+  - road uses road tile,
+  - water row uses water tile.
+- Kept mystery bag/shop split logic in both builds:
+  - shop sells item bags (limit 30),
+  - mystery bags drop every 5 waves up to 6 total.
+- Validation: `node --check main.js` and `node --check main-ui-test.js` passed.
