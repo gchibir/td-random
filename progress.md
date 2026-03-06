@@ -437,3 +437,15 @@ Update:
   - `node --check main.js` passed.
   - `node --check main-ui-test.js` passed.
   - Playwright run attempted and still blocked in this environment by Chromium launch permissions (`MachPortRendezvousServer ... Permission denied`).
+
+Update:
+- Added encyclopedia and leaderboard as dedicated full-screen pause overlays:
+  - `Энциклопедия` now opens a full-screen panel with top tabs (`Башни` / `Предметы`), a large scrollable content area, and a fixed bottom `Назад` button.
+  - `Таблица лидеров` now opens a separate full-screen panel with a scrollable leaderboard list and a fixed bottom `Назад` button.
+- Added separate leaderboard scroll state/pointer handling (`leaderboardScroll`, `leaderboardScrollMax`) so drag scrolling works inside leaderboard content.
+- Updated pause-menu hit-testing so full-screen overlays block underlying menu/map clicks; only tab buttons and `Назад` are actionable there.
+- Synced `main-ui-test.js` from `main.js`.
+- Validation:
+  - `node --check main.js` passed.
+  - `node --check main-ui-test.js` passed.
+  - Playwright run attempted via `develop-web-game` client, but still blocked by this environment’s Chromium launch restriction (`MachPortRendezvousServer ... Permission denied`).

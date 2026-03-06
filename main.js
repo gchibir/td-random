@@ -990,6 +990,8 @@ const state = {
   bestWave: 1,
   leaderboard: [],
   leaderboardLoading: false,
+  leaderboardScroll: 0,
+  leaderboardScrollMax: 0,
   nextTowerInstanceId: 1,
   nextEnemyId: 1,
   time: 0,
@@ -1014,12 +1016,15 @@ const pointerState = {
   infoPointerId: null,
   tutorialPointerId: null,
   encyclopediaPointerId: null,
+  leaderboardPointerId: null,
   lastInfoY: 0,
   lastTutorialY: 0,
   lastEncyclopediaY: 0,
+  lastLeaderboardY: 0,
   infoMoved: false,
   tutorialMoved: false,
   encyclopediaMoved: false,
+  leaderboardMoved: false,
   pinchDistance: 0,
   lastX: 0,
   lastY: 0,
@@ -3284,6 +3289,24 @@ function countWrappedLines(text, maxWidth, font) {
   return Math.max(1, count);
 }
 
+function truncateToWidth(text, maxWidth, font) {
+  const source = String(text ?? "");
+  if (maxWidth <= 0 || !source) return "";
+  ctx.save();
+  ctx.font = font;
+  if (ctx.measureText(source).width <= maxWidth) {
+    ctx.restore();
+    return source;
+  }
+  const ellipsis = "…";
+  let out = source;
+  while (out.length > 0 && ctx.measureText(`${out}${ellipsis}`).width > maxWidth) {
+    out = out.slice(0, -1);
+  }
+  ctx.restore();
+  return `${out}${ellipsis}`;
+}
+
 function markRenderCachesDirty() {
   backgroundCacheDirty = true;
   boardStaticCacheDirty = true;
@@ -4259,6 +4282,31 @@ function isMenuOpen() {
   return state.mainMenuOpen || state.pauseMenuOpen;
 }
 
+function isPauseFullscreenPanel() {
+  return isMenuOpen() && (state.pausePanel === "encyclopedia" || state.pausePanel === "leaders");
+}
+
+function getPauseFullscreenPanelRect() {
+  if (!isPauseFullscreenPanel()) return null;
+  const x = 16;
+  const y = 54;
+  const w = canvas.width - 32;
+  const h = canvas.height - 108;
+  return { x, y, w, h };
+}
+
+function getPauseFullscreenBackButtonRect() {
+  const panel = getPauseFullscreenPanelRect();
+  if (!panel) return null;
+  const h = 50;
+  return {
+    x: panel.x + 16,
+    y: panel.y + panel.h - h - 14,
+    w: panel.w - 32,
+    h
+  };
+}
+
 function getPauseMenuLayout() {
   const menuX = 78;
   const menuY = 144;
@@ -4302,6 +4350,18 @@ function getMenuButtons() {
 
 function getEncyclopediaTabButtons() {
   if (!isMenuOpen() || state.pausePanel !== "encyclopedia") return [];
+  if (isPauseFullscreenPanel()) {
+    const panel = getPauseFullscreenPanelRect();
+    const inset = 16;
+    const gap = 10;
+    const tabY = panel.y + 56;
+    const tabW = Math.floor((panel.w - inset * 2 - gap) / 2);
+    const h = 40;
+    return [
+      { id: "towers", label: "Башни", x: panel.x + inset, y: tabY, w: tabW, h },
+      { id: "items", label: "Предметы", x: panel.x + inset + tabW + gap, y: tabY, w: tabW, h }
+    ];
+  }
   const info = getPauseInfoRect();
   const tabY = info.y + 12;
   const tabW = Math.floor((info.w - 20) / 2);
@@ -4313,6 +4373,17 @@ function getEncyclopediaTabButtons() {
 
 function getEncyclopediaContentRect() {
   if (!isMenuOpen() || state.pausePanel !== "encyclopedia") return null;
+  if (isPauseFullscreenPanel()) {
+    const panel = getPauseFullscreenPanelRect();
+    const back = getPauseFullscreenBackButtonRect();
+    const y = panel.y + 104;
+    return {
+      x: panel.x + 16,
+      y,
+      w: panel.w - 32,
+      h: Math.max(120, back.y - y - 12)
+    };
+  }
   const info = getPauseInfoRect();
   return {
     x: info.x + 10,
@@ -5774,8 +5845,172 @@ function drawEncyclopediaPanel(infoRect) {
   }
 }
 
+function getLeaderboardContentRect() {
+  if (!isMenuOpen() || state.pausePanel !== "leaders") return null;
+  if (isPauseFullscreenPanel()) {
+    const panel = getPauseFullscreenPanelRect();
+    const back = getPauseFullscreenBackButtonRect();
+    const y = panel.y + 64;
+    return {
+      x: panel.x + 16,
+      y,
+      w: panel.w - 32,
+      h: Math.max(120, back.y - y - 12)
+    };
+  }
+  const info = getPauseInfoRect();
+  return {
+    x: info.x + 10,
+    y: info.y + 42,
+    w: info.w - 20,
+    h: info.h - 52
+  };
+}
+
+function isPointInLeaderboardContent(point) {
+  return pointInRect(point, getLeaderboardContentRect());
+}
+
+function drawFullscreenLeaders(panelRect) {
+  const contentRect = getLeaderboardContentRect();
+  if (!contentRect) return;
+
+  fillRoundedRect(contentRect.x, contentRect.y, contentRect.w, contentRect.h, 12, "#1c3347", "rgba(255,255,255,0.08)");
+
+  if (state.leaderboardLoading) {
+    state.leaderboardScroll = 0;
+    state.leaderboardScrollMax = 0;
+    ctx.fillStyle = "#d6e6f4";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 18px Avenir Next";
+    ctx.fillText("Загрузка...", contentRect.x + contentRect.w / 2, contentRect.y + contentRect.h / 2);
+    return;
+  }
+
+  const entries = state.leaderboard.length
+    ? state.leaderboard
+    : [{
+        playerKey: getLeaderboardPlayerKey(),
+        name: state.nickname || "Player",
+        bestWave: state.bestWave,
+        bestExtraKills: state.extraKills
+      }];
+
+  state.leaderboardScroll = Math.max(0, Math.min(state.leaderboardScroll, state.leaderboardScrollMax));
+
+  const rowX = contentRect.x + 6;
+  const rowW = contentRect.w - 12;
+  const rowH = 54;
+  const rowGap = 8;
+  const rankW = 56;
+  const statW = 146;
+  let y = contentRect.y + 8 - state.leaderboardScroll;
+  let totalContentHeight = 0;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(contentRect.x, contentRect.y, contentRect.w, contentRect.h);
+  ctx.clip();
+
+  for (let i = 0; i < entries.length; i += 1) {
+    const entry = entries[i];
+    totalContentHeight += rowH + rowGap;
+    if (y + rowH < contentRect.y || y > contentRect.y + contentRect.h) {
+      y += rowH + rowGap;
+      continue;
+    }
+
+    fillRoundedRect(
+      rowX,
+      y,
+      rowW,
+      rowH,
+      10,
+      i === 0 ? "#3d5e31" : "#234158",
+      i === 0 ? "rgba(255,232,163,0.32)" : "rgba(255,255,255,0.08)"
+    );
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = i === 0 ? "#ffe8a3" : "#c6d8e8";
+    ctx.font = "bold 18px Avenir Next";
+    ctx.fillText(`#${i + 1}`, rowX + rankW / 2, y + rowH / 2 + 0.5);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#f4fbff";
+    ctx.font = "bold 17px Avenir Next";
+    const nameX = rowX + rankW + 8;
+    const maxNameW = Math.max(80, rowW - rankW - statW - 22);
+    const rawName = entry.name || "Игрок";
+    const name = truncateToWidth(rawName, maxNameW, "bold 17px Avenir Next");
+    ctx.fillText(name, nameX, y + rowH / 2 + 0.5);
+
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#dff1ff";
+    ctx.font = "16px Avenir Next";
+    ctx.fillText(
+      `${Math.max(0, Math.round(entry.bestWave || 0))}в • ${Math.max(0, Math.round(entry.bestExtraKills || 0))}э`,
+      rowX + rowW - 10,
+      y + rowH / 2 + 0.5
+    );
+
+    y += rowH + rowGap;
+  }
+
+  ctx.restore();
+
+  state.leaderboardScrollMax = Math.max(0, totalContentHeight - contentRect.h);
+  state.leaderboardScroll = Math.max(0, Math.min(state.leaderboardScroll, state.leaderboardScrollMax));
+
+  if (state.leaderboardScrollMax > 0) {
+    const trackX = panelRect.x + panelRect.w - 8;
+    const trackY = contentRect.y;
+    const trackH = contentRect.h;
+    fillRoundedRect(trackX, trackY, 3, trackH, 2, "rgba(255,255,255,0.1)");
+    const ratio = contentRect.h / (contentRect.h + state.leaderboardScrollMax);
+    const thumbH = Math.max(28, Math.round(trackH * ratio));
+    const thumbY = trackY + Math.round((trackH - thumbH) * (state.leaderboardScroll / state.leaderboardScrollMax));
+    fillRoundedRect(trackX - 1, thumbY, 5, thumbH, 3, "#d4a93d");
+  }
+}
+
+function drawPauseFullscreenPanel() {
+  const panelRect = getPauseFullscreenPanelRect();
+  if (!panelRect) return;
+
+  ctx.fillStyle = "rgba(6, 12, 19, 0.76)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  fillRoundedRect(panelRect.x, panelRect.y, panelRect.w, panelRect.h, 20, "#1a2f44", "rgba(255,255,255,0.14)");
+
+  const title = state.pausePanel === "encyclopedia" ? "Энциклопедия" : "Таблица лидеров";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 28px Avenir Next";
+  ctx.fillText(title, panelRect.x + 16, panelRect.y + 14);
+
+  if (state.pausePanel === "encyclopedia") {
+    drawEncyclopediaPanel(panelRect);
+  } else {
+    drawFullscreenLeaders(panelRect);
+  }
+
+  const backRect = getPauseFullscreenBackButtonRect();
+  fillRoundedRect(backRect.x, backRect.y, backRect.w, backRect.h, 12, "#2b4459", "rgba(255,255,255,0.14)");
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 20px Avenir Next";
+  ctx.fillText("Назад", backRect.x + backRect.w / 2, backRect.y + backRect.h / 2 + 0.5);
+}
+
 function drawPauseMenu() {
   if (!isMenuOpen()) return;
+  if (isPauseFullscreenPanel()) {
+    drawPauseFullscreenPanel();
+    return;
+  }
   ctx.fillStyle = "rgba(6, 12, 19, 0.68)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -6165,6 +6400,13 @@ function findToolsActionAt(clientX, clientY) {
 function findPauseMenuActionAt(clientX, clientY) {
   if (!isMenuOpen()) return null;
   const point = getCanvasPoint(clientX, clientY);
+  if (isPauseFullscreenPanel()) {
+    const backRect = getPauseFullscreenBackButtonRect();
+    if (pointInRect(point, backRect)) {
+      return "back_pause_panel";
+    }
+    return null;
+  }
   for (const button of getMenuButtons()) {
     if (
       point.x >= button.x &&
@@ -6179,6 +6421,7 @@ function findPauseMenuActionAt(clientX, clientY) {
 }
 
 function findEncyclopediaTabAt(clientX, clientY) {
+  if (!isPauseFullscreenPanel() && state.pausePanel !== "encyclopedia") return null;
   const point = getCanvasPoint(clientX, clientY);
   for (const tab of getEncyclopediaTabButtons()) {
     if (
@@ -6372,7 +6615,13 @@ function handleTap(event) {
   const menuAction = findPauseMenuActionAt(event.clientX, event.clientY);
   if (menuAction) {
     hideInfoPanel();
-    if (menuAction === "primary") {
+    if (menuAction === "back_pause_panel") {
+      state.pausePanel = "settings";
+      state.encyclopediaScroll = 0;
+      state.encyclopediaScrollMax = 0;
+      state.leaderboardScroll = 0;
+      state.leaderboardScrollMax = 0;
+    } else if (menuAction === "primary") {
       if (!state.nickname) {
         const nickname = ensureNickname();
         if (!nickname) {
@@ -6407,6 +6656,8 @@ function handleTap(event) {
     } else if (menuAction === "leaders") {
       syncLeaderboardEntry();
       state.pausePanel = "leaders";
+      state.leaderboardScroll = 0;
+      state.leaderboardScrollMax = 0;
       void refreshLeaderboardFromServer();
     } else if (menuAction === "encyclopedia") {
       state.pausePanel = "encyclopedia";
@@ -6772,6 +7023,11 @@ canvas.addEventListener("pointerdown", (event) => {
     pointerState.lastEncyclopediaY = point.y;
     pointerState.encyclopediaMoved = false;
   }
+  if (isMenuOpen() && state.pausePanel === "leaders" && isPointInLeaderboardContent(point)) {
+    pointerState.leaderboardPointerId = event.pointerId;
+    pointerState.lastLeaderboardY = point.y;
+    pointerState.leaderboardMoved = false;
+  }
   if (insideInfoPanel) {
     pointerState.infoPointerId = event.pointerId;
     pointerState.lastInfoY = point.y;
@@ -6843,6 +7099,15 @@ canvas.addEventListener("pointermove", (event) => {
     }
     pointerState.lastEncyclopediaY = point.y;
   }
+  if (pointerState.leaderboardPointerId === event.pointerId) {
+    const dy = point.y - pointerState.lastLeaderboardY;
+    if (Math.abs(dy) > 2) {
+      pointerState.leaderboardMoved = true;
+      state.leaderboardScroll = Math.max(0, Math.min(state.leaderboardScrollMax, state.leaderboardScroll - dy));
+      draw();
+    }
+    pointerState.lastLeaderboardY = point.y;
+  }
 
   const activeBoardPointers = getActiveBoardPointers();
   if (activeBoardPointers.length >= 2) {
@@ -6897,6 +7162,8 @@ function finishPointer(event) {
   const blockedByTutorial = pointerState.tutorialPointerId === event.pointerId && pointerState.tutorialMoved;
   const blockedByEncyclopedia =
     pointerState.encyclopediaPointerId === event.pointerId && pointerState.encyclopediaMoved;
+  const blockedByLeaderboard =
+    pointerState.leaderboardPointerId === event.pointerId && pointerState.leaderboardMoved;
   const shouldTap = tapPointerId === event.pointerId && !pointerState.moved;
   pointerState.pointers.delete(event.pointerId);
 
@@ -6911,6 +7178,10 @@ function finishPointer(event) {
   if (pointerState.encyclopediaPointerId === event.pointerId) {
     pointerState.encyclopediaPointerId = null;
     pointerState.encyclopediaMoved = false;
+  }
+  if (pointerState.leaderboardPointerId === event.pointerId) {
+    pointerState.leaderboardPointerId = null;
+    pointerState.leaderboardMoved = false;
   }
 
   const activeBoardPointers = getActiveBoardPointers();
@@ -6932,7 +7203,7 @@ function finishPointer(event) {
     pointerState.board = false;
   }
 
-  if (shouldTap && !blockedByInfo && !blockedByTutorial && !blockedByEncyclopedia) {
+  if (shouldTap && !blockedByInfo && !blockedByTutorial && !blockedByEncyclopedia && !blockedByLeaderboard) {
     handleTap({ clientX: pointer.startClientX, clientY: pointer.startClientY });
   }
 }
