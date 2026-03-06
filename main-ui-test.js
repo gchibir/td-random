@@ -127,7 +127,7 @@ function loadMapTiles() {
     img.src = src;
     img.onload = () => {
       boardStaticCacheDirty = true;
-      if (typeof render === "function") render();
+      if (typeof draw === "function") draw();
     };
     return img;
   };
