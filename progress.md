@@ -384,3 +384,56 @@ Update:
   - `node --check main.js` passed.
   - `node --check main-ui-test.js` passed.
   - Playwright run attempted via develop-web-game skill client, but Chromium launch failed in this environment (`MachPortRendezvousServer ... Permission denied`).
+
+Update:
+- Introduced external balance data sources and generation pipeline:
+  - `data/towers.balance.json`
+  - `data/items.balance.json`
+  - `data/waves.balance.json`
+  - generated runtime bundle `data/balance-config.js`
+- Added tooling scripts:
+  - `scripts/generate-balance-json.mjs` (extracts current balance data from `main.js` into JSON files)
+  - `scripts/build-balance-config.mjs` (builds `window.TD_BALANCE_CONFIG` bundle from JSON)
+  - package scripts:
+    - `npm run sync:balance`
+    - `npm run build:balance`
+- Updated HTML entrypoints to load external balance bundle before game logic:
+  - `index.html`
+  - `index-ui-test.html`
+- Refactored `main.js` to read balance from config (with safe fallbacks) without touching core combat mechanics:
+  - tower costs / wave constants / economy constants now sourced from `WAVE_CONSTANTS`
+  - boss defs and sell values configurable from `waves.balance.json`
+  - tower per-id balance overrides applied from `towers.balance.json`
+  - item per-id balance overrides applied from `items.balance.json`
+  - moved wave formulas into config-driven objects:
+    - wave hp/armor growth
+    - wave magic resist brackets
+    - nugget price formula
+    - regular/bonus creep silver rewards
+    - endless thresholds and modifiers
+    - random roll chances (build rolls, bag rolls, shop tier-2 item chance)
+  - replaced hardcoded wave-threshold literals (`30`, `250`, `500`, `850`) in core flow with config-driven values.
+- Synced `main-ui-test.js` from updated `main.js`.
+- Validation:
+  - `node --check main.js` passed
+  - `node --check main-ui-test.js` passed
+  - `npm run sync:balance` passed
+  - Playwright run attempted via develop-web-game skill, but Chromium launch is blocked in this environment (`MachPortRendezvousServer ... Permission denied`).
+
+TODO / next:
+- If you change any JSON in `data/*.balance.json`, run `npm run build:balance` (or `npm run sync:balance`) before deploy.
+- Consider adding a CI check that regenerates `data/balance-config.js` and fails if it is out of sync with JSON.
+
+Update:
+- Performance optimization pass for iPhone heat/battery issues:
+  - Added hard frame cap to 60 FPS (`TARGET_FPS`, `FRAME_TIME_MS`) in main loop.
+  - Added render skip on hidden tab and conditional continuous rendering (`shouldRenderContinuously`) to avoid drawing static frames repeatedly.
+  - Removed all Canvas shadow blur/glow usage (`shadowBlur`/`shadowColor`) to cut GPU-heavy effects.
+  - Implemented background render cache (offscreen canvas): gradient/page/frame now rendered once and reused.
+  - Implemented static board render cache (offscreen canvas): grid/roads/turn markers/map labels/river rendered once and reused each frame.
+  - Runtime board rendering now draws cached static layer + dynamic entities only (selection, towers, shots, enemies, hover).
+- Synced `main-ui-test.js` from optimized `main.js`.
+- Validation:
+  - `node --check main.js` passed.
+  - `node --check main-ui-test.js` passed.
+  - Playwright run attempted and still blocked in this environment by Chromium launch permissions (`MachPortRendezvousServer ... Permission denied`).

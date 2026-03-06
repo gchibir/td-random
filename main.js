@@ -87,6 +87,16 @@ let SHOP_H = 340;
 let SHOP_X = 0;
 let SHOP_Y = 0;
 
+const TARGET_FPS = 60;
+const FRAME_TIME_MS = 1000 / TARGET_FPS;
+
+let backgroundCacheCanvas = null;
+let backgroundCacheCtx = null;
+let backgroundCacheDirty = true;
+let boardStaticCacheCanvas = null;
+let boardStaticCacheCtx = null;
+let boardStaticCacheDirty = true;
+
 function loadUiIcons() {
   const icons = {};
   for (const [id, src] of Object.entries(UI_ICON_PATHS)) {
@@ -157,6 +167,7 @@ function recalculateLayout() {
   SHOP_W = 248;
   SHOP_X = canvas.width - LAYOUT.padding - SHOP_W;
   SHOP_Y = CONTROL_Y - SHOP_H - 10;
+  markRenderCachesDirty();
 }
 
 function getTelegramInsetTopCanvasPx() {
@@ -297,9 +308,36 @@ const TURN_MARKERS = [
   { c: 1, r: 7, ax: 0.18, ay: 0.18, bx: 0.18, by: 0.82, cx: 0.82, cy: 0.82 }
 ];
 
-const SIMPLE_TOWER_COST = 170;
-const MASTER_TOWER_COST = 1500;
-const MAX_TOWER_ATTACK_RANGE_CELLS = 5;
+const BALANCE_CONFIG = window.TD_BALANCE_CONFIG || {};
+const TOWER_BALANCE_CONFIG = BALANCE_CONFIG.towers || {};
+const ITEM_BALANCE_CONFIG = BALANCE_CONFIG.items || {};
+const WAVE_BALANCE_CONFIG = BALANCE_CONFIG.waves || {};
+const WAVE_CONSTANTS = WAVE_BALANCE_CONFIG.constants || {};
+const WAVE_FORMULAS = WAVE_BALANCE_CONFIG.formulas || {};
+
+function deepCloneJson(value, fallback) {
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return fallback;
+  }
+}
+
+function readNumber(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function readObject(value, fallback) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : fallback;
+}
+
+function readArray(value, fallback = []) {
+  return Array.isArray(value) ? value : fallback;
+}
+
+const SIMPLE_TOWER_COST = readNumber(WAVE_CONSTANTS.simpleTowerCost, 170);
+const MASTER_TOWER_COST = readNumber(WAVE_CONSTANTS.masterTowerCost, 1500);
+const MAX_TOWER_ATTACK_RANGE_CELLS = readNumber(WAVE_CONSTANTS.maxTowerAttackRangeCells, 5);
 function makeTower(spec) {
   return {
     cost: 0,
@@ -374,6 +412,22 @@ function makeTower(spec) {
   };
 }
 
+function applyTowerBalanceConfig(levelPools) {
+  const byId = readObject(TOWER_BALANCE_CONFIG.byId, null);
+  if (!byId) return;
+  const lookup = new Map();
+  for (const pool of levelPools) {
+    for (const tower of pool) {
+      lookup.set(tower.id, tower);
+    }
+  }
+  for (const [towerId, patch] of Object.entries(byId)) {
+    const tower = lookup.get(towerId);
+    if (!tower || !patch || typeof patch !== "object") continue;
+    Object.assign(tower, patch);
+  }
+}
+
 const SIMPLE_TOWERS = [
   makeTower({ id: "peasant", family: "peasant", level: 1, tier: "Уровень 1", name: "Крестьянин", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 3, cooldown: 1.1, baseDamage: 22, cost: SIMPLE_TOWER_COST, shotColor: "#b68d5e", bodyColor: "#7a5a38", trimColor: "#e8d3b0", visual: "spike", talent: "Простой силовой урон без эффектов.", description: "Надежная стартовая башня ближнего радиуса." }),
   makeTower({ id: "archer", family: "archer", level: 1, tier: "Уровень 1", name: "Лучник", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 4.5, cooldown: 0.4, baseDamage: 14, cost: SIMPLE_TOWER_COST, shotColor: "#d7c092", bodyColor: "#6d5844", trimColor: "#f4e7c4", visual: "ballista", talent: "Очень частые выстрелы.", description: "Быстрый ранний снайпер по одиночной цели." }),
@@ -442,6 +496,8 @@ const MYTHIC_TOWERS = [
   makeTower({ id: "star_judgment", family: "star_judgment", level: 6, tier: "Уровень 6", name: "ЗВЁЗДНЫЙ СУД", attributeType: "Ловкость", attackType: "Физическая по области", pattern: "splash", rangeCells: 6, cooldown: 0.7, baseDamage: 300, splashRadiusCells: 2.0, mapBlastEvery: 8, mapBlastDamage: 400, mapBlastBossMultiplier: 1.5, abilityAttackType: "Магическая", shotColor: "#ffdcae", bodyColor: "#6a5772", trimColor: "#fff4dd", visual: "flare", talent: "Каждая 8-я атака наносит 400 урона всем врагам на карте, по боссам +50%.", description: "Поздний глобальный массовый burst." })
 ];
 
+applyTowerBalanceConfig([SIMPLE_TOWERS, ADVANCED_TOWERS, MASTER_TOWERS, EXPERT_TOWERS, LEGEND_TOWERS, MYTHIC_TOWERS]);
+
 const TOWER_POOLS = {
   1: SIMPLE_TOWERS,
   2: ADVANCED_TOWERS,
@@ -453,7 +509,7 @@ const TOWER_POOLS = {
 
 const ALL_TOWERS = [...SIMPLE_TOWERS, ...ADVANCED_TOWERS, ...MASTER_TOWERS, ...EXPERT_TOWERS, ...LEGEND_TOWERS, ...MYTHIC_TOWERS];
 const TOWER_BY_ID = Object.fromEntries(ALL_TOWERS.map((tower) => [tower.id, tower]));
-const START_SILVER = SIMPLE_TOWERS[0].cost * 4;
+const START_SILVER = readNumber(WAVE_CONSTANTS.startSilver, SIMPLE_TOWERS[0].cost * 4);
 
 const MINE_DEF = {
   name: "Шахта",
@@ -463,27 +519,36 @@ const MINE_DEF = {
   talent: "Живет 2 раунда, затем рушится."
 };
 
-const ENEMIES_PER_WAVE = 20;
-const ENEMY_SPEED_CELLS = 1.2825;
-const SPAWN_INTERVAL = 0.7;
-const WAVE_BREAK = 2.0;
-const ROUND_DURATION = 50;
-const ENDLESS_START_DELAY = 5;
-const START_LIVES = 20;
+const ENEMIES_PER_WAVE = readNumber(WAVE_CONSTANTS.enemiesPerWave, 20);
+const ENEMY_SPEED_CELLS = readNumber(WAVE_CONSTANTS.enemySpeedCells, 1.2825);
+const SPAWN_INTERVAL = readNumber(WAVE_CONSTANTS.spawnInterval, 0.7);
+const WAVE_BREAK = readNumber(WAVE_CONSTANTS.waveBreak, 2.0);
+const ROUND_DURATION = readNumber(WAVE_CONSTANTS.roundDuration, 50);
+const ENDLESS_START_DELAY = readNumber(WAVE_CONSTANTS.endlessStartDelay, 5);
+const START_LIVES = readNumber(WAVE_CONSTANTS.startLives, 20);
 const TILE_SPEED = ENEMY_SPEED_CELLS * TILE;
-const TOOL_RE_ROLL_COST = 950;
-const TOOL_MOVE_COST = 100;
-const ITEM_PURCHASE_COST = 500;
-const MYSTERY_BAG_COST = 500;
-const MYSTERY_BAG_SHOP_LIMIT = 30;
-const ATTRIBUTE_UPGRADE_COST = 500;
-const BOSS_DEFS = [
+const TOOL_RE_ROLL_COST = readNumber(WAVE_CONSTANTS.toolRerollCost, 950);
+const TOOL_MOVE_COST = readNumber(WAVE_CONSTANTS.toolMoveCost, 100);
+const ITEM_PURCHASE_COST = readNumber(WAVE_CONSTANTS.itemPurchaseCost, 500);
+const MYSTERY_BAG_COST = readNumber(WAVE_CONSTANTS.mysteryBagCost, 500);
+const MYSTERY_BAG_SHOP_LIMIT = readNumber(WAVE_CONSTANTS.mysteryBagShopLimit, 30);
+const ATTRIBUTE_UPGRADE_COST = readNumber(WAVE_CONSTANTS.attributeUpgradeCost, 500);
+const DEFAULT_BOSS_DEFS = [
   { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 240, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
   { id: "boss2", name: "Босс 2", hp: 15000, armor: 15, magicResist: 0.35, cost: 150, cooldown: 240, maxBuys: 4, rewardMines: 4, castleDamage: 5, color: "#7c2d12" },
   { id: "boss3", name: "Босс 3", hp: 25000, armor: 20, magicResist: 0.45, cost: 220, cooldown: 240, maxBuys: 4, rewardMines: 8, castleDamage: 5, color: "#4c1d95" }
 ];
-const TOWER_SELL_VALUES = { 1: 75, 2: 170, 3: 340, 4: 680, 5: 1360, 6: 2720 };
-const INVENTORY_SLOT_COUNT = 12;
+const BOSS_DEFS = deepCloneJson(readArray(WAVE_BALANCE_CONFIG.bosses, DEFAULT_BOSS_DEFS), DEFAULT_BOSS_DEFS);
+const TOWER_SELL_VALUES = {
+  1: 75,
+  2: 170,
+  3: 340,
+  4: 680,
+  5: 1360,
+  6: 2720,
+  ...readObject(WAVE_BALANCE_CONFIG.towerSellValues, {})
+};
+const INVENTORY_SLOT_COUNT = readNumber(WAVE_CONSTANTS.inventorySlotCount, 12);
 const ITEM_DEFS = {
   mystery_bag: {
     id: "mystery_bag",
@@ -742,11 +807,111 @@ const SHOP_ITEM_GROUPS = [
     }
   ]
 ];
+
+function applyItemBalanceConfig(itemGroups) {
+  const byId = readObject(ITEM_BALANCE_CONFIG.byId, null);
+  if (!byId) return;
+  for (const group of itemGroups) {
+    for (const item of group) {
+      const patch = byId[item.id];
+      if (!patch || typeof patch !== "object") continue;
+      Object.assign(item, patch);
+    }
+  }
+}
+
+applyItemBalanceConfig(SHOP_ITEM_GROUPS);
+
 const ALL_SHOP_ITEMS = SHOP_ITEM_GROUPS.flat();
 const ITEM_BY_ID = Object.fromEntries([
   ...Object.values(ITEM_DEFS).map((item) => [item.id, item]),
   ...ALL_SHOP_ITEMS.map((item) => [item.id, item])
 ]);
+
+const WAVE_STATS_FORMULA = {
+  earlyCapWave: 5,
+  baseHp: 90,
+  earlyHpPerWave: 32,
+  baseArmor: 4,
+  earlyArmorPerWave: 1.6,
+  lateHpPerWave: 56,
+  lateArmorPerWave: 2.6,
+  ...readObject(WAVE_FORMULAS.waveStats, {})
+};
+
+const DEFAULT_MAGIC_RESIST_BRACKETS = [
+  { fromWave: 1, resist: 0.2 },
+  { fromWave: 5, resist: 0.25 },
+  { fromWave: 10, resist: 0.3 },
+  { fromWave: 15, resist: 0.35 },
+  { fromWave: 20, resist: 0.4 },
+  { fromWave: 25, resist: 0.45 }
+];
+
+const MAGIC_RESIST_BRACKETS = deepCloneJson(
+  readArray(WAVE_FORMULAS.magicResistBrackets, DEFAULT_MAGIC_RESIST_BRACKETS),
+  DEFAULT_MAGIC_RESIST_BRACKETS
+).sort((a, b) => (a.fromWave || 0) - (b.fromWave || 0));
+
+const NUGGET_PRICE_FORMULA = {
+  minBase: 50,
+  maxBase: 100,
+  perWave: 2,
+  maxCap: 160,
+  ...readObject(WAVE_FORMULAS.nuggetPrice, {})
+};
+
+const REWARD_SILVER_FORMULA = {
+  regularCap: 30,
+  bonusBase: 75,
+  bonusPerWave: 35,
+  ...readObject(WAVE_FORMULAS.rewardSilver, {})
+};
+
+const ENDLESS_FORMULA = {
+  speedBoostFromExtraWave: 850,
+  speedBoostMultiplier: 1.25,
+  magicResistFromExtraWave: 250,
+  magicResistValue: 0.9,
+  physicalResistFromExtraWave: 500,
+  physicalResistValue: 0.9,
+  baseWaveForExtra: 30,
+  minesStopWave: 30,
+  ...readObject(WAVE_FORMULAS.endless, {})
+};
+
+const RANDOM_ROLL_FORMULA_RAW = readObject(WAVE_FORMULAS.randomRolls, {});
+
+const RANDOM_ROLL_FORMULA = {
+  shopItemTier2Chance: 0.2,
+  bagTowerLevelWeights: [
+    { level: 4, weight: 97 },
+    { level: 3, weight: 1.5 },
+    { level: 5, weight: 1 },
+    { level: 6, weight: 0.5 }
+  ],
+  buildSimple: {
+    level4Chance: 0.001,
+    level3Chance: 0.005,
+    level2Chance: 0.01
+  },
+  buildMaster: {
+    level6Chance: 0.0001,
+    level5Chance: 0.005
+  },
+  ...RANDOM_ROLL_FORMULA_RAW,
+  buildSimple: {
+    level4Chance: 0.001,
+    level3Chance: 0.005,
+    level2Chance: 0.01,
+    ...readObject(RANDOM_ROLL_FORMULA_RAW.buildSimple, {})
+  },
+  buildMaster: {
+    level6Chance: 0.0001,
+    level5Chance: 0.005,
+    ...readObject(RANDOM_ROLL_FORMULA_RAW.buildMaster, {})
+  }
+};
 
 const state = {
   mode: "running",
@@ -769,7 +934,7 @@ const state = {
   lives: START_LIVES,
   silver: START_SILVER,
   goldNuggets: 0,
-  currentNuggetPrice: randInt(52, 102),
+  currentNuggetPrice: randInt(getNuggetPriceRange(1).min, getNuggetPriceRange(1).max),
   mineStock: 2,
   buildMode: "simple",
   towerBuildMode: "simple",
@@ -910,30 +1075,39 @@ function getPathPoint(index) {
 }
 
 function getWaveStats(wave) {
-  if (wave <= 5) {
+  const earlyCap = WAVE_STATS_FORMULA.earlyCapWave;
+  if (wave <= earlyCap) {
     return {
-      hp: 90 + (wave - 1) * 32,
-      armor: 4 + Math.floor((wave - 1) * 1.6)
+      hp: WAVE_STATS_FORMULA.baseHp + (wave - 1) * WAVE_STATS_FORMULA.earlyHpPerWave,
+      armor: WAVE_STATS_FORMULA.baseArmor + Math.floor((wave - 1) * WAVE_STATS_FORMULA.earlyArmorPerWave)
     };
   }
+  const earlySpan = Math.max(0, earlyCap - 1);
   return {
-    hp: 90 + 4 * 32 + (wave - 5) * 56,
-    armor: 4 + Math.floor(4 * 1.6) + Math.floor((wave - 5) * 2.6)
+    hp:
+      WAVE_STATS_FORMULA.baseHp +
+      earlySpan * WAVE_STATS_FORMULA.earlyHpPerWave +
+      (wave - earlyCap) * WAVE_STATS_FORMULA.lateHpPerWave,
+    armor:
+      WAVE_STATS_FORMULA.baseArmor +
+      Math.floor(earlySpan * WAVE_STATS_FORMULA.earlyArmorPerWave) +
+      Math.floor((wave - earlyCap) * WAVE_STATS_FORMULA.lateArmorPerWave)
   };
 }
 
 function getWaveMagicResist(wave) {
-  if (wave >= 25) return 0.45;
-  if (wave >= 20) return 0.40;
-  if (wave >= 15) return 0.35;
-  if (wave >= 10) return 0.30;
-  if (wave >= 5) return 0.25;
-  return 0.20;
+  let resist = MAGIC_RESIST_BRACKETS[0]?.resist ?? 0.2;
+  for (const bracket of MAGIC_RESIST_BRACKETS) {
+    if (wave >= (bracket.fromWave || 1)) {
+      resist = bracket.resist;
+    }
+  }
+  return resist;
 }
 
 function getNuggetPriceRange(wave) {
-  const min = Math.min(160, 50 + wave * 2);
-  const max = Math.min(160, 100 + wave * 2);
+  const min = Math.min(NUGGET_PRICE_FORMULA.maxCap, NUGGET_PRICE_FORMULA.minBase + wave * NUGGET_PRICE_FORMULA.perWave);
+  const max = Math.min(NUGGET_PRICE_FORMULA.maxCap, NUGGET_PRICE_FORMULA.maxBase + wave * NUGGET_PRICE_FORMULA.perWave);
   return {
     min,
     max: Math.max(min, max)
@@ -1576,14 +1750,21 @@ function clearMenus() {
 }
 
 function spawnEnemy() {
-  const progressionWave = state.endlessMode ? 30 + state.extraWave + 1 : state.wave;
+  const progressionWave = state.endlessMode ? ENDLESS_FORMULA.baseWaveForExtra + state.extraWave + 1 : state.wave;
   const stats = getWaveStats(progressionWave);
   const spawnIndex = state.waveSpawned + 1;
   const isBonus = !state.endlessMode && spawnIndex === 3;
   const extraIndex = state.endlessMode ? state.extraWave + 1 : 0;
-  const speedMultiplier = state.endlessMode && extraIndex >= 850 ? 1.25 : 1;
-  const magicResist = state.endlessMode && extraIndex >= 250 ? 0.90 : getWaveMagicResist(progressionWave);
-  const physicalResist = state.endlessMode && extraIndex >= 500 ? 0.90 : 0;
+  const speedMultiplier =
+    state.endlessMode && extraIndex >= ENDLESS_FORMULA.speedBoostFromExtraWave ? ENDLESS_FORMULA.speedBoostMultiplier : 1;
+  const magicResist =
+    state.endlessMode && extraIndex >= ENDLESS_FORMULA.magicResistFromExtraWave
+      ? ENDLESS_FORMULA.magicResistValue
+      : getWaveMagicResist(progressionWave);
+  const physicalResist =
+    state.endlessMode && extraIndex >= ENDLESS_FORMULA.physicalResistFromExtraWave
+      ? ENDLESS_FORMULA.physicalResistValue
+      : 0;
   state.enemies.push(
     createEnemy({
       hp: stats.hp,
@@ -1592,7 +1773,9 @@ function spawnEnemy() {
       physicalResist,
       speedMultiplier,
       isBonus,
-      rewardSilver: isBonus ? 75 + progressionWave * 35 : Math.min(30, progressionWave)
+      rewardSilver: isBonus
+        ? REWARD_SILVER_FORMULA.bonusBase + progressionWave * REWARD_SILVER_FORMULA.bonusPerWave
+        : Math.min(REWARD_SILVER_FORMULA.regularCap, progressionWave)
     })
   );
   state.waveSpawned += 1;
@@ -1679,7 +1862,7 @@ function killEnemy(enemy, killer = null) {
   }
   if (
     !state.endlessMode &&
-    state.wave === 30 &&
+    state.wave === ENDLESS_FORMULA.baseWaveForExtra &&
     state.waveActive &&
     state.waveSpawned >= ENEMIES_PER_WAVE &&
     state.enemies.length === 0 &&
@@ -1752,7 +1935,7 @@ function beginWave() {
   state.skipAvailable = false;
   rollCurrentNuggetPrice();
   processMinesForWaveStart();
-  if (state.wave === 30) {
+  if (state.wave === ENDLESS_FORMULA.baseWaveForExtra) {
     cashOutRemainingMines();
   }
   resetWaveDamage();
@@ -1771,7 +1954,7 @@ function startNextWaveRound() {
   state.wave += 1;
   maybeAwardMysteryBag(state.wave);
   state.intermission = 0;
-  if (state.wave <= 30) {
+  if (state.wave <= ENDLESS_FORMULA.minesStopWave) {
     state.mineStock += 2;
   }
   beginWave();
@@ -1856,7 +2039,7 @@ function addItemToInventory(itemId) {
 
 function rollRandomShopItemId() {
   const group = rollRandomFrom(SHOP_ITEM_GROUPS);
-  const upgraded = Math.random() < 0.2;
+  const upgraded = Math.random() < RANDOM_ROLL_FORMULA.shopItemTier2Chance;
   return group[upgraded ? 1 : 0].id;
 }
 
@@ -1876,12 +2059,8 @@ function getEmptyBuildCells() {
 }
 
 function rollMysteryBagTowerLevel() {
-  const entries = [
-    { level: 4, weight: 97 },
-    { level: 3, weight: 1.5 },
-    { level: 5, weight: 1 },
-    { level: 6, weight: 0.5 }
-  ];
+  const entries = readArray(RANDOM_ROLL_FORMULA.bagTowerLevelWeights, []);
+  if (!entries.length) return 4;
   const total = entries.reduce((sum, item) => sum + item.weight, 0);
   let roll = Math.random() * total;
   for (const entry of entries) {
@@ -2717,7 +2896,7 @@ function updateWave(dt) {
     return;
   }
 
-  if (state.wave < 30) {
+  if (state.wave < ENDLESS_FORMULA.baseWaveForExtra) {
     state.roundTimeLeft = Math.max(0, state.roundTimeLeft - dt);
   }
 
@@ -2727,7 +2906,7 @@ function updateWave(dt) {
     state.spawnTimer += SPAWN_INTERVAL;
   }
 
-  if (state.wave >= 30) {
+  if (state.wave >= ENDLESS_FORMULA.baseWaveForExtra) {
     if (state.waveSpawned >= ENEMIES_PER_WAVE && state.enemies.length === 0) {
       finishWaveThirtyAndQueueEndless();
     }
@@ -3028,29 +3207,29 @@ function update(dt) {
   updateShots(dt);
 }
 
-function roundedRectPath(x, y, w, h, radius) {
+function roundedRectPath(x, y, w, h, radius, renderCtx = ctx) {
   const r = Math.min(radius, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+  renderCtx.beginPath();
+  renderCtx.moveTo(x + r, y);
+  renderCtx.lineTo(x + w - r, y);
+  renderCtx.quadraticCurveTo(x + w, y, x + w, y + r);
+  renderCtx.lineTo(x + w, y + h - r);
+  renderCtx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  renderCtx.lineTo(x + r, y + h);
+  renderCtx.quadraticCurveTo(x, y + h, x, y + h - r);
+  renderCtx.lineTo(x, y + r);
+  renderCtx.quadraticCurveTo(x, y, x + r, y);
+  renderCtx.closePath();
 }
 
-function fillRoundedRect(x, y, w, h, radius, fill, stroke) {
-  roundedRectPath(x, y, w, h, radius);
-  ctx.fillStyle = fill;
-  ctx.fill();
+function fillRoundedRect(x, y, w, h, radius, fill, stroke, renderCtx = ctx) {
+  roundedRectPath(x, y, w, h, radius, renderCtx);
+  renderCtx.fillStyle = fill;
+  renderCtx.fill();
   if (stroke) {
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    renderCtx.strokeStyle = stroke;
+    renderCtx.lineWidth = 1;
+    renderCtx.stroke();
   }
 }
 
@@ -3105,58 +3284,158 @@ function countWrappedLines(text, maxWidth, font) {
   return Math.max(1, count);
 }
 
-function drawBackground() {
-  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  gradient.addColorStop(0, COLORS.pageTop);
-  gradient.addColorStop(1, COLORS.pageBottom);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-  ctx.beginPath();
-  ctx.arc(canvas.width * 0.18, canvas.height * 0.16, 96, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(canvas.width * 0.78, canvas.height * 0.78, 112, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.shadowColor = COLORS.boardShadow;
-  ctx.shadowBlur = 20;
-  fillRoundedRect(BOARD_X - 10, BOARD_Y - 10, BOARD_W + 20, MAP_VISUAL_H + 20, 18, COLORS.boardFrame, null);
-  ctx.shadowBlur = 0;
-  fillRoundedRect(BOARD_X - 4, BOARD_Y - 4, BOARD_W + 8, MAP_VISUAL_H + 8, 14, COLORS.boardInset, null);
+function markRenderCachesDirty() {
+  backgroundCacheDirty = true;
+  boardStaticCacheDirty = true;
 }
 
-function drawBoard() {
+function ensureBackgroundCache() {
+  if (
+    !backgroundCacheCanvas ||
+    backgroundCacheCanvas.width !== canvas.width ||
+    backgroundCacheCanvas.height !== canvas.height
+  ) {
+    backgroundCacheCanvas = document.createElement("canvas");
+    backgroundCacheCanvas.width = canvas.width;
+    backgroundCacheCanvas.height = canvas.height;
+    backgroundCacheCtx = backgroundCacheCanvas.getContext("2d");
+    backgroundCacheDirty = true;
+  }
+}
+
+function drawCachedBackground() {
+  ensureBackgroundCache();
+  if (backgroundCacheDirty && backgroundCacheCtx) {
+    backgroundCacheCtx.clearRect(0, 0, backgroundCacheCanvas.width, backgroundCacheCanvas.height);
+    drawBackground(backgroundCacheCtx);
+    backgroundCacheDirty = false;
+  }
+  if (backgroundCacheCanvas) {
+    ctx.drawImage(backgroundCacheCanvas, 0, 0);
+  }
+}
+
+function ensureBoardStaticCache() {
+  if (
+    !boardStaticCacheCanvas ||
+    boardStaticCacheCanvas.width !== BOARD_W ||
+    boardStaticCacheCanvas.height !== MAP_VISUAL_H
+  ) {
+    boardStaticCacheCanvas = document.createElement("canvas");
+    boardStaticCacheCanvas.width = BOARD_W;
+    boardStaticCacheCanvas.height = MAP_VISUAL_H;
+    boardStaticCacheCtx = boardStaticCacheCanvas.getContext("2d");
+    boardStaticCacheDirty = true;
+  }
+}
+
+function drawBoardStaticLayer(renderCtx) {
   for (let r = 0; r < GRID_ROWS; r += 1) {
     for (let c = 0; c < GRID_COLS; c += 1) {
-      const x = BOARD_X + c * TILE;
-      const y = BOARD_Y + r * TILE;
+      const x = c * TILE;
+      const y = r * TILE;
       const road = isRoad(c, r);
-      ctx.fillStyle = road ? COLORS.road : COLORS.build;
-      ctx.fillRect(x, y, TILE, TILE);
-      ctx.strokeStyle = road ? COLORS.roadStroke : COLORS.buildStroke;
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
+      renderCtx.fillStyle = road ? COLORS.road : COLORS.build;
+      renderCtx.fillRect(x, y, TILE, TILE);
+      renderCtx.strokeStyle = road ? COLORS.roadStroke : COLORS.buildStroke;
+      renderCtx.lineWidth = 1;
+      renderCtx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
 
       if (!road) {
-        ctx.strokeStyle = COLORS.grid;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(x + TILE / 2, y + 4);
-        ctx.lineTo(x + TILE / 2, y + TILE - 4);
-        ctx.moveTo(x + 4, y + TILE / 2);
-        ctx.lineTo(x + TILE - 4, y + TILE / 2);
-        ctx.stroke();
+        renderCtx.strokeStyle = COLORS.grid;
+        renderCtx.lineWidth = 1;
+        renderCtx.beginPath();
+        renderCtx.moveTo(x + TILE / 2, y + 4);
+        renderCtx.lineTo(x + TILE / 2, y + TILE - 4);
+        renderCtx.moveTo(x + 4, y + TILE / 2);
+        renderCtx.lineTo(x + TILE - 4, y + TILE / 2);
+        renderCtx.stroke();
 
-        ctx.fillStyle = COLORS.towerSlot;
-        ctx.beginPath();
-        ctx.arc(x + TILE / 2, y + TILE / 2, 4.5, 0, Math.PI * 2);
-        ctx.fill();
+        renderCtx.fillStyle = COLORS.towerSlot;
+        renderCtx.beginPath();
+        renderCtx.arc(x + TILE / 2, y + TILE / 2, 4.5, 0, Math.PI * 2);
+        renderCtx.fill();
       }
     }
   }
 
+  renderCtx.strokeStyle = COLORS.turn;
+  renderCtx.lineWidth = 2.2;
+  renderCtx.lineCap = "round";
+  renderCtx.lineJoin = "round";
+  for (const marker of TURN_MARKERS) {
+    const baseX = marker.c * TILE;
+    const baseY = marker.r * TILE;
+    renderCtx.beginPath();
+    renderCtx.moveTo(baseX + marker.ax * TILE, baseY + marker.ay * TILE);
+    renderCtx.lineTo(baseX + marker.bx * TILE, baseY + marker.by * TILE);
+    renderCtx.lineTo(baseX + marker.cx * TILE, baseY + marker.cy * TILE);
+    renderCtx.stroke();
+  }
+
+  for (const cross of CROSS_MARKERS) {
+    const baseX = cross.c * TILE;
+    const baseY = cross.r * TILE;
+    const cx = baseX + TILE / 2;
+    const cy = baseY + TILE / 2;
+    renderCtx.strokeStyle = COLORS.cross;
+    renderCtx.lineWidth = 2.1;
+    renderCtx.beginPath();
+    renderCtx.moveTo(cx - 5, cy - 5);
+    renderCtx.lineTo(cx + 5, cy + 5);
+    renderCtx.moveTo(cx + 5, cy - 5);
+    renderCtx.lineTo(cx - 5, cy + 5);
+    renderCtx.stroke();
+  }
+
+  const startX = START_CELL.c * TILE + TILE / 2;
+  const startY = START_CELL.r * TILE + TILE / 2;
+  const exitX = EXIT_CELL.c * TILE + TILE / 2;
+  const exitY = EXIT_CELL.r * TILE + TILE / 2;
+  renderCtx.fillStyle = COLORS.gate;
+  renderCtx.textAlign = "center";
+  renderCtx.textBaseline = "middle";
+  renderCtx.font = "bold 10px Avenir Next";
+  renderCtx.fillText("Вход", startX, startY - 9);
+  renderCtx.fillText("монстров", startX, startY + 2);
+  renderCtx.fillText("Выход", exitX, exitY - 9);
+  renderCtx.fillText("монстров", exitX, exitY + 2);
+
+  const riverY = BOARD_H;
+  const riverW = BOARD_W;
+  const laneH = TILE;
+  fillRoundedRect(0, riverY, riverW, laneH, 6, "rgba(111, 209, 237, 0.72)", "rgba(201, 244, 255, 0.28)", renderCtx);
+}
+
+function renderBoardStaticLayerIfNeeded() {
+  ensureBoardStaticCache();
+  if (boardStaticCacheDirty && boardStaticCacheCtx) {
+    boardStaticCacheCtx.clearRect(0, 0, boardStaticCacheCanvas.width, boardStaticCacheCanvas.height);
+    drawBoardStaticLayer(boardStaticCacheCtx);
+    boardStaticCacheDirty = false;
+  }
+}
+
+function drawBackground(renderCtx = ctx) {
+  const gradient = renderCtx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, COLORS.pageTop);
+  gradient.addColorStop(1, COLORS.pageBottom);
+  renderCtx.fillStyle = gradient;
+  renderCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+  renderCtx.fillStyle = "rgba(255, 255, 255, 0.03)";
+  renderCtx.beginPath();
+  renderCtx.arc(canvas.width * 0.18, canvas.height * 0.16, 96, 0, Math.PI * 2);
+  renderCtx.fill();
+  renderCtx.beginPath();
+  renderCtx.arc(canvas.width * 0.78, canvas.height * 0.78, 112, 0, Math.PI * 2);
+  renderCtx.fill();
+
+  fillRoundedRect(BOARD_X - 10, BOARD_Y - 10, BOARD_W + 20, MAP_VISUAL_H + 20, 18, COLORS.boardFrame, null, renderCtx);
+  fillRoundedRect(BOARD_X - 4, BOARD_Y - 4, BOARD_W + 8, MAP_VISUAL_H + 8, 14, COLORS.boardInset, null, renderCtx);
+}
+
+function drawHoveredSlot() {
   if (state.hoveredSlot) {
     const p = cellToPixel(state.hoveredSlot.c, state.hoveredSlot.r);
     ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
@@ -3369,13 +3648,9 @@ function drawSelection() {
   ctx.fillStyle = glowColor;
   ctx.fillRect(p.x - 3, p.y - 3, TILE + 6, TILE + 6);
 
-  ctx.save();
-  ctx.shadowColor = baseColor;
-  ctx.shadowBlur = 16 + pulse * 10;
   ctx.strokeStyle = baseColor;
   ctx.lineWidth = 5;
   ctx.strokeRect(p.x + 1, p.y + 1, TILE - 2, TILE - 2);
-  ctx.restore();
 
   ctx.strokeStyle = "#ffffff";
   ctx.lineWidth = 2;
@@ -3451,13 +3726,12 @@ function drawEnemies() {
 function drawShots() {
   for (const shot of state.shots) {
     const isCrit = !!shot.crit;
-    ctx.save();
     ctx.strokeStyle = isCrit ? COLORS.crit : shot.color || COLORS.shot;
     ctx.lineWidth = isCrit ? Math.max(4.6, (shot.width || 2) + 1.6) : shot.width || 2;
     if (isCrit) {
-      ctx.shadowColor = COLORS.crit;
-      ctx.shadowBlur = 12;
       ctx.lineCap = "round";
+    } else {
+      ctx.lineCap = "butt";
     }
     ctx.beginPath();
     ctx.moveTo(shot.fromX, shot.fromY);
@@ -3473,7 +3747,6 @@ function drawShots() {
       ctx.arc(shot.toX, shot.toY, 2.2, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.restore();
   }
 }
 
@@ -3553,7 +3826,7 @@ function getTopTimerState() {
   if (state.endlessStartDelay > 0) {
     return { label: "Экстра волны", seconds: Math.ceil(state.endlessStartDelay), color: "#d3e5ff" };
   }
-  if (!state.endlessMode && state.waveActive && state.wave <= 30 && state.roundTimeLeft > 0) {
+  if (!state.endlessMode && state.waveActive && state.wave <= ENDLESS_FORMULA.baseWaveForExtra && state.roundTimeLeft > 0) {
     return { label: "До след. волны", seconds: Math.ceil(state.roundTimeLeft), color: "#f3fff0" };
   }
   return null;
@@ -3682,15 +3955,11 @@ function getAttributeAccent(attributeType) {
 
 function drawTowerLevelRing(tower) {
   const color = getTowerLevelAccent(tower.level);
-  ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = tower.level >= 5 ? 4 : 3;
-  ctx.shadowColor = color;
-  ctx.shadowBlur = tower.level >= 4 ? 8 : 4;
   ctx.beginPath();
   ctx.arc(tower.x, tower.y, tower.level >= 6 ? 17 : 15, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.restore();
 }
 
 function drawStatsStrip() {
@@ -5616,27 +5885,28 @@ function drawDefeatOverlay() {
 }
 
 function drawBoardViewport() {
+  renderBoardStaticLayerIfNeeded();
   ctx.save();
   ctx.beginPath();
   ctx.rect(BOARD_X, BOARD_Y, BOARD_W, MAP_VISUAL_H);
   ctx.clip();
   ctx.save();
   applyBoardCamera();
-  drawBoard();
-  drawTurnMarkers();
-  drawMapLabels();
+  if (boardStaticCacheCanvas) {
+    ctx.drawImage(boardStaticCacheCanvas, BOARD_X, BOARD_Y);
+  }
+  drawHoveredSlot();
   drawSelection();
   drawMoveTargetHint();
   drawTowers();
   drawShots();
   drawEnemies();
-  drawRiverLanes();
   ctx.restore();
   ctx.restore();
 }
 
 function draw() {
-  drawBackground();
+  drawCachedBackground();
   drawBoardViewport();
   drawPendingBagHint();
   drawTowerAnnouncement();
@@ -6011,20 +6281,25 @@ function tryPlaceOnSlot(slot) {
     towerDef = getTowerDefByIdentity(state.tutorial.forcedTowerId, state.tutorial.forcedTowerLevel) || rollRandomFrom(pool);
   } else if (mode === "simple") {
     const roll = Math.random();
-    if (roll < 0.001) {
+    if (roll < RANDOM_ROLL_FORMULA.buildSimple.level4Chance) {
       towerDef = rollRandomFrom(getPoolForLevel(4));
-    } else if (roll < 0.006) {
+    } else if (roll < RANDOM_ROLL_FORMULA.buildSimple.level4Chance + RANDOM_ROLL_FORMULA.buildSimple.level3Chance) {
       towerDef = rollRandomFrom(getPoolForLevel(3));
-    } else if (roll < 0.016) {
+    } else if (
+      roll <
+      RANDOM_ROLL_FORMULA.buildSimple.level4Chance +
+      RANDOM_ROLL_FORMULA.buildSimple.level3Chance +
+      RANDOM_ROLL_FORMULA.buildSimple.level2Chance
+    ) {
       towerDef = rollRandomFrom(getPoolForLevel(2));
     } else {
       towerDef = rollRandomFrom(pool);
     }
   } else {
     const roll = Math.random();
-    if (roll < 0.0001) {
+    if (roll < RANDOM_ROLL_FORMULA.buildMaster.level6Chance) {
       towerDef = rollRandomFrom(getPoolForLevel(6));
-    } else if (roll < 0.0051) {
+    } else if (roll < RANDOM_ROLL_FORMULA.buildMaster.level6Chance + RANDOM_ROLL_FORMULA.buildMaster.level5Chance) {
       towerDef = rollRandomFrom(getPoolForLevel(5));
     } else {
       towerDef = rollRandomFrom(pool);
@@ -6174,7 +6449,7 @@ function handleTap(event) {
 
   if (findSkipButtonAt(event.clientX, event.clientY)) {
     hideInfoPanel();
-    if (state.skipAvailable && !state.endlessMode && state.wave < 30) {
+    if (state.skipAvailable && !state.endlessMode && state.wave < ENDLESS_FORMULA.baseWaveForExtra) {
       startNextWaveRound();
     }
     draw();
@@ -6886,6 +7161,17 @@ window.advanceTime = (ms) => {
   return Promise.resolve();
 };
 
+function shouldRenderContinuously() {
+  if (state.towerAnnouncement && state.towerAnnouncement.until > state.time) return true;
+  if (state.enemies.length > 0 || state.shots.length > 0) return true;
+  if (state.hoveredSlot || state.moveMode || pointerState.pointers.size > 0) return true;
+  if (!state.paused && (state.waveActive || state.startCountdown > 0 || state.endlessStartDelay > 0 || state.skipAvailable)) {
+    return true;
+  }
+  if (state.tutorial.active && state.mode === "running") return true;
+  return false;
+}
+
 function initTelegramWebApp() {
   const tg = window.Telegram?.WebApp;
   applyTelegramViewportLayout();
@@ -6901,10 +7187,22 @@ function initTelegramWebApp() {
 
 let lastFrame = performance.now();
 function frame(now) {
-  const dt = Math.min((now - lastFrame) / 1000, 0.05);
+  if (document.hidden) {
+    lastFrame = now;
+    requestAnimationFrame(frame);
+    return;
+  }
+  const elapsedMs = now - lastFrame;
+  if (elapsedMs + 0.1 < FRAME_TIME_MS) {
+    requestAnimationFrame(frame);
+    return;
+  }
+  const dt = Math.min(elapsedMs / 1000, 0.05);
   lastFrame = now;
   update(dt);
-  draw();
+  if (shouldRenderContinuously()) {
+    draw();
+  }
   requestAnimationFrame(frame);
 }
 

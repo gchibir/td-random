@@ -1,0 +1,482 @@
+{
+  "itemGroups": [
+    [
+      {
+        "id": "time_pendulum_1",
+        "baseId": "time_pendulum",
+        "level": 1,
+        "name": "Маятник времени",
+        "short": "Мв",
+        "description": "15% шанс нанести 500 + атрибут*10 физического урона и оглушить на 0.5 сек.",
+        "pendulumChance": 0.15,
+        "pendulumDamage": 500,
+        "pendulumAttrScale": 10,
+        "pendulumStun": 0.5,
+        "sellValue": 100
+      },
+      {
+        "id": "time_pendulum_2",
+        "baseId": "time_pendulum",
+        "level": 2,
+        "name": "Продвинутый маятник",
+        "short": "Пм",
+        "description": "25% шанс нанести 1000 + атрибут*12 физического урона и оглушить на 1.2 сек.",
+        "pendulumChance": 0.25,
+        "pendulumDamage": 1000,
+        "pendulumAttrScale": 12,
+        "pendulumStun": 1.2,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "cursed_shard_1",
+        "baseId": "cursed_shard",
+        "level": 1,
+        "name": "Проклятый осколок",
+        "short": "По",
+        "description": "Снижает броню цели на 20% на 5 секунд.",
+        "armorDebuffPercent": 0.2,
+        "armorDebuffDuration": 5,
+        "sellValue": 100
+      },
+      {
+        "id": "cursed_shard_2",
+        "baseId": "cursed_shard",
+        "level": 2,
+        "name": "Продвинутый проклятый осколок",
+        "short": "ПО",
+        "description": "Снижает броню цели на 45% на 7 секунд.",
+        "armorDebuffPercent": 0.45,
+        "armorDebuffDuration": 7,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "speed_diamond_1",
+        "baseId": "speed_diamond",
+        "level": 1,
+        "name": "Алмаз скорости",
+        "short": "Ас",
+        "description": "Дает носителю +15% к скорости атаки.",
+        "selfAttackSpeedBoost": 0.15,
+        "sellValue": 100
+      },
+      {
+        "id": "speed_diamond_2",
+        "baseId": "speed_diamond",
+        "level": 2,
+        "name": "Продвинутый алмаз скорости",
+        "short": "АС",
+        "description": "Дает носителю +30% к скорости атаки.",
+        "selfAttackSpeedBoost": 0.3,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "energy_emitter_1",
+        "baseId": "energy_emitter",
+        "level": 1,
+        "name": "Излучатель энергии",
+        "short": "Иэ",
+        "description": "В радиусе 4.5 клетки увеличивает скорость атаки союзников на 10%.",
+        "auraRangeCells": 4.5,
+        "auraAttackSpeedBoost": 0.1,
+        "sellValue": 100
+      },
+      {
+        "id": "energy_emitter_2",
+        "baseId": "energy_emitter",
+        "level": 2,
+        "name": "Продвинутый излучатель энергии",
+        "short": "ИЭ",
+        "description": "В радиусе 4.5 клетки увеличивает скорость атаки союзников на 20%.",
+        "auraRangeCells": 4.5,
+        "auraAttackSpeedBoost": 0.2,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "chaos_artifact_1",
+        "baseId": "chaos_artifact",
+        "level": 1,
+        "name": "Артефакт хаоса",
+        "short": "Ах",
+        "description": "10% шанс нанести всем врагам в радиусе 5 клеток магический урон 3% + атрибут*0.5% от макс HP.",
+        "chaosChance": 0.1,
+        "chaosRangeCells": 5,
+        "chaosBasePercent": 0.03,
+        "chaosAttrPercent": 0.005,
+        "sellValue": 100
+      },
+      {
+        "id": "chaos_artifact_2",
+        "baseId": "chaos_artifact",
+        "level": 2,
+        "name": "Проклятый артефакт хаоса",
+        "short": "АХ",
+        "description": "12% шанс нанести всем врагам в радиусе 5 клеток магический урон 4% + атрибут*0.6% от макс HP.",
+        "chaosChance": 0.12,
+        "chaosRangeCells": 5,
+        "chaosBasePercent": 0.04,
+        "chaosAttrPercent": 0.006,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "corruption_sphere_1",
+        "baseId": "corruption_sphere",
+        "level": 1,
+        "name": "Сфера порчи",
+        "short": "Сп",
+        "description": "В радиусе 4.5 клетки увеличивает получаемый монстрами урон (магический и физический) на 10%.",
+        "auraRangeCells": 4.5,
+        "auraDamageBoost": 0.1,
+        "sellValue": 100
+      },
+      {
+        "id": "corruption_sphere_2",
+        "baseId": "corruption_sphere",
+        "level": 2,
+        "name": "Разлагающаяся сфера порчи",
+        "short": "СП",
+        "description": "В радиусе 4.5 клетки увеличивает получаемый монстрами урон (магический и физический) на 20%.",
+        "auraRangeCells": 4.5,
+        "auraDamageBoost": 0.2,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "power_ring_1",
+        "baseId": "power_ring",
+        "level": 1,
+        "name": "Кольцо силы",
+        "short": "Кс",
+        "description": "В радиусе 4.5 клетки увеличивает магический урон союзных башен на 15%.",
+        "auraRangeCells": 4.5,
+        "auraMagicDamageBoost": 0.15,
+        "sellValue": 100
+      },
+      {
+        "id": "power_ring_2",
+        "baseId": "power_ring",
+        "level": 2,
+        "name": "Закаленное кольцо силы",
+        "short": "КС",
+        "description": "В радиусе 4.5 клетки увеличивает магический урон союзных башен на 30%.",
+        "auraRangeCells": 4.5,
+        "auraMagicDamageBoost": 0.3,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "royal_armor_1",
+        "baseId": "royal_armor",
+        "level": 1,
+        "name": "Доспех принца",
+        "short": "Дп",
+        "description": "20% шанс нанести двойной урон.",
+        "critProcChance": 0.2,
+        "critProcMultiplier": 2,
+        "sellValue": 100
+      },
+      {
+        "id": "royal_armor_2",
+        "baseId": "royal_armor",
+        "level": 2,
+        "name": "Доспех короля",
+        "short": "ДК",
+        "description": "20% шанс нанести тройной урон.",
+        "critProcChance": 0.2,
+        "critProcMultiplier": 3,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "justice_hammer_1",
+        "baseId": "justice_hammer",
+        "level": 1,
+        "name": "Молот правосудия",
+        "short": "Мп",
+        "description": "20% шанс нанести физический сплэш в радиусе 2 клеток от цели: урон + атрибут*10.",
+        "justiceSplashChance": 0.2,
+        "justiceSplashRadiusCells": 2,
+        "justiceAttrScale": 10,
+        "sellValue": 100
+      },
+      {
+        "id": "justice_hammer_2",
+        "baseId": "justice_hammer",
+        "level": 2,
+        "name": "Зачарованный молот правосудия",
+        "short": "МП",
+        "description": "20% шанс нанести физический сплэш в радиусе 2 клеток от цели: урон + атрибут*15.",
+        "justiceSplashChance": 0.2,
+        "justiceSplashRadiusCells": 2,
+        "justiceAttrScale": 15,
+        "sellValue": 200
+      }
+    ],
+    [
+      {
+        "id": "rage_sword_1",
+        "baseId": "rage_sword",
+        "level": 1,
+        "name": "Меч ярости",
+        "short": "Мя",
+        "description": "10% шанс нанести критический урон 300% сквозь броню.",
+        "rageProcChance": 0.1,
+        "rageCritMultiplier": 3,
+        "sellValue": 100
+      },
+      {
+        "id": "rage_sword_2",
+        "baseId": "rage_sword",
+        "level": 2,
+        "name": "Окровавленный меч ярости",
+        "short": "МЯ",
+        "description": "10% шанс нанести критический урон 600% сквозь броню.",
+        "rageProcChance": 0.1,
+        "rageCritMultiplier": 6,
+        "sellValue": 200
+      }
+    ]
+  ],
+  "byId": {
+    "time_pendulum_1": {
+      "id": "time_pendulum_1",
+      "baseId": "time_pendulum",
+      "level": 1,
+      "name": "Маятник времени",
+      "short": "Мв",
+      "description": "15% шанс нанести 500 + атрибут*10 физического урона и оглушить на 0.5 сек.",
+      "pendulumChance": 0.15,
+      "pendulumDamage": 500,
+      "pendulumAttrScale": 10,
+      "pendulumStun": 0.5,
+      "sellValue": 100
+    },
+    "time_pendulum_2": {
+      "id": "time_pendulum_2",
+      "baseId": "time_pendulum",
+      "level": 2,
+      "name": "Продвинутый маятник",
+      "short": "Пм",
+      "description": "25% шанс нанести 1000 + атрибут*12 физического урона и оглушить на 1.2 сек.",
+      "pendulumChance": 0.25,
+      "pendulumDamage": 1000,
+      "pendulumAttrScale": 12,
+      "pendulumStun": 1.2,
+      "sellValue": 200
+    },
+    "cursed_shard_1": {
+      "id": "cursed_shard_1",
+      "baseId": "cursed_shard",
+      "level": 1,
+      "name": "Проклятый осколок",
+      "short": "По",
+      "description": "Снижает броню цели на 20% на 5 секунд.",
+      "armorDebuffPercent": 0.2,
+      "armorDebuffDuration": 5,
+      "sellValue": 100
+    },
+    "cursed_shard_2": {
+      "id": "cursed_shard_2",
+      "baseId": "cursed_shard",
+      "level": 2,
+      "name": "Продвинутый проклятый осколок",
+      "short": "ПО",
+      "description": "Снижает броню цели на 45% на 7 секунд.",
+      "armorDebuffPercent": 0.45,
+      "armorDebuffDuration": 7,
+      "sellValue": 200
+    },
+    "speed_diamond_1": {
+      "id": "speed_diamond_1",
+      "baseId": "speed_diamond",
+      "level": 1,
+      "name": "Алмаз скорости",
+      "short": "Ас",
+      "description": "Дает носителю +15% к скорости атаки.",
+      "selfAttackSpeedBoost": 0.15,
+      "sellValue": 100
+    },
+    "speed_diamond_2": {
+      "id": "speed_diamond_2",
+      "baseId": "speed_diamond",
+      "level": 2,
+      "name": "Продвинутый алмаз скорости",
+      "short": "АС",
+      "description": "Дает носителю +30% к скорости атаки.",
+      "selfAttackSpeedBoost": 0.3,
+      "sellValue": 200
+    },
+    "energy_emitter_1": {
+      "id": "energy_emitter_1",
+      "baseId": "energy_emitter",
+      "level": 1,
+      "name": "Излучатель энергии",
+      "short": "Иэ",
+      "description": "В радиусе 4.5 клетки увеличивает скорость атаки союзников на 10%.",
+      "auraRangeCells": 4.5,
+      "auraAttackSpeedBoost": 0.1,
+      "sellValue": 100
+    },
+    "energy_emitter_2": {
+      "id": "energy_emitter_2",
+      "baseId": "energy_emitter",
+      "level": 2,
+      "name": "Продвинутый излучатель энергии",
+      "short": "ИЭ",
+      "description": "В радиусе 4.5 клетки увеличивает скорость атаки союзников на 20%.",
+      "auraRangeCells": 4.5,
+      "auraAttackSpeedBoost": 0.2,
+      "sellValue": 200
+    },
+    "chaos_artifact_1": {
+      "id": "chaos_artifact_1",
+      "baseId": "chaos_artifact",
+      "level": 1,
+      "name": "Артефакт хаоса",
+      "short": "Ах",
+      "description": "10% шанс нанести всем врагам в радиусе 5 клеток магический урон 3% + атрибут*0.5% от макс HP.",
+      "chaosChance": 0.1,
+      "chaosRangeCells": 5,
+      "chaosBasePercent": 0.03,
+      "chaosAttrPercent": 0.005,
+      "sellValue": 100
+    },
+    "chaos_artifact_2": {
+      "id": "chaos_artifact_2",
+      "baseId": "chaos_artifact",
+      "level": 2,
+      "name": "Проклятый артефакт хаоса",
+      "short": "АХ",
+      "description": "12% шанс нанести всем врагам в радиусе 5 клеток магический урон 4% + атрибут*0.6% от макс HP.",
+      "chaosChance": 0.12,
+      "chaosRangeCells": 5,
+      "chaosBasePercent": 0.04,
+      "chaosAttrPercent": 0.006,
+      "sellValue": 200
+    },
+    "corruption_sphere_1": {
+      "id": "corruption_sphere_1",
+      "baseId": "corruption_sphere",
+      "level": 1,
+      "name": "Сфера порчи",
+      "short": "Сп",
+      "description": "В радиусе 4.5 клетки увеличивает получаемый монстрами урон (магический и физический) на 10%.",
+      "auraRangeCells": 4.5,
+      "auraDamageBoost": 0.1,
+      "sellValue": 100
+    },
+    "corruption_sphere_2": {
+      "id": "corruption_sphere_2",
+      "baseId": "corruption_sphere",
+      "level": 2,
+      "name": "Разлагающаяся сфера порчи",
+      "short": "СП",
+      "description": "В радиусе 4.5 клетки увеличивает получаемый монстрами урон (магический и физический) на 20%.",
+      "auraRangeCells": 4.5,
+      "auraDamageBoost": 0.2,
+      "sellValue": 200
+    },
+    "power_ring_1": {
+      "id": "power_ring_1",
+      "baseId": "power_ring",
+      "level": 1,
+      "name": "Кольцо силы",
+      "short": "Кс",
+      "description": "В радиусе 4.5 клетки увеличивает магический урон союзных башен на 15%.",
+      "auraRangeCells": 4.5,
+      "auraMagicDamageBoost": 0.15,
+      "sellValue": 100
+    },
+    "power_ring_2": {
+      "id": "power_ring_2",
+      "baseId": "power_ring",
+      "level": 2,
+      "name": "Закаленное кольцо силы",
+      "short": "КС",
+      "description": "В радиусе 4.5 клетки увеличивает магический урон союзных башен на 30%.",
+      "auraRangeCells": 4.5,
+      "auraMagicDamageBoost": 0.3,
+      "sellValue": 200
+    },
+    "royal_armor_1": {
+      "id": "royal_armor_1",
+      "baseId": "royal_armor",
+      "level": 1,
+      "name": "Доспех принца",
+      "short": "Дп",
+      "description": "20% шанс нанести двойной урон.",
+      "critProcChance": 0.2,
+      "critProcMultiplier": 2,
+      "sellValue": 100
+    },
+    "royal_armor_2": {
+      "id": "royal_armor_2",
+      "baseId": "royal_armor",
+      "level": 2,
+      "name": "Доспех короля",
+      "short": "ДК",
+      "description": "20% шанс нанести тройной урон.",
+      "critProcChance": 0.2,
+      "critProcMultiplier": 3,
+      "sellValue": 200
+    },
+    "justice_hammer_1": {
+      "id": "justice_hammer_1",
+      "baseId": "justice_hammer",
+      "level": 1,
+      "name": "Молот правосудия",
+      "short": "Мп",
+      "description": "20% шанс нанести физический сплэш в радиусе 2 клеток от цели: урон + атрибут*10.",
+      "justiceSplashChance": 0.2,
+      "justiceSplashRadiusCells": 2,
+      "justiceAttrScale": 10,
+      "sellValue": 100
+    },
+    "justice_hammer_2": {
+      "id": "justice_hammer_2",
+      "baseId": "justice_hammer",
+      "level": 2,
+      "name": "Зачарованный молот правосудия",
+      "short": "МП",
+      "description": "20% шанс нанести физический сплэш в радиусе 2 клеток от цели: урон + атрибут*15.",
+      "justiceSplashChance": 0.2,
+      "justiceSplashRadiusCells": 2,
+      "justiceAttrScale": 15,
+      "sellValue": 200
+    },
+    "rage_sword_1": {
+      "id": "rage_sword_1",
+      "baseId": "rage_sword",
+      "level": 1,
+      "name": "Меч ярости",
+      "short": "Мя",
+      "description": "10% шанс нанести критический урон 300% сквозь броню.",
+      "rageProcChance": 0.1,
+      "rageCritMultiplier": 3,
+      "sellValue": 100
+    },
+    "rage_sword_2": {
+      "id": "rage_sword_2",
+      "baseId": "rage_sword",
+      "level": 2,
+      "name": "Окровавленный меч ярости",
+      "short": "МЯ",
+      "description": "10% шанс нанести критический урон 600% сквозь броню.",
+      "rageProcChance": 0.1,
+      "rageCritMultiplier": 6,
+      "sellValue": 200
+    }
+  }
+}

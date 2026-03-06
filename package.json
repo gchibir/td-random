@@ -1,4 +1,8 @@
 {
   "name": "td-random",
-  "private": true
+  "private": true,
+  "scripts": {
+    "build:balance": "node scripts/build-balance-config.mjs",
+    "sync:balance": "node scripts/generate-balance-json.mjs && node scripts/build-balance-config.mjs"
+  }
 }
