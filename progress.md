@@ -489,3 +489,16 @@ Update:
   - `Абсолютный холод`: renamed, removed splash pattern, freeze chance reduced to 2%.
   - `Небесный шторм`: renamed, removed crit and magic-resist shred.
 - Validation: `node --check main.js` and `node --check main-ui-test.js` passed.
+
+Update:
+- Connected level-1 tower sprite assets to base build (`main.js`) via `TOWER_SPRITE_PATHS`.
+- Added mappings:
+  - peasant -> assets/towers/level1/peasant.png
+  - archer -> assets/towers/level1/archer.png
+  - stonethrower -> assets/towers/level1/catapult.png
+  - frost_turret -> assets/towers/level1/frozentower.png
+  - cactus -> assets/towers/level1/cactus.png
+  - spark -> assets/towers/level1/lightning.png
+  - banner -> assets/towers/level1/banner.png
+- Kept existing level-6 mappings unchanged.
+- Validation: `node --check main.js` passed.

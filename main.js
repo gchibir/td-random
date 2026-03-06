@@ -41,26 +41,30 @@ const MAP_TILE_PATHS = {
   water: "/assets/tiles/water/water_1.jpeg"
 };
 const TOWER_SPRITE_VERSION = "20260303b";
-const TOWER_SPRITE_IDS = [
-  "soul_reaper",
-  "heaven_archon",
-  "time_keeper",
-  "plague_master",
-  "thunderer",
-  "small_but_strong",
-  "archiarcher",
-  "anglosax",
-  "money_doctor",
-  "flame_of_fate",
-  "shadow_altar",
-  "colossus",
-  "heaven_oracle",
-  "devourer",
-  "star_judgment"
-];
-const TOWER_SPRITE_PATHS = Object.fromEntries(
-  TOWER_SPRITE_IDS.map((id) => [id, `/assets/towers/level6/${id}.png?v=${TOWER_SPRITE_VERSION}`])
-);
+const TOWER_SPRITE_PATHS = {
+  peasant: "/assets/towers/level1/peasant.png",
+  archer: "/assets/towers/level1/archer.png",
+  stonethrower: "/assets/towers/level1/catapult.png",
+  frost_turret: "/assets/towers/level1/frozentower.png",
+  cactus: "/assets/towers/level1/cactus.png",
+  spark: "/assets/towers/level1/lightning.png",
+  banner: "/assets/towers/level1/banner.png",
+  soul_reaper: `/assets/towers/level6/soul_reaper.png?v=${TOWER_SPRITE_VERSION}`,
+  heaven_archon: `/assets/towers/level6/heaven_archon.png?v=${TOWER_SPRITE_VERSION}`,
+  time_keeper: `/assets/towers/level6/time_keeper.png?v=${TOWER_SPRITE_VERSION}`,
+  plague_master: `/assets/towers/level6/plague_master.png?v=${TOWER_SPRITE_VERSION}`,
+  thunderer: `/assets/towers/level6/thunderer.png?v=${TOWER_SPRITE_VERSION}`,
+  small_but_strong: `/assets/towers/level6/small_but_strong.png?v=${TOWER_SPRITE_VERSION}`,
+  archiarcher: `/assets/towers/level6/archiarcher.png?v=${TOWER_SPRITE_VERSION}`,
+  anglosax: `/assets/towers/level6/anglosax.png?v=${TOWER_SPRITE_VERSION}`,
+  money_doctor: `/assets/towers/level6/money_doctor.png?v=${TOWER_SPRITE_VERSION}`,
+  flame_of_fate: `/assets/towers/level6/flame_of_fate.png?v=${TOWER_SPRITE_VERSION}`,
+  shadow_altar: `/assets/towers/level6/shadow_altar.png?v=${TOWER_SPRITE_VERSION}`,
+  colossus: `/assets/towers/level6/colossus.png?v=${TOWER_SPRITE_VERSION}`,
+  heaven_oracle: `/assets/towers/level6/heaven_oracle.png?v=${TOWER_SPRITE_VERSION}`,
+  devourer: `/assets/towers/level6/devourer.png?v=${TOWER_SPRITE_VERSION}`,
+  star_judgment: `/assets/towers/level6/star_judgment.png?v=${TOWER_SPRITE_VERSION}`
+};
 const MINE_SPRITE_VERSION = "20260304a";
 const MINE_SPRITE_PATH = `/assets/towers/mine.png?v=${MINE_SPRITE_VERSION}`;
 
