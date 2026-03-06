@@ -482,3 +482,10 @@ Update:
   - shop sells item bags (limit 30),
   - mystery bags drop every 5 waves up to 6 total.
 - Validation: `node --check main.js` and `node --check main-ui-test.js` passed.
+
+Update:
+- Endgame mine cashout moved from wave 30 start to endless transition moment (when first extra wave starts after countdown).
+- Tower tuning updates (main + ui-test):
+  - `Абсолютный холод`: renamed, removed splash pattern, freeze chance reduced to 2%.
+  - `Небесный шторм`: renamed, removed crit and magic-resist shred.
+- Validation: `node --check main.js` and `node --check main-ui-test.js` passed.

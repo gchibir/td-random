@@ -508,7 +508,7 @@ const EXPERT_TOWERS = [
   makeTower({ id: "sharpshooter", family: "sharpshooter", level: 4, tier: "Уровень 4", name: "Башня Меткий стрелок", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 6.5, cooldown: 1.4, baseDamage: 220, critChance: 0.25, critMultiplier: 2.5, shotColor: "#f0dfbc", bodyColor: "#8a694d", trimColor: "#fff5db", visual: "ballista", talent: "25% шанс крита x2.5.", description: "Сильный дальний крит." }),
   makeTower({ id: "punisher", family: "punisher", level: 4, tier: "Уровень 4", name: "Каратель", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 5.5, cooldown: 1.1, baseDamage: 260, percentCurrentHpDamage: 0.10, percentCurrentHpChance: 0.25, shotColor: "#e0a368", bodyColor: "#7a4a38", trimColor: "#ffd49a", visual: "spike", talent: "25% шанс нанести 10% текущего HP.", description: "Тяжелый силовой палач." }),
   makeTower({ id: "stardrop", family: "stardrop", level: 4, tier: "Уровень 4", name: "Звездопад", attributeType: "Интеллект", attackType: "Магическая", pattern: "nova", rangeCells: 5.5, cooldown: 0.4, baseDamage: 80, allTargetsChance: 0.30, shotColor: "#ffe9aa", bodyColor: "#7a6dbe", trimColor: "#fff6d0", visual: "flare", talent: "30% шанс задеть всех в радиусе.", description: "Вспышка массовой магии." }),
-  makeTower({ id: "absolute_cold", family: "absolute_cold", level: 4, tier: "Уровень 4", name: "Башня Абсолютный холод", attributeType: "Интеллект", attackType: "Магическая по области", pattern: "splash", rangeCells: 5.5, cooldown: 1.0, baseDamage: 100, splashRadiusCells: 1.8, slowFactor: 0.8, slowDuration: 3, freezeChance: 0.10, freezeDuration: 1.0, shotColor: "#ecffff", bodyColor: "#5a9dc0", trimColor: "#ffffff", visual: "frost", talent: "Замедление 20%, заморозка 10%.", description: "Глубокий холод по области." }),
+  makeTower({ id: "absolute_cold", family: "absolute_cold", level: 4, tier: "Уровень 4", name: "Абсолютный холод", attributeType: "Интеллект", attackType: "Магическая", pattern: "slow", rangeCells: 5.5, cooldown: 1.0, baseDamage: 100, slowFactor: 0.8, slowDuration: 3, freezeChance: 0.02, freezeDuration: 1.0, shotColor: "#ecffff", bodyColor: "#5a9dc0", trimColor: "#ffffff", visual: "frost", talent: "Замедление 20%, заморозка 2%.", description: "Магический контроль одиночной цели." }),
   makeTower({ id: "black_ivy", family: "black_ivy", level: 4, tier: "Уровень 4", name: "Чёрный плющ", attributeType: "Интеллект", attackType: "Магическая", pattern: "poison", rangeCells: 5.5, cooldown: 1.3, baseDamage: 95, poisonDamage: 45, poisonDuration: 5, shotColor: "#dbff9f", bodyColor: "#538e3a", trimColor: "#fbffe3", visual: "toxin", talent: "Яд 45/сек на 5 сек.", description: "Тяжелый одиночный яд." }),
   makeTower({ id: "lightning_lord", family: "lightning_lord", level: 4, tier: "Уровень 4", name: "Молниеносец", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 6, cooldown: 0.8, baseDamage: 120, multiTargets: 5, chainFalloff: 0.25, shotColor: "#fff8b9", bodyColor: "#a5912c", trimColor: "#fffde8", visual: "flare", talent: "5 целей, -25% за прыжок.", description: "Мощная цепная магия." }),
   makeTower({ id: "war_banner", family: "war_banner", level: 4, tier: "Уровень 4", name: "Знамя войны", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 4.5, cooldown: 0.3, baseDamage: 30, auraDamageBoost: 0.10, auraAttackSpeedBoost: 0.15, shotColor: "#ffe184", bodyColor: "#8b3232", trimColor: "#ffef9b", visual: "banner", talent: "Урон +10%, скорость +15%.", description: "Сильная комбинированная аура." })
@@ -520,7 +520,7 @@ const LEGEND_TOWERS = [
   makeTower({ id: "cataclysm", family: "cataclysm", level: 5, tier: "Уровень 5", name: "Катаклизм", attributeType: "Сила", attackType: "Физическая", pattern: "single", rangeCells: 5, cooldown: 1.0, baseDamage: 360, pulseStunChance: 0.20, pulseStunRadiusCells: 2.5, pulseStunDuration: 0.8, shotColor: "#dbe2ea", bodyColor: "#88919f", trimColor: "#ffffff", visual: "mortar", talent: "20% шанс оглушить вокруг себя.", description: "Тяжелый удар с волной контроля." }),
   makeTower({ id: "ice_throne", family: "ice_throne", level: 5, tier: "Уровень 5", name: "Ледяной трон", attributeType: "Интеллект", attackType: "Магическая по области", pattern: "splash", rangeCells: 4, cooldown: 1.1, baseDamage: 190, splashRadiusCells: 1.5, slowFactor: 0.75, slowDuration: 3, freezeChance: 0.15, freezeDuration: 0.8, shotColor: "#f2ffff", bodyColor: "#62a8cb", trimColor: "#ffffff", visual: "frost", talent: "Замедление 25%, заморозка 15%.", description: "Поздний ледяной сплэш." }),
   makeTower({ id: "plague_lord", family: "plague_lord", level: 5, tier: "Уровень 5", name: "Чумной владыка", attributeType: "Интеллект", attackType: "Магическая", pattern: "poison", rangeCells: 4, cooldown: 1.3, baseDamage: 150, poisonDamage: 60, poisonDuration: 6, poisonSpreadCount: 2, shotColor: "#e6ffad", bodyColor: "#5ea144", trimColor: "#ffffff", visual: "toxin", talent: "Яд 60/сек, 2 доп. цели.", description: "Поздний заразный яд." }),
-  makeTower({ id: "sky_storm", family: "sky_storm", level: 5, tier: "Уровень 5", name: "Башня Небесный шторм", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 6.5, cooldown: 0.65, baseDamage: 190, multiTargets: 6, chainFalloff: 0.20, magicShredPercent: 0.10, critChance: 0.05, critMultiplier: 2, shotColor: "#fff9cc", bodyColor: "#b29d34", trimColor: "#ffffff", visual: "flare", talent: "6 целей, каждая цель с шансом на двойной урон.", description: "Пиковая цепная молния." }),
+  makeTower({ id: "sky_storm", family: "sky_storm", level: 5, tier: "Уровень 5", name: "Небесный шторм", attributeType: "Интеллект", attackType: "Магическая цепная", pattern: "chain", rangeCells: 6.5, cooldown: 0.65, baseDamage: 190, multiTargets: 6, chainFalloff: 0.20, shotColor: "#fff9cc", bodyColor: "#b29d34", trimColor: "#ffffff", visual: "flare", talent: "6 целей, -20% урона за прыжок.", description: "Пиковая цепная молния без доп. дебаффов." }),
   makeTower({ id: "ancient_totem", family: "ancient_totem", level: 5, tier: "Уровень 5", name: "Древний тотем", attributeType: "Ловкость", attackType: "Физическая", pattern: "single", rangeCells: 5, cooldown: 0.3, baseDamage: 50, auraDamageBoost: 0.15, auraAttackSpeedBoost: 0.25, shotColor: "#ffeb9a", bodyColor: "#953c3c", trimColor: "#fff3b0", visual: "banner", talent: "Урон +15%, скорость +25%.", description: "Сильнейшая поддержка пятого уровня." })
 ];
 
@@ -1987,9 +1987,6 @@ function beginWave() {
   state.skipAvailable = false;
   rollCurrentNuggetPrice();
   processMinesForWaveStart();
-  if (state.wave === ENDLESS_FORMULA.baseWaveForExtra) {
-    cashOutRemainingMines();
-  }
   resetWaveDamage();
 }
 
@@ -2909,6 +2906,7 @@ function updateWave(dt) {
   if (state.endlessStartDelay > 0) {
     state.endlessStartDelay = Math.max(0, state.endlessStartDelay - dt);
     if (state.endlessStartDelay === 0) {
+      cashOutRemainingMines();
       state.endlessMode = true;
       state.waveActive = true;
       state.waveSpawned = 0;
