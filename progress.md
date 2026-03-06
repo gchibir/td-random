@@ -507,3 +507,7 @@ Update:
 - Increased level-1 tower sprite render scale by 2x in both main and ui-test builds.
 - Implemented in `drawTowerImageSprite`: `tierScale = 2` for `tower.level === 1`.
 - Validation: `node --check main.js` and `node --check main-ui-test.js` passed.
+
+Update:
+- Increased level-1 sprite scale further by +10% (2.0 -> 2.2) in both main and ui-test builds.
+- Validation: `node --check main.js` and `node --check main-ui-test.js` passed.
