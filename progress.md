@@ -502,3 +502,8 @@ Update:
   - banner -> assets/towers/level1/banner.png
 - Kept existing level-6 mappings unchanged.
 - Validation: `node --check main.js` passed.
+
+Update:
+- Increased level-1 tower sprite render scale by 2x in both main and ui-test builds.
+- Implemented in `drawTowerImageSprite`: `tierScale = 2` for `tower.level === 1`.
+- Validation: `node --check main.js` and `node --check main-ui-test.js` passed.

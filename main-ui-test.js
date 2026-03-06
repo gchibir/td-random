@@ -3690,8 +3690,9 @@ function drawTowerImageSprite(tower) {
 
   const maxSize = tower.level >= 6 ? TILE - 4 : TILE - 8;
   const scale = Math.min(maxSize / img.naturalWidth, maxSize / img.naturalHeight);
-  const drawW = Math.max(1, Math.round(img.naturalWidth * scale));
-  const drawH = Math.max(1, Math.round(img.naturalHeight * scale));
+  const tierScale = tower.level === 1 ? 2 : 1;
+  const drawW = Math.max(1, Math.round(img.naturalWidth * scale * tierScale));
+  const drawH = Math.max(1, Math.round(img.naturalHeight * scale * tierScale));
   const drawX = Math.round(tower.x - drawW / 2);
   const drawY = Math.round(tower.y - drawH / 2);
 
