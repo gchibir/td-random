@@ -7493,11 +7493,33 @@ function initTelegramWebApp() {
     window.addEventListener("resize", applyTelegramViewportLayout);
     return;
   }
+  try {
+    tg.disableVerticalSwipes?.();
+    if (typeof tg.isVerticalSwipesEnabled === "boolean") {
+      tg.isVerticalSwipesEnabled = false;
+    }
+  } catch {}
   if (typeof tg.onEvent === "function") {
     tg.onEvent("viewportChanged", applyTelegramViewportLayout);
   }
   window.addEventListener("resize", applyTelegramViewportLayout);
 }
+
+canvas.addEventListener(
+  "touchstart",
+  (event) => {
+    if (event.cancelable) event.preventDefault();
+  },
+  { passive: false }
+);
+
+canvas.addEventListener(
+  "touchmove",
+  (event) => {
+    if (event.cancelable) event.preventDefault();
+  },
+  { passive: false }
+);
 
 let lastFrame = performance.now();
 function frame(now) {
