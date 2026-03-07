@@ -2394,6 +2394,18 @@ function equipItemOnTower(targetTower) {
   return true;
 }
 
+function moveSelectedTowerItemToInventory(slotIndex) {
+  if (slotIndex < 0 || slotIndex >= state.inventory.length) return false;
+  if (state.inventory[slotIndex] !== null) return false;
+  if (state.pendingItemTransfer?.source !== "tower") return false;
+  const sourceTower = getTowerById(state.pendingItemTransfer.towerInstanceId);
+  if (!sourceTower?.equippedItem) return false;
+  state.inventory[slotIndex] = { ...sourceTower.equippedItem };
+  sourceTower.equippedItem = null;
+  clearItemSelection();
+  return true;
+}
+
 function removeStructure(structure) {
   if (structure?.kind === "tower") {
     if (state.selectedTowerItemTowerId === structure.instanceId) {
@@ -6842,6 +6854,9 @@ function handleTap(event) {
   const inventorySlot = findInventorySlotAt(event.clientX, event.clientY);
   if (inventorySlot != null) {
     if (!state.inventory[inventorySlot]) {
+      if (state.pendingItemTransfer?.source === "tower") {
+        moveSelectedTowerItemToInventory(inventorySlot);
+      }
       if (state.selectedItemSlot === inventorySlot) {
         clearItemSelection();
       }
