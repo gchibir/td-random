@@ -750,6 +750,7 @@ const STACKABLE_INVENTORY_ITEM_IDS = new Set([
   "fish_trout",
   "mystery_bag"
 ]);
+const ITEM_ICON_SCALE = 1.2;
 const SHOP_ITEM_GROUPS = [
   [
     {
@@ -4595,16 +4596,20 @@ function drawInventoryStrip() {
       ctx.save();
       ctx.translate(cx, cy);
       if (isFish) {
-        const drawW = Math.round(slot.w * 0.9);
-        const drawH = Math.round(slot.h * 0.34);
+        const maxW = slot.w - 2;
+        const maxH = slot.h - 2;
+        const baseW = Math.round(slot.w * 0.9);
+        const baseH = Math.round(slot.h * 0.34);
+        const drawW = Math.min(maxW, Math.round(baseW * ITEM_ICON_SCALE));
+        const drawH = Math.min(maxH, Math.round(baseH * ITEM_ICON_SCALE));
         ctx.rotate(Math.PI / 4);
         ctx.drawImage(icon, -drawW / 2, -drawH / 2, drawW, drawH);
       } else {
         const maxW = slot.w - 2;
         const maxH = slot.h - 2;
         const scale = Math.min(maxW / icon.naturalWidth, maxH / icon.naturalHeight);
-        const drawW = Math.max(1, Math.round(icon.naturalWidth * scale));
-        const drawH = Math.max(1, Math.round(icon.naturalHeight * scale));
+        const drawW = Math.max(1, Math.min(maxW, Math.round(icon.naturalWidth * scale * ITEM_ICON_SCALE)));
+        const drawH = Math.max(1, Math.min(maxH, Math.round(icon.naturalHeight * scale * ITEM_ICON_SCALE)));
         ctx.drawImage(icon, -drawW / 2, -drawH / 2, drawW, drawH);
       }
       ctx.restore();
@@ -6262,8 +6267,8 @@ function drawEncyclopediaItemIcon(itemDef, x, y, size) {
     const maxW = size - 4;
     const maxH = size - 4;
     const scale = Math.min(maxW / icon.naturalWidth, maxH / icon.naturalHeight);
-    const drawW = Math.max(1, Math.round(icon.naturalWidth * scale));
-    const drawH = Math.max(1, Math.round(icon.naturalHeight * scale));
+    const drawW = Math.max(1, Math.min(maxW, Math.round(icon.naturalWidth * scale * ITEM_ICON_SCALE)));
+    const drawH = Math.max(1, Math.min(maxH, Math.round(icon.naturalHeight * scale * ITEM_ICON_SCALE)));
     const drawX = Math.round(x + (size - drawW) / 2);
     const drawY = Math.round(y + (size - drawH) / 2);
     ctx.drawImage(icon, drawX, drawY, drawW, drawH);
