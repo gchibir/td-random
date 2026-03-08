@@ -673,9 +673,9 @@ const ITEM_BAG_SHOP_LIMIT = readNumber(WAVE_CONSTANTS.itemBagShopLimit, readNumb
 const MYSTERY_BAG_DROP_LIMIT = readNumber(WAVE_CONSTANTS.mysteryBagDropLimit, 6);
 const ATTRIBUTE_UPGRADE_COST = readNumber(WAVE_CONSTANTS.attributeUpgradeCost, 500);
 const DEFAULT_BOSS_DEFS = [
-  { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 180, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
-  { id: "boss2", name: "Босс 2", hp: 15000, armor: 15, magicResist: 0.35, cost: 150, cooldown: 180, maxBuys: 4, rewardMines: 4, castleDamage: 5, color: "#7c2d12" },
-  { id: "boss3", name: "Босс 3", hp: 25000, armor: 20, magicResist: 0.45, cost: 220, cooldown: 180, maxBuys: 4, rewardMines: 8, castleDamage: 5, color: "#4c1d95" }
+  { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 10800, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
+  { id: "boss2", name: "Босс 2", hp: 15000, armor: 15, magicResist: 0.35, cost: 150, cooldown: 10800, maxBuys: 4, rewardMines: 4, castleDamage: 5, color: "#7c2d12" },
+  { id: "boss3", name: "Босс 3", hp: 25000, armor: 20, magicResist: 0.45, cost: 220, cooldown: 10800, maxBuys: 4, rewardMines: 8, castleDamage: 5, color: "#4c1d95" }
 ];
 const BOSS_DEFS = deepCloneJson(readArray(WAVE_BALANCE_CONFIG.bosses, DEFAULT_BOSS_DEFS), DEFAULT_BOSS_DEFS);
 const TOWER_SELL_VALUES = {
@@ -4577,6 +4577,8 @@ function drawInventoryStrip() {
   for (const slot of getInventorySlotRects()) {
     const item = state.inventory[slot.index];
     const selected = state.selectedItemSlot === slot.index;
+    const itemDef = item ? getItemDefById(item.itemId) : null;
+    const isTier2 = !!(itemDef && itemDef.level >= 2);
     fillRoundedRect(
       slot.x,
       slot.y,
@@ -4584,10 +4586,10 @@ function drawInventoryStrip() {
       slot.h,
       10,
       selected ? "#d4a93d" : "rgba(10, 21, 32, 0.38)",
-      selected ? "#ffe7a2" : "rgba(255,255,255,0.1)"
+      isTier2 ? "rgba(255,214,102,0.95)" : (selected ? "#ffe7a2" : "rgba(255,255,255,0.1)")
     );
     if (!item) continue;
-    const def = getItemDefById(item.itemId);
+    const def = itemDef;
     const icon = INVENTORY_ICONS[item.itemId];
     const isFish = item.itemId === "fish_carp" || item.itemId === "fish_ide" || item.itemId === "fish_trout";
     if (icon && icon.complete && icon.naturalWidth && icon.naturalHeight) {
@@ -5505,12 +5507,25 @@ function drawInfoPanel() {
 
   const equippedItemDef = getItemDefById(selectedTower.equippedItem?.itemId);
   if (itemRect) {
-    fillRoundedRect(itemRect.x, itemRect.y, itemRect.w, itemRect.h, 8, "#36536a", "rgba(255,255,255,0.1)");
-    ctx.fillStyle = "#ffffff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 14px Avenir Next";
-    ctx.fillText(equippedItemDef ? formatItemShortLabel(equippedItemDef) : "+", itemRect.x + itemRect.w / 2, itemRect.y + itemRect.h / 2 + 0.5);
+    const tier2 = !!(equippedItemDef && equippedItemDef.level >= 2);
+    fillRoundedRect(itemRect.x, itemRect.y, itemRect.w, itemRect.h, 8, "#36536a", tier2 ? "rgba(255,214,102,0.95)" : "rgba(255,255,255,0.1)");
+    const icon = equippedItemDef ? INVENTORY_ICONS[equippedItemDef.id] : null;
+    if (icon && icon.complete && icon.naturalWidth && icon.naturalHeight) {
+      const maxW = itemRect.w - 4;
+      const maxH = itemRect.h - 4;
+      const scale = Math.min(maxW / icon.naturalWidth, maxH / icon.naturalHeight);
+      const drawW = Math.max(1, Math.min(maxW, Math.round(icon.naturalWidth * scale * ITEM_ICON_SCALE)));
+      const drawH = Math.max(1, Math.min(maxH, Math.round(icon.naturalHeight * scale * ITEM_ICON_SCALE)));
+      const drawX = Math.round(itemRect.x + (itemRect.w - drawW) / 2);
+      const drawY = Math.round(itemRect.y + (itemRect.h - drawH) / 2);
+      ctx.drawImage(icon, drawX, drawY, drawW, drawH);
+    } else {
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 14px Avenir Next";
+      ctx.fillText(equippedItemDef ? formatItemShortLabel(equippedItemDef) : "+", itemRect.x + itemRect.w / 2, itemRect.y + itemRect.h / 2 + 0.5);
+    }
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
   }
