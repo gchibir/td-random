@@ -1106,6 +1106,7 @@ const state = {
   selectedShopItem: "boss1",
   itemBagsBought: 0,
   mysteryBagsDropped: 0,
+  baitAwardedUntilWave: 0,
   selectedToolAction: null,
   attributeLevels: {
     "Сила": 1,
@@ -1113,7 +1114,13 @@ const state = {
     "Интеллект": 1
   },
   damagePanelOpen: false,
-  inventory: Array.from({ length: INVENTORY_SLOT_COUNT }, () => null),
+  inventory: (() => {
+    const slots = Array.from({ length: INVENTORY_SLOT_COUNT }, () => null);
+    if (slots.length > 0) {
+      slots[0] = { itemId: "fish_bait", count: 3 };
+    }
+    return slots;
+  })(),
   selectedItemSlot: null,
   selectedTowerItemTowerId: null,
   itemMenuOpen: false,
@@ -2120,6 +2127,7 @@ function cashOutRemainingMines() {
 }
 
 function beginWave() {
+  ensureBaitAwardForWave(state.wave);
   state.waveActive = true;
   state.waveSpawned = 0;
   state.waveKilled = 0;
@@ -2144,7 +2152,6 @@ function startNextWaveRound() {
   finishCompletedWave();
   state.wave += 1;
   maybeAwardMysteryBag(state.wave);
-  maybeAwardFishingBait(state.wave);
   state.intermission = 0;
   if (state.wave <= ENDLESS_FORMULA.minesStopWave) {
     state.mineStock += 2;
@@ -2270,9 +2277,13 @@ function maybeAwardMysteryBag(nextWave) {
 
 function maybeAwardFishingBait(nextWave) {
   if (nextWave <= 0) return;
-  const amount = nextWave === 1 ? 3 : 1;
-  for (let i = 0; i < amount; i += 1) {
-    addItemToInventory("fish_bait");
+  addItemToInventory("fish_bait");
+}
+
+function ensureBaitAwardForWave(targetWave) {
+  while (state.baitAwardedUntilWave < targetWave) {
+    state.baitAwardedUntilWave += 1;
+    maybeAwardFishingBait(state.baitAwardedUntilWave);
   }
 }
 
