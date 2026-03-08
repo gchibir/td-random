@@ -1347,6 +1347,16 @@ function pointInRect(point, rect) {
   );
 }
 
+function pointInRectExpanded(point, rect, pad = 0) {
+  if (!point || !rect) return false;
+  return (
+    point.x >= rect.x - pad &&
+    point.x <= rect.x + rect.w + pad &&
+    point.y >= rect.y - pad &&
+    point.y <= rect.y + rect.h + pad
+  );
+}
+
 function loadBestWave() {
   try {
     const raw = Number(window.localStorage.getItem(BEST_WAVE_STORAGE_KEY) || "1");
@@ -4211,7 +4221,7 @@ function getFloatingInfoRect() {
   if (!state.infoPanelVisible || (!selectedTower && !selectedEnemy && !selectedItemDef && !selectedAura)) return null;
   return {
     x: BOARD_X + 2,
-    y: BOARD_Y + MAP_VISUAL_H - 146,
+    y: BOARD_Y + BOARD_H - 146,
     w: BOARD_W - 4,
     h: 138
   };
@@ -6579,28 +6589,12 @@ function findEnemyAt(clientX, clientY) {
 
 function findActionButtonAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
-  return (
-    getActionButtons().find(
-      (button) =>
-        point.x >= button.x &&
-        point.x <= button.x + button.w &&
-        point.y >= button.y &&
-        point.y <= button.y + button.h
-    ) || null
-  );
+  return getActionButtons().find((button) => pointInRectExpanded(point, button, 2)) || null;
 }
 
 function findBuildPickerActionAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
-  return (
-    getBuildPickerButtons().find(
-      (button) =>
-        point.x >= button.x &&
-        point.x <= button.x + button.w &&
-        point.y >= button.y &&
-        point.y <= button.y + button.h
-    ) || null
-  );
+  return getBuildPickerButtons().find((button) => pointInRectExpanded(point, button, 2)) || null;
 }
 
 function findAuraBadgeAt(clientX, clientY) {
@@ -6669,12 +6663,7 @@ function findInventorySlotAt(clientX, clientY) {
 function findItemMenuActionAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
   for (const button of getItemMenuButtons()) {
-    if (
-      point.x >= button.x &&
-      point.x <= button.x + button.w &&
-      point.y >= button.y &&
-      point.y <= button.y + button.h
-    ) {
+    if (pointInRectExpanded(point, button, 2)) {
       return button.id;
     }
   }
@@ -6725,22 +6714,11 @@ function findShopActionAt(clientX, clientY) {
   if (!state.shopOpen) return null;
   const point = getCanvasPoint(clientX, clientY);
   const close = getShopCloseRect();
-  if (
-    close &&
-    point.x >= close.x &&
-    point.x <= close.x + close.w &&
-    point.y >= close.y &&
-    point.y <= close.y + close.h
-  ) {
+  if (pointInRectExpanded(point, close, 2)) {
     return "close_shop";
   }
   for (const button of getShopButtons()) {
-    if (
-      point.x >= button.x &&
-      point.x <= button.x + button.w &&
-      point.y >= button.y &&
-      point.y <= button.y + button.h
-    ) {
+    if (pointInRectExpanded(point, button, 2)) {
       return button.id;
     }
   }
@@ -6750,22 +6728,11 @@ function findShopActionAt(clientX, clientY) {
 function findToolsActionAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
   const close = getToolsCloseRect();
-  if (
-    close &&
-    point.x >= close.x &&
-    point.x <= close.x + close.w &&
-    point.y >= close.y &&
-    point.y <= close.y + close.h
-  ) {
+  if (pointInRectExpanded(point, close, 2)) {
     return "close_tools";
   }
   for (const button of getToolsMenuButtons()) {
-    if (
-      point.x >= button.x &&
-      point.x <= button.x + button.w &&
-      point.y >= button.y &&
-      point.y <= button.y + button.h
-    ) {
+    if (pointInRectExpanded(point, button, 2)) {
       return button.id;
     }
   }
@@ -6783,12 +6750,7 @@ function findPauseMenuActionAt(clientX, clientY) {
     return null;
   }
   for (const button of getMenuButtons()) {
-    if (
-      point.x >= button.x &&
-      point.x <= button.x + button.w &&
-      point.y >= button.y &&
-      point.y <= button.y + button.h
-    ) {
+    if (pointInRectExpanded(point, button, 2)) {
       return button.id;
     }
   }
@@ -6799,12 +6761,7 @@ function findEncyclopediaTabAt(clientX, clientY) {
   if (!isPauseFullscreenPanel() && state.pausePanel !== "encyclopedia") return null;
   const point = getCanvasPoint(clientX, clientY);
   for (const tab of getEncyclopediaTabButtons()) {
-    if (
-      point.x >= tab.x &&
-      point.x <= tab.x + tab.w &&
-      point.y >= tab.y &&
-      point.y <= tab.y + tab.h
-    ) {
+    if (pointInRectExpanded(point, tab, 2)) {
       return tab.id;
     }
   }
