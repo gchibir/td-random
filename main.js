@@ -31,6 +31,11 @@ const UI_ICON_PATHS = {
   shop: "/assets/ui/bascet.png",
   tools: "/assets/ui/tools.png"
 };
+const TARGET_PRIORITY_ICON_PATHS = {
+  exit: "/assets/ui/rangeattack.png",
+  lowhp: "/assets/ui/lesshpattack.png",
+  nearest: "/assets/ui/miliattack.png"
+};
 const INVENTORY_ICON_PATHS = {
   fish_bait: "/assets/inventory/hook.png",
   fish_carp: "/assets/inventory/carp.png",
@@ -158,6 +163,21 @@ function loadUiIcons() {
 }
 
 const UI_ICONS = loadUiIcons();
+
+function loadTargetPriorityIcons() {
+  const icons = {};
+  for (const [id, src] of Object.entries(TARGET_PRIORITY_ICON_PATHS)) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      if (typeof render === "function") render();
+    };
+    icons[id] = img;
+  }
+  return icons;
+}
+
+const TARGET_PRIORITY_ICONS = loadTargetPriorityIcons();
 
 function loadInventoryIcons() {
   const icons = {};
@@ -4406,9 +4426,9 @@ function getTargetPriorityButtons() {
   const x = STATS_X + 8;
   const y = STATS_Y + Math.floor((LAYOUT.inventoryH - totalH) / 2);
   return [
-    { id: "exit", label: "🏹", x, y, w: buttonW, h: buttonH },
-    { id: "lowhp", label: "🩸", x, y: y + buttonH + gap, w: buttonW, h: buttonH },
-    { id: "nearest", label: "🗡", x, y: y + (buttonH + gap) * 2, w: buttonW, h: buttonH }
+    { id: "exit", x, y, w: buttonW, h: buttonH },
+    { id: "lowhp", x, y: y + buttonH + gap, w: buttonW, h: buttonH },
+    { id: "nearest", x, y: y + (buttonH + gap) * 2, w: buttonW, h: buttonH }
   ];
 }
 
@@ -4470,11 +4490,23 @@ function drawInventoryStrip() {
       "rgba(10, 21, 32, 0.56)",
       active ? "rgba(255,80,80,0.95)" : "rgba(255,255,255,0.2)"
     );
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 21px Avenir Next";
-    ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 + 0.5);
+    const icon = TARGET_PRIORITY_ICONS[button.id];
+    if (icon && icon.complete && icon.naturalWidth && icon.naturalHeight) {
+      const maxW = button.w - 8;
+      const maxH = button.h - 8;
+      const scale = Math.min(maxW / icon.naturalWidth, maxH / icon.naturalHeight);
+      const drawW = Math.max(1, Math.round(icon.naturalWidth * scale));
+      const drawH = Math.max(1, Math.round(icon.naturalHeight * scale));
+      const drawX = Math.round(button.x + (button.w - drawW) / 2);
+      const drawY = Math.round(button.y + (button.h - drawH) / 2);
+      ctx.drawImage(icon, drawX, drawY, drawW, drawH);
+    } else {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 15px Avenir Next";
+      ctx.fillText(getPriorityLabel(button.id), button.x + button.w / 2, button.y + button.h / 2 + 0.5);
+    }
   }
   for (const slot of getInventorySlotRects()) {
     const item = state.inventory[slot.index];
