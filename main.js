@@ -4046,7 +4046,7 @@ function drawTowerImageSprite(tower) {
 
   const maxSize = tower.level >= 6 ? TILE - 4 : TILE - 8;
   const scale = Math.min(maxSize / img.naturalWidth, maxSize / img.naturalHeight);
-  const tierScale = tower.level === 1 ? 2.2 : (tower.level >= 2 && tower.level <= 5 ? 2.5 : 1);
+  const tierScale = tower.level === 1 ? 2.2 : (tower.level >= 2 && tower.level <= 5 ? 2.5 : (tower.level >= 6 ? 1.2 : 1));
   const drawW = Math.max(1, Math.round(img.naturalWidth * scale * tierScale));
   const drawH = Math.max(1, Math.round(img.naturalHeight * scale * tierScale));
   const drawX = Math.round(tower.x - drawW / 2);
@@ -6257,11 +6257,23 @@ function drawEncyclopediaItemIcon(itemDef, x, y, size) {
   const fill = level >= 2 ? "#7b5bcf" : "#476a83";
   const stroke = level >= 2 ? "#d6c4ff" : "#b7d7ee";
   fillRoundedRect(x, y, size, size, 10, fill, stroke);
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 13px Avenir Next";
-  ctx.fillText(formatItemShortLabel(itemDef), x + size / 2, y + size / 2 + 0.5);
+  const icon = INVENTORY_ICONS[itemDef?.id];
+  if (icon && icon.complete && icon.naturalWidth && icon.naturalHeight) {
+    const maxW = size - 4;
+    const maxH = size - 4;
+    const scale = Math.min(maxW / icon.naturalWidth, maxH / icon.naturalHeight);
+    const drawW = Math.max(1, Math.round(icon.naturalWidth * scale));
+    const drawH = Math.max(1, Math.round(icon.naturalHeight * scale));
+    const drawX = Math.round(x + (size - drawW) / 2);
+    const drawY = Math.round(y + (size - drawH) / 2);
+    ctx.drawImage(icon, drawX, drawY, drawW, drawH);
+  } else {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px Avenir Next";
+    ctx.fillText(formatItemShortLabel(itemDef), x + size / 2, y + size / 2 + 0.5);
+  }
 }
 
 function drawEncyclopediaPanel(infoRect) {
