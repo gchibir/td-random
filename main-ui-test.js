@@ -723,6 +723,13 @@ const FISHING_REWARD_TABLE = [
   { type: "silver", amount: 500, weight: 1, label: "+500 серебра", color: "#ffe58a" },
   { type: "item", itemId: "mystery_bag", weight: 0.5, label: "Таинственный мешок", color: "#b97dff" }
 ];
+const STACKABLE_INVENTORY_ITEM_IDS = new Set([
+  "fish_bait",
+  "fish_carp",
+  "fish_ide",
+  "fish_trout",
+  "mystery_bag"
+]);
 const SHOP_ITEM_GROUPS = [
   [
     {
@@ -2312,8 +2319,8 @@ function hideInfoPanel() {
 }
 
 function addItemToInventory(itemId) {
-  if (itemId === "fish_bait") {
-    const existingSlot = state.inventory.findIndex((slot) => slot?.itemId === "fish_bait");
+  if (STACKABLE_INVENTORY_ITEM_IDS.has(itemId)) {
+    const existingSlot = state.inventory.findIndex((slot) => slot?.itemId === itemId);
     if (existingSlot >= 0) {
       const current = getInventoryItemCount(state.inventory[existingSlot]);
       state.inventory[existingSlot].count = current + 1;
@@ -2495,7 +2502,7 @@ function applyBagUpgradeToTower(targetTower) {
 
 function consumeInventoryItem(slotIndex) {
   if (slotIndex < 0 || slotIndex >= state.inventory.length) return;
-  state.inventory[slotIndex] = null;
+  decreaseInventorySlot(slotIndex, 1);
   clearItemSelection();
 }
 
@@ -4590,11 +4597,11 @@ function drawInventoryStrip() {
     }
     const count = getInventoryItemCount(item);
     if (count > 1) {
-      ctx.textAlign = "right";
+      ctx.textAlign = "left";
       ctx.textBaseline = "bottom";
       ctx.font = "bold 11px Avenir Next";
       ctx.fillStyle = selected ? "#1f1702" : "#e8f5ff";
-      ctx.fillText(`x${count}`, slot.x + slot.w - 4, slot.y + slot.h - 3);
+      ctx.fillText(`x${count}`, slot.x + 4, slot.y + slot.h - 3);
     }
   }
 }
