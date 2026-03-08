@@ -56,7 +56,11 @@ const INVENTORY_ICON_PATHS = {
   power_ring_1: "/assets/inventory/items/ring%20of%20power.png",
   power_ring_2: "/assets/inventory/items/hardenedringofpower.png",
   royal_armor_1: "/assets/inventory/items/princecuirass.png",
-  royal_armor_2: "/assets/inventory/items/kingscuirass.png"
+  royal_armor_2: "/assets/inventory/items/kingscuirass.png",
+  justice_hammer_1: "/assets/inventory/items/hammerofjustice.png",
+  justice_hammer_2: "/assets/inventory/items/enchancedhammerofjustice.png",
+  rage_sword_1: "/assets/inventory/items/swordofravange.png",
+  rage_sword_2: "/assets/inventory/items/bloodyswordofravange.png"
 };
 const MAP_TILE_PATHS = {
   grass: [
