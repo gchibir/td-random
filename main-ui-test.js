@@ -4100,7 +4100,13 @@ function drawBaseLives() {
 
 function getSkipButtonRect() {
   if (!state.skipAvailable || state.endlessMode || state.endlessStartDelay > 0 || state.mode === "defeat") return null;
-  return { x: TOP_HUD_X + TOP_HUD_W - 92, y: TOP_HUD_Y + 6, w: 36, h: LAYOUT.statsH - 12 };
+  const slots = getInventorySlotRects();
+  const lastSlot = slots[slots.length - 1];
+  const w = 64;
+  const h = 64;
+  const x = Math.min(STATS_X + STATS_W - w - 10, lastSlot.x + lastSlot.w + 10);
+  const y = STATS_Y + Math.floor((LAYOUT.inventoryH - h) / 2);
+  return { x, y, w, h };
 }
 
 function getPauseButtonRect() {
@@ -4126,24 +4132,24 @@ function drawSkipButton() {
     button.y,
     button.w,
     button.h,
-    14,
+    16,
     `rgba(15, 25, 38, ${0.72 + pulse * 0.25})`,
     `rgba(255,255,255,${0.18 + pulse * 0.28})`
   );
   ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 3 + pulse * 0.8;
+  ctx.lineWidth = 4 + pulse * 1.1;
   ctx.lineCap = "round";
   const cx = button.x + button.w / 2;
   const cy = button.y + button.h / 2;
   ctx.beginPath();
-  ctx.moveTo(cx - 8, cy - 7);
-  ctx.lineTo(cx - 1, cy);
-  ctx.lineTo(cx - 8, cy + 7);
+  ctx.moveTo(cx - 14, cy - 11);
+  ctx.lineTo(cx - 3, cy);
+  ctx.lineTo(cx - 14, cy + 11);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(cx, cy - 7);
-  ctx.lineTo(cx + 7, cy);
-  ctx.lineTo(cx, cy + 7);
+  ctx.moveTo(cx + 2, cy - 11);
+  ctx.lineTo(cx + 13, cy);
+  ctx.lineTo(cx + 2, cy + 11);
   ctx.stroke();
 }
 
@@ -4302,7 +4308,6 @@ function drawTowerLevelRing(tower) {
 function drawStatsStrip() {
   fillRoundedRect(TOP_HUD_X, TOP_HUD_Y, TOP_HUD_W, LAYOUT.statsH, 16, COLORS.statsPanel, "rgba(255,255,255,0.12)");
   drawPauseButton();
-  drawSkipButton();
   drawBaseLives();
 
   const items = [
@@ -4313,7 +4318,7 @@ function drawStatsStrip() {
   ];
 
   const contentX = TOP_HUD_X + 56;
-  const rightReserve = getSkipButtonRect() ? 96 : 56;
+  const rightReserve = 56;
   const contentW = TOP_HUD_W - 56 - rightReserve;
   const itemW = contentW / items.length;
   ctx.textAlign = "center";
@@ -4366,7 +4371,7 @@ function drawStatsStrip() {
 
 function getTopHudMetricRects() {
   const contentX = TOP_HUD_X + 56;
-  const rightReserve = getSkipButtonRect() ? 96 : 56;
+  const rightReserve = 56;
   const contentW = TOP_HUD_W - 56 - rightReserve;
   const itemW = contentW / 4;
   return {
@@ -6513,6 +6518,7 @@ function draw() {
   drawStatsStrip();
   drawAuraPanel();
   drawInventoryStrip();
+  drawSkipButton();
   drawControlPanel();
   drawDefeatOverlay();
   drawPauseMenu();
