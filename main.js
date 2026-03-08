@@ -653,9 +653,9 @@ const ITEM_BAG_SHOP_LIMIT = readNumber(WAVE_CONSTANTS.itemBagShopLimit, readNumb
 const MYSTERY_BAG_DROP_LIMIT = readNumber(WAVE_CONSTANTS.mysteryBagDropLimit, 6);
 const ATTRIBUTE_UPGRADE_COST = readNumber(WAVE_CONSTANTS.attributeUpgradeCost, 500);
 const DEFAULT_BOSS_DEFS = [
-  { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 240, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
-  { id: "boss2", name: "Босс 2", hp: 15000, armor: 15, magicResist: 0.35, cost: 150, cooldown: 240, maxBuys: 4, rewardMines: 4, castleDamage: 5, color: "#7c2d12" },
-  { id: "boss3", name: "Босс 3", hp: 25000, armor: 20, magicResist: 0.45, cost: 220, cooldown: 240, maxBuys: 4, rewardMines: 8, castleDamage: 5, color: "#4c1d95" }
+  { id: "boss1", name: "Босс 1", hp: 5000, armor: 10, magicResist: 0.25, cost: 100, cooldown: 180, maxBuys: 4, rewardMines: 2, castleDamage: 5, color: "#7f1d1d" },
+  { id: "boss2", name: "Босс 2", hp: 15000, armor: 15, magicResist: 0.35, cost: 150, cooldown: 180, maxBuys: 4, rewardMines: 4, castleDamage: 5, color: "#7c2d12" },
+  { id: "boss3", name: "Босс 3", hp: 25000, armor: 20, magicResist: 0.45, cost: 220, cooldown: 180, maxBuys: 4, rewardMines: 8, castleDamage: 5, color: "#4c1d95" }
 ];
 const BOSS_DEFS = deepCloneJson(readArray(WAVE_BALANCE_CONFIG.bosses, DEFAULT_BOSS_DEFS), DEFAULT_BOSS_DEFS);
 const TOWER_SELL_VALUES = {
@@ -2191,6 +2191,14 @@ function startNextWaveRound() {
     state.mineStock += 2;
   }
   beginWave();
+}
+
+function applySkipCooldownReduction(seconds) {
+  if (!seconds || seconds <= 0) return;
+  for (const status of Object.values(state.bossShop || {})) {
+    if (!status) continue;
+    status.nextReadyAt = Math.max(state.time, (status.nextReadyAt || 0) - seconds);
+  }
 }
 
 function finishWaveThirtyAndQueueEndless() {
@@ -7213,6 +7221,7 @@ function handleTap(event) {
   if (findSkipButtonAt(event.clientX, event.clientY)) {
     hideInfoPanel();
     if (state.skipAvailable && !state.endlessMode && state.wave < ENDLESS_FORMULA.baseWaveForExtra) {
+      applySkipCooldownReduction(state.roundTimeLeft || 0);
       startNextWaveRound();
     }
     draw();
