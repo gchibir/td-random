@@ -40,7 +40,23 @@ const INVENTORY_ICON_PATHS = {
   fish_bait: "/assets/inventory/hook.png",
   fish_carp: "/assets/inventory/carp.png",
   fish_ide: "/assets/inventory/yaz.png",
-  fish_trout: "/assets/inventory/forell.png"
+  fish_trout: "/assets/inventory/forell.png",
+  time_pendulum_1: "/assets/inventory/items/pendulumoftime.png",
+  time_pendulum_2: "/assets/inventory/items/enchatedpendulumoftime.png",
+  cursed_shard_1: "/assets/inventory/items/cursedshard.png",
+  cursed_shard_2: "/assets/inventory/items/supercursedshard.png",
+  speed_diamond_1: "/assets/inventory/items/diamondofspeed.png",
+  speed_diamond_2: "/assets/inventory/items/enchanteddiamondofspeed.png",
+  energy_emitter_1: "/assets/inventory/items/radiance.png",
+  energy_emitter_2: "/assets/inventory/items/enchantedradiance.png",
+  chaos_artifact_1: "/assets/inventory/items/atrephactofchaos.png",
+  chaos_artifact_2: "/assets/inventory/items/cursedartefactofchaos.png",
+  corruption_sphere_1: "/assets/inventory/items/sphereofdecay.png",
+  corruption_sphere_2: "/assets/inventory/items/rottedsphereofdecay.png",
+  power_ring_1: "/assets/inventory/items/ring%20of%20power.png",
+  power_ring_2: "/assets/inventory/items/hardenedringofpower.png",
+  royal_armor_1: "/assets/inventory/items/princecuirass.png",
+  royal_armor_2: "/assets/inventory/items/kingscuirass.png"
 };
 const MAP_TILE_PATHS = {
   grass: [
@@ -4580,8 +4596,8 @@ function drawInventoryStrip() {
         ctx.rotate(Math.PI / 4);
         ctx.drawImage(icon, -drawW / 2, -drawH / 2, drawW, drawH);
       } else {
-        const maxW = slot.w - 6;
-        const maxH = slot.h - 6;
+        const maxW = slot.w - 2;
+        const maxH = slot.h - 2;
         const scale = Math.min(maxW / icon.naturalWidth, maxH / icon.naturalHeight);
         const drawW = Math.max(1, Math.round(icon.naturalWidth * scale));
         const drawH = Math.max(1, Math.round(icon.naturalHeight * scale));
