@@ -1091,6 +1091,7 @@ const state = {
   pauseMenuOpen: false,
   mainMenuOpen: true,
   pausePanel: "settings",
+  globalTargetPriority: "nearest",
   encyclopediaTab: "towers",
   encyclopediaScroll: 0,
   encyclopediaScrollMax: 0,
@@ -1706,6 +1707,7 @@ function createTower(cellC, cellR, towerDef) {
     attributeType: towerDef.attributeType,
     attributeLevel: Math.max(towerDef.attributeLevel || 1, state.attributeLevels[towerDef.attributeType] || 1),
     attackType: towerDef.attackType,
+    targetPriority: state.globalTargetPriority || "nearest",
     pattern: towerDef.pattern,
     cost: towerDef.cost,
     range: attackRangeCells * TILE,
@@ -2809,15 +2811,29 @@ function getTowerAbilityDescriptions(tower) {
 }
 
 function getSortedTargetsInRange(tower) {
+  const priority = tower?.targetPriority || state.globalTargetPriority || "nearest";
   return state.enemies
     .filter((enemy) => !enemy.dead)
     .map((enemy) => {
       const pos = enemyPixel(enemy);
       const dist = Math.hypot(pos.x - tower.x, pos.y - tower.y);
-      return { enemy, pos, dist };
+      const progress = enemy.segment + enemy.t;
+      return { enemy, pos, dist, progress };
     })
     .filter((entry) => entry.dist <= tower.range)
-    .sort((a, b) => a.dist - b.dist);
+    .sort((a, b) => {
+      if (priority === "exit") {
+        if (b.progress !== a.progress) return b.progress - a.progress;
+        return a.dist - b.dist;
+      }
+      if (priority === "lowhp") {
+        if (a.enemy.hp !== b.enemy.hp) return a.enemy.hp - b.enemy.hp;
+        if (b.progress !== a.progress) return b.progress - a.progress;
+        return a.dist - b.dist;
+      }
+      if (a.dist !== b.dist) return a.dist - b.dist;
+      return b.progress - a.progress;
+    });
 }
 
 function addShot(fromX, fromY, toX, toY, color, width, crit) {
@@ -4382,6 +4398,46 @@ function getTopHudMetricRects() {
   };
 }
 
+function getTargetPriorityButtons() {
+  const buttonW = 46;
+  const buttonH = 34;
+  const gap = 6;
+  const totalH = buttonH * 3 + gap * 2;
+  const x = STATS_X + 8;
+  const y = STATS_Y + Math.floor((LAYOUT.inventoryH - totalH) / 2);
+  return [
+    { id: "exit", label: "🏹", x, y, w: buttonW, h: buttonH },
+    { id: "lowhp", label: "🩸", x, y: y + buttonH + gap, w: buttonW, h: buttonH },
+    { id: "nearest", label: "🗡", x, y: y + (buttonH + gap) * 2, w: buttonW, h: buttonH }
+  ];
+}
+
+function getCurrentPrioritySelection() {
+  const selected = getSelectedStructure();
+  if (selected?.kind === "tower") return selected.targetPriority || "nearest";
+  return state.globalTargetPriority || "nearest";
+}
+
+function getPriorityLabel(priority) {
+  if (priority === "exit") return "К выходу";
+  if (priority === "lowhp") return "Меньше HP";
+  return "Ближайшие";
+}
+
+function applyTargetPriority(priority) {
+  const selected = getSelectedStructure();
+  if (selected?.kind === "tower") {
+    selected.targetPriority = priority;
+    return;
+  }
+  state.globalTargetPriority = priority;
+  for (const tower of state.towers) {
+    if (tower.kind === "tower") {
+      tower.targetPriority = priority;
+    }
+  }
+}
+
 function getInventorySlotRects() {
   const gap = 6;
   const slotSize = 54;
@@ -4402,6 +4458,24 @@ function getInventorySlotRects() {
 
 function drawInventoryStrip() {
   fillRoundedRect(STATS_X, STATS_Y, STATS_W, LAYOUT.inventoryH, 16, "#21435f", "rgba(255,255,255,0.12)");
+  const selectedPriority = getCurrentPrioritySelection();
+  for (const button of getTargetPriorityButtons()) {
+    const active = button.id === selectedPriority;
+    fillRoundedRect(
+      button.x,
+      button.y,
+      button.w,
+      button.h,
+      10,
+      "rgba(10, 21, 32, 0.56)",
+      active ? "rgba(255,80,80,0.95)" : "rgba(255,255,255,0.2)"
+    );
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 21px Avenir Next";
+    ctx.fillText(button.label, button.x + button.w / 2, button.y + button.h / 2 + 0.5);
+  }
   for (const slot of getInventorySlotRects()) {
     const item = state.inventory[slot.index];
     const selected = state.selectedItemSlot === slot.index;
@@ -5327,10 +5401,12 @@ function drawInfoPanel() {
   const levelLine = `Уровень ${selectedTower.level} • ${selectedTower.attackType}`;
   const attributeLine = `${selectedTower.attributeType} ${selectedTower.attributeLevel || 1}`;
   const statLine = `Урон ${effectiveDamage} • ${effectiveCooldown.toFixed(2)}с • Рэндж ${selectedTower.rangeCells.toFixed(1)}`;
+  const priorityLine = `Приоритет: ${getPriorityLabel(selectedTower.targetPriority || "nearest")}`;
   const abilityLines = getTowerAbilityDescriptions(selectedTower);
   const detailText = abilityLines.length ? abilityLines[0] : selectedTower.talent || "Без особой способности.";
   const levelLineCount = countWrappedLines(levelLine, textW, "16px Avenir Next");
   const statLineCount = countWrappedLines(statLine, textW, "16px Avenir Next");
+  const priorityLineCount = countWrappedLines(priorityLine, textW, "15px Avenir Next");
   const detailLineCount = countWrappedLines(`Способность: ${detailText}`, textW, "15px Avenir Next");
   contentHeight =
     26 +
@@ -5339,6 +5415,8 @@ function drawInfoPanel() {
     levelLineCount * lineHeights.body +
     8 +
     statLineCount * lineHeights.body +
+    8 +
+    priorityLineCount * lineHeights.detail +
     12 +
     detailLineCount * lineHeights.detail;
   state.infoScrollMax = Math.max(0, contentHeight - body.h);
@@ -5367,9 +5445,19 @@ function drawInfoPanel() {
     8
   );
   drawWrappedText(
+    priorityLine,
+    body.x,
+    scrollY + 58 + levelLineCount * lineHeights.body + 8 + statLineCount * lineHeights.body + 8,
+    textW,
+    lineHeights.detail,
+    "#ffb3b3",
+    "15px Avenir Next",
+    8
+  );
+  drawWrappedText(
     `Способность: ${detailText}`,
     body.x,
-    scrollY + 58 + levelLineCount * lineHeights.body + 8 + statLineCount * lineHeights.body + 12,
+    scrollY + 58 + levelLineCount * lineHeights.body + 8 + statLineCount * lineHeights.body + 8 + priorityLineCount * lineHeights.detail + 12,
     textW,
     lineHeights.detail,
     "#ffffff",
@@ -6666,6 +6754,11 @@ function findInventorySlotAt(clientX, clientY) {
   return null;
 }
 
+function findTargetPriorityButtonAt(clientX, clientY) {
+  const point = getCanvasPoint(clientX, clientY);
+  return getTargetPriorityButtons().find((button) => pointInRectExpanded(point, button, 2)) || null;
+}
+
 function findItemMenuActionAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
   for (const button of getItemMenuButtons()) {
@@ -7058,6 +7151,14 @@ function handleTap(event) {
     } else {
       activateMysteryBagChoice(itemMenuAction);
     }
+    draw();
+    return;
+  }
+
+  const priorityButton = findTargetPriorityButtonAt(event.clientX, event.clientY);
+  if (priorityButton) {
+    hideInfoPanel();
+    applyTargetPriority(priorityButton.id);
     draw();
     return;
   }
