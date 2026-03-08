@@ -31,6 +31,12 @@ const UI_ICON_PATHS = {
   shop: "/assets/ui/bascet.png",
   tools: "/assets/ui/tools.png"
 };
+const INVENTORY_ICON_PATHS = {
+  fish_bait: "/assets/inventory/hook.png",
+  fish_carp: "/assets/inventory/carp.png",
+  fish_ide: "/assets/inventory/yaz.png",
+  fish_trout: "/assets/inventory/forell.png"
+};
 const MAP_TILE_PATHS = {
   grass: [
     "/assets/tiles/grass/grass_1.png",
@@ -152,6 +158,21 @@ function loadUiIcons() {
 }
 
 const UI_ICONS = loadUiIcons();
+
+function loadInventoryIcons() {
+  const icons = {};
+  for (const [id, src] of Object.entries(INVENTORY_ICON_PATHS)) {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      if (typeof render === "function") render();
+    };
+    icons[id] = img;
+  }
+  return icons;
+}
+
+const INVENTORY_ICONS = loadInventoryIcons();
 
 function loadMapTiles() {
   const loadOne = (src) => {
@@ -633,8 +654,55 @@ const ITEM_DEFS = {
     name: "Таинственный мешок",
     short: "Мш",
     description: "Редкий мешок с одной из трех наград на выбор."
+  },
+  fish_bait: {
+    id: "fish_bait",
+    name: "Приманка",
+    short: "Пр",
+    description: "Приманка для рыбы. Закинь в воду, может там что-то водится.",
+    equippable: false,
+    sellable: false
+  },
+  fish_carp: {
+    id: "fish_carp",
+    name: "Карп",
+    short: "Кр",
+    description: "Пойманная рыба. Можно продать за 30 серебра.",
+    equippable: false,
+    sellable: true,
+    sellValue: 30
+  },
+  fish_ide: {
+    id: "fish_ide",
+    name: "Язь",
+    short: "Яз",
+    description: "Пойманная рыба. Можно продать за 30 серебра.",
+    equippable: false,
+    sellable: true,
+    sellValue: 30
+  },
+  fish_trout: {
+    id: "fish_trout",
+    name: "Форель",
+    short: "Фр",
+    description: "Пойманная рыба. Можно продать за 50 серебра.",
+    equippable: false,
+    sellable: true,
+    sellValue: 50
   }
 };
+const FISHING_REWARD_TABLE = [
+  { type: "silver", amount: 50, weight: 25, label: "+50 серебра", color: "#ffe58a" },
+  { type: "item", itemId: "fish_carp", weight: 25, label: "Карп", color: "#9fe8ff" },
+  { type: "item", itemId: "fish_ide", weight: 25, label: "Язь", color: "#9fe8ff" },
+  { type: "item", itemId: "fish_trout", weight: 20, label: "Форель", color: "#8fffd4" },
+  { type: "nuggets", amount: 4, weight: 20, label: "+4 самородка", color: "#ffd86b" },
+  { type: "nothing", weight: 10, label: "Обрыв лески", color: "#ff9e9e" },
+  { type: "silver", amount: 100, weight: 10, label: "+100 серебра", color: "#ffe58a" },
+  { type: "random_shop_item", weight: 2, label: "Случайный предмет", color: "#c5b7ff" },
+  { type: "silver", amount: 500, weight: 1, label: "+500 серебра", color: "#ffe58a" },
+  { type: "item", itemId: "mystery_bag", weight: 0.5, label: "Таинственный мешок", color: "#b97dff" }
+];
 const SHOP_ITEM_GROUPS = [
   [
     {
@@ -1054,6 +1122,8 @@ const state = {
   pendingBagUpgrade: false,
   bagPlacementHint: "",
   towerAnnouncement: null,
+  fishingRewardAnnouncement: null,
+  fishingRewardPopup: null,
   infoPanelVisible: false,
   infoScroll: 0,
   infoScrollMax: 0,
@@ -2074,6 +2144,7 @@ function startNextWaveRound() {
   finishCompletedWave();
   state.wave += 1;
   maybeAwardMysteryBag(state.wave);
+  maybeAwardFishingBait(state.wave);
   state.intermission = 0;
   if (state.wave <= ENDLESS_FORMULA.minesStopWave) {
     state.mineStock += 2;
@@ -2107,6 +2178,23 @@ function getAdjustedNuggetPrice() {
 
 function getItemDefById(itemId) {
   return itemId ? ITEM_BY_ID[itemId] || null : null;
+}
+
+function getInventoryItemCount(slot) {
+  return slot?.count && slot.count > 1 ? slot.count : 1;
+}
+
+function decreaseInventorySlot(slotIndex, amount = 1) {
+  if (slotIndex < 0 || slotIndex >= state.inventory.length) return false;
+  const slot = state.inventory[slotIndex];
+  if (!slot) return false;
+  const count = getInventoryItemCount(slot);
+  if (count <= amount) {
+    state.inventory[slotIndex] = null;
+  } else {
+    slot.count = count - amount;
+  }
+  return true;
 }
 
 function canTowerHoldItems(tower) {
@@ -2152,6 +2240,14 @@ function hideInfoPanel() {
 }
 
 function addItemToInventory(itemId) {
+  if (itemId === "fish_bait") {
+    const existingSlot = state.inventory.findIndex((slot) => slot?.itemId === "fish_bait");
+    if (existingSlot >= 0) {
+      const current = getInventoryItemCount(state.inventory[existingSlot]);
+      state.inventory[existingSlot].count = current + 1;
+      return true;
+    }
+  }
   const slotIndex = state.inventory.findIndex((slot) => slot === null);
   if (slotIndex < 0) return false;
   state.inventory[slotIndex] = { itemId };
@@ -2170,6 +2266,62 @@ function maybeAwardMysteryBag(nextWave) {
   if (addItemToInventory("mystery_bag")) {
     state.mysteryBagsDropped += 1;
   }
+}
+
+function maybeAwardFishingBait(nextWave) {
+  if (nextWave <= 0) return;
+  const amount = nextWave === 1 ? 3 : 1;
+  for (let i = 0; i < amount; i += 1) {
+    addItemToInventory("fish_bait");
+  }
+}
+
+function rollFishingReward() {
+  const total = FISHING_REWARD_TABLE.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = Math.random() * total;
+  for (const entry of FISHING_REWARD_TABLE) {
+    if (roll < entry.weight) return entry;
+    roll -= entry.weight;
+  }
+  return FISHING_REWARD_TABLE[0];
+}
+
+function showFishingReward(text, color) {
+  state.fishingRewardAnnouncement = { text, color, until: state.time + 2.2 };
+  state.fishingRewardPopup = { text, color, strokeColor: "rgba(255,255,255,0.85)", until: state.time + 1.5 };
+}
+
+function awardFishingReward() {
+  const reward = rollFishingReward();
+  let text = reward.label;
+  let color = reward.color || "#ffe58a";
+
+  if (reward.type === "silver") {
+    state.silver += reward.amount || 0;
+  } else if (reward.type === "nuggets") {
+    state.goldNuggets += reward.amount || 0;
+  } else if (reward.type === "nothing") {
+    // no reward
+  } else if (reward.type === "item") {
+    const ok = addItemToInventory(reward.itemId);
+    if (!ok) {
+      text = "Инвентарь полон";
+      color = "#ff9e9e";
+    }
+  } else if (reward.type === "random_shop_item") {
+    const randomItem = rollRandomShopItemId();
+    const ok = addItemToInventory(randomItem);
+    if (!ok) {
+      text = "Инвентарь полон";
+      color = "#ff9e9e";
+    } else {
+      const def = getItemDefById(randomItem);
+      text = def ? def.name : "Случайный предмет";
+      color = "#c5b7ff";
+    }
+  }
+
+  showFishingReward(text, color);
 }
 
 function getEmptyBuildCells() {
@@ -2339,9 +2491,10 @@ function sellSelectedItem() {
   const itemDef = getSelectedTransferItemDef();
   const item = getSelectedTransferItem();
   if (!item || !itemDef) return false;
+  if (itemDef.sellable === false || !itemDef.sellValue) return false;
   state.silver += getItemSellValue(itemDef);
   if (state.pendingItemTransfer?.source === "inventory") {
-    state.inventory[state.pendingItemTransfer.slotIndex] = null;
+    decreaseInventorySlot(state.pendingItemTransfer.slotIndex, 1);
   } else if (state.pendingItemTransfer?.source === "tower") {
     const tower = getTowerById(state.pendingItemTransfer.towerInstanceId);
     if (tower) tower.equippedItem = null;
@@ -2354,6 +2507,7 @@ function equipItemOnTower(targetTower) {
   const item = getSelectedTransferItem();
   const itemDef = getSelectedTransferItemDef();
   if (!item || !itemDef || !canTowerHoldItems(targetTower)) return false;
+  if (itemDef.equippable === false) return false;
   if (
     state.pendingItemTransfer?.source === "tower" &&
     state.pendingItemTransfer.towerInstanceId === targetTower.instanceId
@@ -2372,7 +2526,7 @@ function equipItemOnTower(targetTower) {
     ) {
       targetTower.equippedItem = { itemId: `${itemDef.baseId}_2` };
       if (state.pendingItemTransfer.source === "inventory") {
-        state.inventory[state.pendingItemTransfer.slotIndex] = null;
+        decreaseInventorySlot(state.pendingItemTransfer.slotIndex, 1);
       } else {
         const sourceTower = getTowerById(state.pendingItemTransfer.towerInstanceId);
         if (sourceTower) sourceTower.equippedItem = null;
@@ -2385,7 +2539,7 @@ function equipItemOnTower(targetTower) {
 
   targetTower.equippedItem = { itemId: item.itemId };
   if (state.pendingItemTransfer.source === "inventory") {
-    state.inventory[state.pendingItemTransfer.slotIndex] = null;
+    decreaseInventorySlot(state.pendingItemTransfer.slotIndex, 1);
   } else {
     const sourceTower = getTowerById(state.pendingItemTransfer.towerInstanceId);
     if (sourceTower) sourceTower.equippedItem = null;
@@ -4089,7 +4243,7 @@ function getInfoPanelCloseRect() {
 function getInfoPanelSellButtonRect() {
   const rect = getFloatingInfoRect();
   const itemDef = getSelectedTransferItemDef();
-  if (!rect || !itemDef || itemDef.id === "mystery_bag") return null;
+  if (!rect || !itemDef || itemDef.id === "mystery_bag" || itemDef.sellable === false || !itemDef.sellValue) return null;
   return {
     x: rect.x + rect.w - 132,
     y: rect.y + rect.h - 40,
@@ -4236,12 +4390,61 @@ function drawInventoryStrip() {
     );
     if (!item) continue;
     const def = getItemDefById(item.itemId);
-    ctx.fillStyle = selected ? "#1f1702" : "#ffffff";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 13px Avenir Next";
-    ctx.fillText(formatItemShortLabel(def), slot.x + slot.w / 2, slot.y + slot.h / 2 + 0.5);
+    const icon = INVENTORY_ICONS[item.itemId];
+    const isFish = item.itemId === "fish_carp" || item.itemId === "fish_ide" || item.itemId === "fish_trout";
+    if (icon && icon.complete && icon.naturalWidth && icon.naturalHeight) {
+      const cx = slot.x + slot.w / 2;
+      const cy = slot.y + slot.h / 2;
+      ctx.save();
+      ctx.translate(cx, cy);
+      if (isFish) {
+        const drawW = Math.round(slot.w * 0.9);
+        const drawH = Math.round(slot.h * 0.34);
+        ctx.rotate(Math.PI / 4);
+        ctx.drawImage(icon, -drawW / 2, -drawH / 2, drawW, drawH);
+      } else {
+        const maxW = slot.w - 6;
+        const maxH = slot.h - 6;
+        const scale = Math.min(maxW / icon.naturalWidth, maxH / icon.naturalHeight);
+        const drawW = Math.max(1, Math.round(icon.naturalWidth * scale));
+        const drawH = Math.max(1, Math.round(icon.naturalHeight * scale));
+        ctx.drawImage(icon, -drawW / 2, -drawH / 2, drawW, drawH);
+      }
+      ctx.restore();
+    } else {
+      ctx.fillStyle = selected ? "#1f1702" : "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 13px Avenir Next";
+      ctx.fillText(formatItemShortLabel(def), slot.x + slot.w / 2, slot.y + slot.h / 2 + 0.5);
+    }
+    const count = getInventoryItemCount(item);
+    if (count > 1) {
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+      ctx.font = "bold 11px Avenir Next";
+      ctx.fillStyle = selected ? "#1f1702" : "#e8f5ff";
+      ctx.fillText(`x${count}`, slot.x + slot.w - 4, slot.y + slot.h - 3);
+    }
   }
+}
+
+function drawFishingRewardPopup() {
+  const popup = state.fishingRewardPopup;
+  if (!popup || state.time >= popup.until) return;
+  const w = 290;
+  const h = 74;
+  const x = Math.floor((canvas.width - w) / 2);
+  const y = Math.floor((canvas.height - h) / 2) - 28;
+  fillRoundedRect(x, y, w, h, 18, "rgba(10, 21, 32, 0.92)", popup.strokeColor || "rgba(255, 216, 107, 0.95)");
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#b9d0e0";
+  ctx.font = "600 14px Avenir Next";
+  ctx.fillText("Улов", x + w / 2, y + 20);
+  ctx.fillStyle = popup.color || "#ffe58a";
+  ctx.font = "bold 24px Avenir Next";
+  ctx.fillText(popup.text, x + w / 2, y + 47);
 }
 
 function getAuraPanelBadges() {
@@ -4950,6 +5153,16 @@ function drawTowerAnnouncement() {
   drawEventText(state.towerAnnouncement.text, BOARD_Y + offsetY, {
     color: state.towerAnnouncement.color,
     font: "bold 23px Avenir Next",
+    boxH: 38
+  });
+}
+
+function drawFishingRewardAnnouncement() {
+  const entry = state.fishingRewardAnnouncement;
+  if (!entry || state.time >= entry.until) return;
+  drawEventText(`Рыбалка: ${entry.text}`, BOARD_Y + 24, {
+    color: entry.color || "#ffe58a",
+    font: "bold 22px Avenir Next",
     boxH: 38
   });
 }
@@ -6272,6 +6485,8 @@ function draw() {
   drawBoardViewport();
   drawPendingBagHint();
   drawTowerAnnouncement();
+  drawFishingRewardAnnouncement();
+  drawFishingRewardPopup();
   drawDamagePanel();
   drawTopTimerBanner();
   drawStatsStrip();
@@ -6294,6 +6509,28 @@ function getCanvasPoint(clientX, clientY) {
 
 function isPointInBoard(point) {
   return point.x >= BOARD_X && point.x <= BOARD_X + BOARD_W && point.y >= BOARD_Y && point.y <= BOARD_Y + MAP_VISUAL_H;
+}
+
+function getRiverRect() {
+  return { x: BOARD_X, y: BOARD_Y + BOARD_H, w: BOARD_W, h: TILE };
+}
+
+function isPointInRiver(point) {
+  const rect = getRiverRect();
+  return point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h;
+}
+
+function tryCastBaitInRiver(clientX, clientY) {
+  const point = getCanvasPoint(clientX, clientY);
+  if (!isPointInRiver(point)) return false;
+  if (state.pendingItemTransfer?.source !== "inventory") return false;
+  const selectedItem = getSelectedTransferItem();
+  const slotIndex = state.pendingItemTransfer.slotIndex;
+  if (!selectedItem || selectedItem.itemId !== "fish_bait") return false;
+  if (!decreaseInventorySlot(slotIndex, 1)) return false;
+  awardFishingReward();
+  clearItemSelection();
+  return true;
 }
 
 function findBoardCellAt(clientX, clientY) {
@@ -7092,6 +7329,12 @@ function handleTap(event) {
   }
 
   const boardCell = findBoardCellAt(event.clientX, event.clientY);
+  if (!boardCell && state.pendingItemTransfer?.source === "inventory") {
+    if (tryCastBaitInRiver(event.clientX, event.clientY)) {
+      draw();
+      return;
+    }
+  }
   if (boardCell) {
     const hitEnemy = findEnemyAt(event.clientX, event.clientY);
     if (hitEnemy) {
