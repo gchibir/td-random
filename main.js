@@ -1102,6 +1102,8 @@ const state = {
   goldNuggets: 0,
   currentNuggetPrice: randInt(getNuggetPriceRange(1).min, getNuggetPriceRange(1).max),
   mineStock: 2,
+  totalMinesBuilt: 0,
+  selectedHudInfo: null,
   buildMode: "simple",
   towerBuildMode: "simple",
   buildPickerOpen: false,
@@ -2212,7 +2214,29 @@ function sellNuggets() {
 }
 
 function getAdjustedNuggetPrice() {
-  return Math.round(state.currentNuggetPrice * (1 + state.nuggetSaleBonus));
+  const mineBonus = 1 + (getMineUpgradeLevel() - 1) * 0.05;
+  return Math.round(state.currentNuggetPrice * (1 + state.nuggetSaleBonus) * mineBonus);
+}
+
+function getMineUpgradeLevel() {
+  return Math.max(1, Math.min(7, 1 + Math.floor((state.totalMinesBuilt || 0) / 10)));
+}
+
+function toRoman(num) {
+  const vals = [
+    [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"],
+    [100, "C"], [90, "XC"], [50, "L"], [40, "XL"],
+    [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"]
+  ];
+  let n = Math.max(1, Math.floor(num));
+  let out = "";
+  for (const [v, s] of vals) {
+    while (n >= v) {
+      out += s;
+      n -= v;
+    }
+  }
+  return out;
 }
 
 function getItemDefById(itemId) {
@@ -2273,6 +2297,7 @@ function clearItemSelection() {
 
 function hideInfoPanel() {
   state.auraInfoOpen = false;
+  state.selectedHudInfo = null;
   state.infoPanelVisible = false;
   state.infoScroll = 0;
   state.infoScrollMax = 0;
@@ -4259,8 +4284,9 @@ function getFloatingInfoRect() {
   const selectedEnemy = getSelectedEnemy();
   const selectedItemDef = getSelectedTransferItemDef();
   const selectedAura = getSelectedAuraBadge();
+  const selectedHudInfo = state.selectedHudInfo;
   const selectedTower = selected?.kind === "tower" ? selected : null;
-  if (!state.infoPanelVisible || (!selectedTower && !selectedEnemy && !selectedItemDef && !selectedAura)) return null;
+  if (!state.infoPanelVisible || (!selectedTower && !selectedEnemy && !selectedItemDef && !selectedAura && !selectedHudInfo)) return null;
   return {
     x: BOARD_X + 2,
     y: BOARD_Y + BOARD_H - 146,
@@ -4398,6 +4424,10 @@ function drawStatsStrip() {
       ctx.fillStyle = COLORS.statsText;
       ctx.font = "bold 13px Avenir Next";
       ctx.fillText(String(item.value), cx + 12, cy);
+      const mineRoman = toRoman(getMineUpgradeLevel());
+      ctx.fillStyle = "#fff3c1";
+      ctx.font = "bold 11px Avenir Next";
+      ctx.fillText(mineRoman, cx + 36, cy);
     } else {
       ctx.font = "bold 12px Avenir Next";
       ctx.fillText(item.label, cx, cy);
@@ -5314,6 +5344,7 @@ function drawInfoPanel() {
   const selectedEnemy = getSelectedEnemy();
   const selectedItemDef = getSelectedTransferItemDef();
   const selectedAura = getSelectedAuraBadge();
+  const selectedHudInfo = state.selectedHudInfo;
   const body = getInfoBodyRect();
   const closeRect = getInfoPanelCloseRect();
   const selectedTower = selected?.kind === "tower" ? selected : null;
@@ -5332,6 +5363,23 @@ function drawInfoPanel() {
   drawCloseButton(closeRect);
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
+
+  if (selectedHudInfo === "mine_upgrade" && !selectedTower && !selectedEnemy && !selectedItemDef && !selectedAura) {
+    const level = getMineUpgradeLevel();
+    const bonus = 100 + (level - 1) * 5;
+    const lines = [
+      `Уровень шахт: ${toRoman(level)} (${level}/VII)`,
+      `Текущий коэффициент продажи самородков: ${bonus}%`,
+      "Прокачка: +1 уровень за каждые 10 построенных шахт",
+      "I:100% II:105% III:110% IV:115% V:120% VI:125% VII:130%"
+    ];
+    state.infoScrollMax = 0;
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 19px Avenir Next";
+    ctx.fillText("Прокачка шахт", body.x, body.y);
+    drawWrappedText(lines.join("\n"), body.x, body.y + 28, body.w, 18, "#f5fbff", "15px Avenir Next", 20);
+    return;
+  }
 
   if (selectedAura && !selectedItemDef) {
     const scopeLine =
@@ -6959,12 +7007,13 @@ function tryPlaceOnSlot(slot) {
   const pool = getPoolForBuildMode(mode);
   state.buildMode = mode;
 
-  if (mode === "mine") {
-    if (state.mineStock <= 0) return;
-    if (state.pendingItemTransfer) clearItemSelection();
-    const mine = createMine(slot.c, slot.r);
-    state.towers.push(mine);
-    state.mineStock -= 1;
+    if (mode === "mine") {
+      if (state.mineStock <= 0) return;
+      if (state.pendingItemTransfer) clearItemSelection();
+      const mine = createMine(slot.c, slot.r);
+      state.towers.push(mine);
+      state.totalMinesBuilt += 1;
+      state.mineStock -= 1;
     state.selectedCell = { c: mine.cellC, r: mine.cellR };
     state.selectedEnemyId = null;
     state.selectedAuraSourceId = null;
@@ -7402,7 +7451,18 @@ function handleTap(event) {
   }
 
   if (isPointInTopHud(event.clientX, event.clientY)) {
-    hideInfoPanel();
+    const hudRects = getTopHudMetricRects();
+    if (pointInRect(point, hudRects.nuggets)) {
+      state.selectedHudInfo = "mine_upgrade";
+      state.infoPanelVisible = true;
+      state.selectedCell = null;
+      state.selectedEnemyId = null;
+      state.selectedAuraSourceId = null;
+      state.auraInfoOpen = false;
+      state.infoScroll = 0;
+    } else {
+      hideInfoPanel();
+    }
     draw();
     return;
   }
