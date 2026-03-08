@@ -517,3 +517,11 @@ Update:
 - Implemented as `cameraZoomHint` state with smooth sine pulse over ~1.3s.
 - Hint starts on normal game start and is cancelled immediately if player touches the board.
 - Validation: `node --check main.js` and `node --check main-ui-test.js` passed.
+
+Update:
+- Added playtime tracking to client (`totalPlaySeconds`) with local persistence in `localStorage` and periodic delta submission to leaderboard API.
+- Leaderboard submit payload now includes `totalPlaySeconds` and `playSecondsDelta` (bounded), preserving existing wave/extra stats behavior.
+- Extended Vercel and Netlify leaderboard functions to store and merge `total_play_seconds` per player key.
+- Added admin stats mode: `GET /api/leaderboard?mode=admin` (or Netlify function equivalent) returning total playtime, total players, and top active players.
+- Added optional admin protection via `ADMIN_STATS_TOKEN` (checked against `x-admin-token` header or `token` query).
+- Synced `main-ui-test.js` from `main.js`.

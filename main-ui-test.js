@@ -23,6 +23,7 @@ const NICK_STORAGE_KEY = "td_random_nick";
 const BEST_WAVE_STORAGE_KEY = "td_random_best_wave";
 const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
 const LEADERBOARD_KEY_HISTORY_STORAGE_KEY = "td_random_leaderboard_key_history";
+const PLAYTIME_STORAGE_KEY = "td_random_total_play_seconds";
 const LEADERBOARD_API_PATH = "/api/leaderboard";
 const UI_ICON_PATHS = {
   build: "/assets/ui/hammer.png",
@@ -1195,6 +1196,8 @@ const state = {
   totalKills: 0,
   nickname: "",
   bestWave: 1,
+  totalPlaySeconds: 0,
+  playtimeTickRemainder: 0,
   leaderboard: [],
   leaderboardLoading: false,
   leaderboardScroll: 0,
@@ -1423,6 +1426,21 @@ function storeBestWave(bestWave) {
   } catch {}
 }
 
+function loadTotalPlaySeconds() {
+  try {
+    const raw = Number(window.localStorage.getItem(PLAYTIME_STORAGE_KEY) || "0");
+    return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function storeTotalPlaySeconds(totalPlaySeconds) {
+  try {
+    window.localStorage.setItem(PLAYTIME_STORAGE_KEY, String(Math.max(0, Math.floor(totalPlaySeconds || 0))));
+  } catch {}
+}
+
 function normalizeLeaderboardEntries(rawEntries) {
   if (!Array.isArray(rawEntries)) return [];
   const deduped = new Map();
@@ -1436,6 +1454,7 @@ function normalizeLeaderboardEntries(rawEntries) {
       name: String(entry.name).slice(0, 20),
       bestWave: Math.max(1, Number(entry.bestWave) || 1),
       bestExtraKills: Math.max(0, Number(entry.bestExtraKills) || 0),
+      totalPlaySeconds: Math.max(0, Number(entry.totalPlaySeconds) || 0),
       updatedAt: Number(entry.updatedAt) || 0
     };
     const existing = deduped.get(normalized.playerKey);
@@ -1446,6 +1465,7 @@ function normalizeLeaderboardEntries(rawEntries) {
     existing.name = normalized.name;
     existing.bestWave = Math.max(existing.bestWave, normalized.bestWave);
     existing.bestExtraKills = Math.max(existing.bestExtraKills, normalized.bestExtraKills);
+    existing.totalPlaySeconds = Math.max(existing.totalPlaySeconds || 0, normalized.totalPlaySeconds || 0);
     existing.updatedAt = Math.max(existing.updatedAt, normalized.updatedAt);
   }
   return [...deduped.values()]
@@ -1532,6 +1552,8 @@ function canUseRemoteLeaderboard() {
 }
 
 let leaderboardSubmitTimer = null;
+let leaderboardSubmitInFlight = false;
+let pendingPlaySecondsDelta = 0;
 
 async function refreshLeaderboardFromServer() {
   if (!canUseRemoteLeaderboard()) return false;
@@ -1562,6 +1584,9 @@ async function submitLeaderboardEntry() {
   const name = (state.nickname || "").trim();
   const playerKey = getLeaderboardPlayerKey();
   if (!name || !playerKey || !canUseRemoteLeaderboard()) return false;
+  if (leaderboardSubmitInFlight) return false;
+  leaderboardSubmitInFlight = true;
+  const playSecondsDelta = Math.max(0, Math.floor(pendingPlaySecondsDelta || 0));
   try {
     const legacyKeys = getLeaderboardLegacyKeys();
     const response = await fetch(LEADERBOARD_API_PATH, {
@@ -1576,6 +1601,8 @@ async function submitLeaderboardEntry() {
         name,
         bestWave: state.bestWave,
         bestExtraKills: state.extraKills || 0,
+        totalPlaySeconds: Math.max(0, Math.floor(state.totalPlaySeconds || 0)),
+        playSecondsDelta,
         legacyKeys
       })
     });
@@ -1587,9 +1614,14 @@ async function submitLeaderboardEntry() {
       storeLeaderboard(entries);
       draw();
     }
+    if (playSecondsDelta > 0) {
+      pendingPlaySecondsDelta = Math.max(0, pendingPlaySecondsDelta - playSecondsDelta);
+    }
     return true;
   } catch {
     return false;
+  } finally {
+    leaderboardSubmitInFlight = false;
   }
 }
 
@@ -1612,6 +1644,7 @@ function syncLeaderboardEntry() {
     existing.name = name;
     existing.bestWave = Math.max(existing.bestWave, state.bestWave);
     existing.bestExtraKills = Math.max(existing.bestExtraKills || 0, state.extraKills || 0);
+    existing.totalPlaySeconds = Math.max(existing.totalPlaySeconds || 0, state.totalPlaySeconds || 0);
     existing.updatedAt = Date.now();
   } else {
     entries.push({
@@ -1619,6 +1652,7 @@ function syncLeaderboardEntry() {
       name,
       bestWave: state.bestWave,
       bestExtraKills: state.extraKills || 0,
+      totalPlaySeconds: Math.max(0, Math.floor(state.totalPlaySeconds || 0)),
       updatedAt: Date.now()
     });
   }
@@ -3600,6 +3634,17 @@ function update(dt) {
   if (state.startCountdown > 0) {
     state.startCountdown = Math.max(0, state.startCountdown - dt);
     return;
+  }
+  state.playtimeTickRemainder += dt;
+  if (state.playtimeTickRemainder >= 1) {
+    const gainedSeconds = Math.floor(state.playtimeTickRemainder);
+    state.playtimeTickRemainder -= gainedSeconds;
+    state.totalPlaySeconds += gainedSeconds;
+    pendingPlaySecondsDelta += gainedSeconds;
+    storeTotalPlaySeconds(state.totalPlaySeconds);
+    if (pendingPlaySecondsDelta >= 10) {
+      scheduleLeaderboardSubmit();
+    }
   }
   updateWave(dt);
   updateEnemyEffects(dt);
@@ -7889,6 +7934,11 @@ function renderGameToText() {
       lastMineIncome: state.lastMineIncome,
       mineStock: state.mineStock
     },
+    profile: {
+      nickname: state.nickname,
+      totalPlaySeconds: Math.max(0, Math.floor(state.totalPlaySeconds || 0)),
+      pendingPlaySecondsDelta: Math.max(0, Math.floor(pendingPlaySecondsDelta || 0))
+    },
     build: {
       mode: state.buildMode,
       towerBuildMode: state.towerBuildMode,
@@ -8111,10 +8161,17 @@ function frame(now) {
 state.nickname = loadStoredNickname();
 if (state.nickname) rememberLeaderboardLegacyKey(`nick:${state.nickname.trim().toLowerCase()}`);
 state.bestWave = loadBestWave();
+state.totalPlaySeconds = loadTotalPlaySeconds();
 state.leaderboard = loadLeaderboard();
 syncLeaderboardEntry();
 void refreshLeaderboardFromServer();
 initTelegramWebApp();
+
+window.addEventListener("visibilitychange", () => {
+  if (document.hidden && pendingPlaySecondsDelta > 0) {
+    scheduleLeaderboardSubmit();
+  }
+});
 
 draw();
 if (!navigator.webdriver) {
