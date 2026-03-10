@@ -1070,6 +1070,8 @@ const ENDLESS_FORMULA = {
   magicResistValue: 0.9,
   physicalResistFromExtraWave: 500,
   physicalResistValue: 0.9,
+  controlResistFromExtraWave: 250,
+  controlDurationMultiplier: 0.1,
   baseWaveForExtra: 30,
   minesStopWave: 30,
   ...readObject(WAVE_FORMULAS.endless, {})
@@ -2062,12 +2064,17 @@ function spawnEnemy() {
     state.endlessMode && extraIndex >= ENDLESS_FORMULA.physicalResistFromExtraWave
       ? ENDLESS_FORMULA.physicalResistValue
       : 0;
+  const controlDurationMultiplier =
+    state.endlessMode && extraIndex >= ENDLESS_FORMULA.controlResistFromExtraWave
+      ? ENDLESS_FORMULA.controlDurationMultiplier
+      : 1;
   state.enemies.push(
     createEnemy({
       hp: stats.hp,
       armor: stats.armor,
       magicResist,
       physicalResist,
+      controlDurationMultiplier,
       speedMultiplier,
       isBonus,
       rewardSilver: isBonus
@@ -2108,6 +2115,7 @@ function createEnemy(spec) {
     armor: spec.armor,
     magicResist: spec.magicResist,
     physicalResist: spec.physicalResist || 0,
+    controlDurationMultiplier: Number(spec.controlDurationMultiplier) > 0 ? Number(spec.controlDurationMultiplier) : 1,
     isBonus: !!spec.isBonus,
     isBoss: !!spec.isBoss,
     bossId: spec.bossId || null,
@@ -3057,8 +3065,11 @@ function applyPoison(enemy, tower) {
 
 function applySlow(enemy, tower) {
   if (!tower.slowDuration || enemy.dead) return;
+  const durationMultiplier = Math.max(0, Number(enemy.controlDurationMultiplier) || 1);
+  const effectiveDuration = tower.slowDuration * durationMultiplier;
+  if (effectiveDuration <= 0) return;
   enemy.slowFactor = Math.min(enemy.slowFactor, tower.slowFactor);
-  enemy.slowUntil = Math.max(enemy.slowUntil, state.time + tower.slowDuration);
+  enemy.slowUntil = Math.max(enemy.slowUntil, state.time + effectiveDuration);
 }
 
 function applyArmorBreak(enemy, tower) {
@@ -3081,7 +3092,10 @@ function applyMagicShred(enemy, tower) {
 
 function applyStun(enemy, duration) {
   if (!duration || enemy.dead) return;
-  enemy.stunUntil = Math.max(enemy.stunUntil, state.time + duration);
+  const durationMultiplier = Math.max(0, Number(enemy.controlDurationMultiplier) || 1);
+  const effectiveDuration = duration * durationMultiplier;
+  if (effectiveDuration <= 0) return;
+  enemy.stunUntil = Math.max(enemy.stunUntil, state.time + effectiveDuration);
   enemy.slowFactor = Math.min(enemy.slowFactor, 0);
 }
 
