@@ -1749,11 +1749,14 @@ window.TD_BALANCE_CONFIG = {
       },
       "endless": {
         "speedBoostFromExtraWave": 850,
-        "speedBoostMultiplier": 1.25,
+        "speedBoostMultiplier": 1.5,
         "magicResistFromExtraWave": 250,
         "magicResistValue": 0.9,
         "physicalResistFromExtraWave": 500,
         "physicalResistValue": 0.9,
+        "damageResistFromExtraWave": 1000,
+        "damageResistPer10Extra": 0.001,
+        "damageResistCap": 0.99,
         "baseWaveForExtra": 30,
         "minesStopWave": 30
       },

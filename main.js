@@ -25,6 +25,8 @@ const LEADERBOARD_STORAGE_KEY = "td_random_leaderboard";
 const LEADERBOARD_KEY_HISTORY_STORAGE_KEY = "td_random_leaderboard_key_history";
 const PLAYTIME_STORAGE_KEY = "td_random_total_play_seconds";
 const LEADERBOARD_API_PATH = "/api/leaderboard";
+const LEADERBOARD_API_FALLBACK_PATH = "/.netlify/functions/leaderboard";
+const LEADERBOARD_API_OVERRIDE_PARAM = "leaderboardApi";
 const UI_ICON_PATHS = {
   build: "/assets/ui/hammer.png",
   mine: "/assets/ui/pickaxe.png",
@@ -1065,13 +1067,16 @@ const REWARD_SILVER_FORMULA = {
 
 const ENDLESS_FORMULA = {
   speedBoostFromExtraWave: 850,
-  speedBoostMultiplier: 1.25,
+  speedBoostMultiplier: 1.5,
   magicResistFromExtraWave: 250,
   magicResistValue: 0.9,
   physicalResistFromExtraWave: 500,
   physicalResistValue: 0.9,
   controlResistFromExtraWave: 250,
   controlDurationMultiplier: 0.1,
+  damageResistFromExtraWave: 1000,
+  damageResistPer10Extra: 0.001,
+  damageResistCap: 0.99,
   baseWaveForExtra: 30,
   minesStopWave: 30,
   ...readObject(WAVE_FORMULAS.endless, {})
@@ -1545,29 +1550,67 @@ function getLeaderboardLegacyKeys() {
 }
 
 function canUseRemoteLeaderboard() {
-  if (typeof window.fetch !== "function" || !/^https?:$/.test(window.location.protocol)) return false;
-  const host = window.location.hostname || "";
-  if (!host || host === "localhost" || host === "127.0.0.1" || /^\d+\.\d+\.\d+\.\d+$/.test(host)) {
-    return false;
-  }
-  return true;
+  return typeof window.fetch === "function" && /^https?:$/.test(window.location.protocol);
 }
 
 let leaderboardSubmitTimer = null;
 let leaderboardSubmitInFlight = false;
 let pendingPlaySecondsDelta = 0;
+let resolvedLeaderboardApiPath = "";
+
+function getLeaderboardApiOverride() {
+  try {
+    const value = new URLSearchParams(window.location.search).get(LEADERBOARD_API_OVERRIDE_PARAM);
+    if (!value) return "";
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("/")) return trimmed;
+  } catch {}
+  return "";
+}
+
+function getLeaderboardApiCandidates() {
+  const candidates = [getLeaderboardApiOverride(), LEADERBOARD_API_PATH, LEADERBOARD_API_FALLBACK_PATH]
+    .filter((entry) => typeof entry === "string" && entry.trim())
+    .map((entry) => entry.trim());
+  return [...new Set(candidates)];
+}
+
+async function requestLeaderboard(method, body) {
+  const headers = { Accept: "application/json" };
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const options = {
+    method,
+    cache: "no-store",
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined
+  };
+  const candidates = resolvedLeaderboardApiPath
+    ? [resolvedLeaderboardApiPath, ...getLeaderboardApiCandidates().filter((entry) => entry !== resolvedLeaderboardApiPath)]
+    : getLeaderboardApiCandidates();
+  let lastError = null;
+  for (const candidate of candidates) {
+    try {
+      const response = await fetch(candidate, options);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      resolvedLeaderboardApiPath = candidate;
+      return payload;
+    } catch (error) {
+      lastError = error;
+      console.error(`[Leaderboard] ${method} ${candidate} failed`, error);
+    }
+  }
+  throw lastError || new Error("No reachable leaderboard endpoint");
+}
 
 async function refreshLeaderboardFromServer() {
   if (!canUseRemoteLeaderboard()) return false;
   state.leaderboardLoading = true;
   try {
-    const response = await fetch(LEADERBOARD_API_PATH, {
-      method: "GET",
-      cache: "no-store",
-      headers: { Accept: "application/json" }
-    });
-    if (!response.ok) throw new Error(`Leaderboard GET failed: ${response.status}`);
-    const payload = await response.json();
+    const payload = await requestLeaderboard("GET");
     const entries = normalizeLeaderboardEntries(Array.isArray(payload) ? payload : payload?.entries);
     if (entries.length) {
       state.leaderboard = entries;
@@ -1591,25 +1634,15 @@ async function submitLeaderboardEntry() {
   const playSecondsDelta = Math.max(0, Math.floor(pendingPlaySecondsDelta || 0));
   try {
     const legacyKeys = getLeaderboardLegacyKeys();
-    const response = await fetch(LEADERBOARD_API_PATH, {
-      method: "POST",
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      },
-      body: JSON.stringify({
-        playerKey,
-        name,
-        bestWave: state.bestWave,
-        bestExtraKills: state.extraKills || 0,
-        totalPlaySeconds: Math.max(0, Math.floor(state.totalPlaySeconds || 0)),
-        playSecondsDelta,
-        legacyKeys
-      })
+    const payload = await requestLeaderboard("POST", {
+      playerKey,
+      name,
+      bestWave: state.bestWave,
+      bestExtraKills: state.extraKills || 0,
+      totalPlaySeconds: Math.max(0, Math.floor(state.totalPlaySeconds || 0)),
+      playSecondsDelta,
+      legacyKeys
     });
-    if (!response.ok) throw new Error(`Leaderboard POST failed: ${response.status}`);
-    const payload = await response.json();
     const entries = normalizeLeaderboardEntries(Array.isArray(payload) ? payload : payload?.entries);
     if (entries.length) {
       state.leaderboard = entries;
@@ -2068,12 +2101,18 @@ function spawnEnemy() {
     state.endlessMode && extraIndex >= ENDLESS_FORMULA.controlResistFromExtraWave
       ? ENDLESS_FORMULA.controlDurationMultiplier
       : 1;
+  let damageResist = 0;
+  if (state.endlessMode && extraIndex >= ENDLESS_FORMULA.damageResistFromExtraWave) {
+    const steps = Math.floor((extraIndex - ENDLESS_FORMULA.damageResistFromExtraWave) / 10);
+    damageResist = Math.min(ENDLESS_FORMULA.damageResistCap, Math.max(0, steps * ENDLESS_FORMULA.damageResistPer10Extra));
+  }
   state.enemies.push(
     createEnemy({
       hp: stats.hp,
       armor: stats.armor,
       magicResist,
       physicalResist,
+      damageResist,
       controlDurationMultiplier,
       speedMultiplier,
       isBonus,
@@ -2115,6 +2154,7 @@ function createEnemy(spec) {
     armor: spec.armor,
     magicResist: spec.magicResist,
     physicalResist: spec.physicalResist || 0,
+    damageResist: Math.max(0, Math.min(0.99, Number(spec.damageResist) || 0)),
     controlDurationMultiplier: Number(spec.controlDurationMultiplier) > 0 ? Number(spec.controlDurationMultiplier) : 1,
     isBonus: !!spec.isBonus,
     isBoss: !!spec.isBoss,
@@ -2144,6 +2184,13 @@ function createEnemy(spec) {
     poisonUntil: 0,
     dead: false
   };
+}
+
+function applyUniversalDamageResist(enemy, value) {
+  const raw = Math.max(0, value || 0);
+  const debuff = Math.max(enemy.armorDebuffPercent || 0, enemy.magicResistDebuffPercent || 0);
+  const effectiveResist = Math.max(0, Math.min(0.99, (enemy.damageResist || 0) - debuff));
+  return Math.max(1, raw * (1 - effectiveResist));
 }
 
 function killEnemy(enemy, killer = null) {
@@ -3015,6 +3062,7 @@ function dealTowerHit(enemy, tower, baseDamageOverride, options = {}) {
   if (tower.cannotKill && dealt >= enemy.hp) {
     dealt = Math.max(0, enemy.hp - 1);
   }
+  dealt = applyUniversalDamageResist(enemy, dealt);
   enemy.hp -= dealt;
   addTowerDamage(tower, dealt);
   applyArmorBreak(enemy, tower);
@@ -3034,6 +3082,7 @@ function dealArmorPiercingPhysicalHit(enemy, tower, rawDamage) {
   if (tower.cannotKill && dealt >= enemy.hp) {
     dealt = Math.max(0, enemy.hp - 1);
   }
+  dealt = applyUniversalDamageResist(enemy, dealt);
   enemy.hp -= dealt;
   addTowerDamage(tower, dealt);
   if (enemy.hp <= 0) {
@@ -3279,7 +3328,7 @@ function updateEnemyEffects(dt) {
       enemy.burnTickTimer -= dt;
       while (enemy.burnTickTimer <= 0 && !enemy.dead) {
         enemy.burnTickTimer += 0.5;
-        enemy.hp -= enemy.burnDamage;
+        enemy.hp -= applyUniversalDamageResist(enemy, enemy.burnDamage);
         if (enemy.hp <= 0) {
           killEnemy(enemy);
         }
@@ -3293,7 +3342,8 @@ function updateEnemyEffects(dt) {
       enemy.poisonTickTimer -= dt;
       while (enemy.poisonTickTimer <= 0 && !enemy.dead) {
         enemy.poisonTickTimer += 0.5;
-        enemy.hp -= Math.max(1, enemy.poisonDamage - Math.floor(enemy.armor / 2));
+        const poisonTickDamage = Math.max(1, enemy.poisonDamage - Math.floor(enemy.armor / 2));
+        enemy.hp -= applyUniversalDamageResist(enemy, poisonTickDamage);
         if (enemy.hp <= 0) {
           killEnemy(enemy);
         }
