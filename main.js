@@ -1153,6 +1153,7 @@ const state = {
   pauseMenuOpen: false,
   mainMenuOpen: true,
   pausePanel: "settings",
+  lastBuildTapAt: 0,
   globalTargetPriority: "nearest",
   encyclopediaTab: "towers",
   encyclopediaScroll: 0,
@@ -5956,24 +5957,30 @@ function drawActionButtons() {
 function getBuildPickerButtons() {
   if (!state.buildPickerOpen) return [];
   const popup = getBuildPickerRect();
+  const size = 68;
+  const gap = 10;
+  const startX = popup.x + Math.floor((popup.w - (size * 2 + gap)) / 2);
+  const y = popup.y + 52;
   return [
     {
       id: "simple",
       label: "Башня 1 уровня",
-      sublabel: `${SIMPLE_TOWER_COST}`,
-      x: popup.x + 8,
-      y: popup.y + 36,
-      w: 220,
-      h: 40
+      line1: "1 ур.",
+      line2: `${SIMPLE_TOWER_COST}`,
+      x: startX,
+      y,
+      w: size,
+      h: size
     },
     {
       id: "master",
       label: "Башня 4 уровня",
-      sublabel: `${MASTER_TOWER_COST}`,
-      x: popup.x + 8,
-      y: popup.y + 82,
-      w: 220,
-      h: 40
+      line1: "4 ур.",
+      line2: `${MASTER_TOWER_COST}`,
+      x: startX + size + gap,
+      y,
+      w: size,
+      h: size
     }
   ];
 }
@@ -5984,26 +5991,38 @@ function drawBuildPicker() {
   const popup = getBuildPickerRect();
   fillRoundedRect(popup.x, popup.y, popup.w, popup.h, 18, "#173246", "rgba(255,255,255,0.12)");
   drawCloseButton(getBuildPickerCloseRect());
+  ctx.fillStyle = COLORS.text;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.font = "bold 16px Avenir Next";
+  ctx.fillText("Строить", popup.x + 12, popup.y + 12);
   for (const button of buttons) {
-    const selected = state.towerBuildMode === button.id && state.buildMode !== "mine";
-    const fill = selected ? "#d4a93d" : "#48515c";
-    const stroke = selected ? "#ffe7a2" : "rgba(255,255,255,0.08)";
-    const text = selected ? "#1f1702" : "rgba(255,255,255,0.7)";
-    fillRoundedRect(button.x, button.y, button.w, button.h, 12, fill, stroke);
+    const selected = state.towerBuildMode === button.id;
+    fillRoundedRect(
+      button.x,
+      button.y,
+      button.w,
+      button.h,
+      14,
+      selected ? "#d4a93d" : "#253f53",
+      selected ? "#ffe7a2" : "rgba(255,255,255,0.1)"
+    );
+    const text = selected ? "#1f1702" : "#ffffff";
     ctx.fillStyle = text;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.font = "bold 14px Avenir Next";
-    ctx.fillText(button.label, button.x + 10, button.y + button.h / 2);
-    ctx.textAlign = "right";
-    ctx.font = "13px Avenir Next";
-    ctx.fillText(button.sublabel, button.x + button.w - 10, button.y + button.h / 2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.font = "bold 12px Avenir Next";
+    ctx.fillText(button.label, button.x + button.w / 2, button.y + 10);
+    ctx.font = "bold 11px Avenir Next";
+    ctx.fillText(button.line1, button.x + button.w / 2, button.y + 29);
+    ctx.font = "10px Avenir Next";
+    ctx.fillText(button.line2, button.x + button.w / 2, button.y + 46);
   }
 }
 
 function getBuildPickerRect() {
   if (!state.buildPickerOpen) return null;
-  return { x: BUTTONS_X - 8, y: getOverlayPopupTop(140), w: 236, h: 140 };
+  return { x: BUTTONS_X - 8, y: getOverlayPopupTop(146), w: 236, h: 146 };
 }
 
 function getBuildPickerCloseRect() {
@@ -7434,6 +7453,26 @@ function handleTap(event) {
   }
 
   if (isAnyOverlayMenuOpen()) {
+    const overlayActionButton = findActionButtonAt(event.clientX, event.clientY);
+    if (overlayActionButton) {
+      if (overlayActionButton.id === "build") {
+        state.buildPickerOpen = false;
+        draw();
+        return;
+      }
+      if (overlayActionButton.id === "shop") {
+        state.shopOpen = false;
+        draw();
+        return;
+      }
+      if (overlayActionButton.id === "tools") {
+        state.toolsOpen = false;
+        state.selectedToolAction = null;
+        draw();
+        return;
+      }
+    }
+
     const itemMenuAction = findItemMenuActionAt(event.clientX, event.clientY);
     if (itemMenuAction) {
       hideInfoPanel();
@@ -7686,7 +7725,14 @@ function handleTap(event) {
     if (actionButton.id === "build") {
       advanceTutorialFromAction("build");
       state.buildMode = state.towerBuildMode;
-      state.buildPickerOpen = !state.buildPickerOpen;
+      const nowMs = Date.now();
+      const isDoubleTap = nowMs - (state.lastBuildTapAt || 0) <= 350;
+      if (isDoubleTap || state.tutorial.active) {
+        state.buildPickerOpen = !state.buildPickerOpen;
+      } else {
+        state.buildPickerOpen = false;
+      }
+      state.lastBuildTapAt = nowMs;
       state.moveMode = false;
       state.shopOpen = false;
       state.toolsOpen = false;
