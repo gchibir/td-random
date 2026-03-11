@@ -280,6 +280,10 @@ function drawTileImage(renderCtx, img, x, y, size, fallbackFill) {
   return false;
 }
 
+function getOverlayPopupTop(popupH) {
+  return STATS_Y - LAYOUT.gap - popupH;
+}
+
 function recalculateLayout() {
   STACK_TOP = LAYOUT.padding + TOP_UI_OFFSET;
   BOARD_W = GRID_COLS * TILE;
@@ -308,7 +312,7 @@ function recalculateLayout() {
   ACTION_BUTTON_H = CONTROL_H;
   SHOP_W = 248;
   SHOP_X = canvas.width - LAYOUT.padding - SHOP_W;
-  SHOP_Y = CONTROL_Y - SHOP_H - 10;
+  SHOP_Y = getOverlayPopupTop(SHOP_H);
   markRenderCachesDirty();
 }
 
@@ -5951,13 +5955,14 @@ function drawActionButtons() {
 
 function getBuildPickerButtons() {
   if (!state.buildPickerOpen) return [];
+  const popup = getBuildPickerRect();
   return [
     {
       id: "simple",
       label: "Башня 1 уровня",
       sublabel: `${SIMPLE_TOWER_COST}`,
-      x: BUTTONS_X,
-      y: CONTROL_Y - 132,
+      x: popup.x + 8,
+      y: popup.y + 36,
       w: 220,
       h: 40
     },
@@ -5965,8 +5970,8 @@ function getBuildPickerButtons() {
       id: "master",
       label: "Башня 4 уровня",
       sublabel: `${MASTER_TOWER_COST}`,
-      x: BUTTONS_X,
-      y: CONTROL_Y - 86,
+      x: popup.x + 8,
+      y: popup.y + 82,
       w: 220,
       h: 40
     }
@@ -5976,7 +5981,9 @@ function getBuildPickerButtons() {
 function drawBuildPicker() {
   const buttons = getBuildPickerButtons();
   if (!buttons.length) return;
-  fillRoundedRect(BUTTONS_X - 8, CONTROL_Y - 140, 236, 104, 18, "#173246", "rgba(255,255,255,0.12)");
+  const popup = getBuildPickerRect();
+  fillRoundedRect(popup.x, popup.y, popup.w, popup.h, 18, "#173246", "rgba(255,255,255,0.12)");
+  drawCloseButton(getBuildPickerCloseRect());
   for (const button of buttons) {
     const selected = state.towerBuildMode === button.id && state.buildMode !== "mine";
     const fill = selected ? "#d4a93d" : "#48515c";
@@ -5996,42 +6003,45 @@ function drawBuildPicker() {
 
 function getBuildPickerRect() {
   if (!state.buildPickerOpen) return null;
-  return { x: BUTTONS_X - 8, y: CONTROL_Y - 140, w: 236, h: 104 };
+  return { x: BUTTONS_X - 8, y: getOverlayPopupTop(140), w: 236, h: 140 };
+}
+
+function getBuildPickerCloseRect() {
+  const popup = getBuildPickerRect();
+  if (!popup) return null;
+  return { x: popup.x + popup.w - 32, y: popup.y + 8, w: 24, h: 24 };
 }
 
 function getItemMenuButtons() {
   const itemDef = getSelectedTransferItemDef();
   if (!state.itemMenuOpen || !itemDef) return [];
-  const popupX = CONTROL_X;
-  const popupY = CONTROL_Y - 248;
-  const popupW = CONTROL_W;
+  const popup = getItemMenuRect();
   if (itemDef.id !== "mystery_bag") return [];
   const buttonH = 42;
   const buttonGap = 8;
-  const firstButtonY = popupY + 42;
-  const buttonW = popupW - 20;
+  const firstButtonY = popup.y + 42;
+  const buttonW = popup.w - 20;
   return [
-    { id: "bag_tower", label: "Случайная башня", sub: "4/3/5/6 ур.", x: popupX + 10, y: firstButtonY, w: buttonW, h: buttonH },
-    { id: "bag_upgrade", label: "Поднять уровень", sub: "1 башня", x: popupX + 10, y: firstButtonY + (buttonH + buttonGap) * 1, w: buttonW, h: buttonH },
-    { id: "bag_damage", label: "Урон всех башен", sub: `+${Math.round((state.globalDamageBoost + 0.2) * 100)}%`, x: popupX + 10, y: firstButtonY + (buttonH + buttonGap) * 2, w: buttonW, h: buttonH },
-    { id: "bag_nuggets", label: "Цена слитков", sub: `+${Math.round((state.nuggetSaleBonus + 0.3) * 100)}%`, x: popupX + 10, y: firstButtonY + (buttonH + buttonGap) * 3, w: buttonW, h: buttonH }
+    { id: "bag_tower", label: "Случайная башня", sub: "4/3/5/6 ур.", x: popup.x + 10, y: firstButtonY, w: buttonW, h: buttonH },
+    { id: "bag_upgrade", label: "Поднять уровень", sub: "1 башня", x: popup.x + 10, y: firstButtonY + (buttonH + buttonGap) * 1, w: buttonW, h: buttonH },
+    { id: "bag_damage", label: "Урон всех башен", sub: `+${Math.round((state.globalDamageBoost + 0.2) * 100)}%`, x: popup.x + 10, y: firstButtonY + (buttonH + buttonGap) * 2, w: buttonW, h: buttonH },
+    { id: "bag_nuggets", label: "Цена слитков", sub: `+${Math.round((state.nuggetSaleBonus + 0.3) * 100)}%`, x: popup.x + 10, y: firstButtonY + (buttonH + buttonGap) * 3, w: buttonW, h: buttonH }
   ];
 }
 
 function drawItemMenu() {
   const buttons = getItemMenuButtons();
   if (!buttons.length) return;
-  const popupX = CONTROL_X;
-  const popupY = CONTROL_Y - 248;
-  const popupW = CONTROL_W;
+  const popup = getItemMenuRect();
   const itemDef = getSelectedTransferItemDef();
   const popupH = itemDef?.id === "mystery_bag" ? 236 : 90;
-  fillRoundedRect(popupX, popupY, popupW, popupH, 18, "#173246", "rgba(255,255,255,0.12)");
+  fillRoundedRect(popup.x, popup.y, popup.w, popupH, 18, "#173246", "rgba(255,255,255,0.12)");
+  drawCloseButton(getItemMenuCloseRect());
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.font = "bold 17px Avenir Next";
-  ctx.fillText(itemDef?.name || "Предмет", popupX + 12, popupY + 10);
+  ctx.fillText(itemDef?.name || "Предмет", popup.x + 12, popup.y + 10);
 
   for (const button of buttons) {
     fillRoundedRect(button.x, button.y, button.w, button.h, 12, "#284a63", "rgba(255,255,255,0.08)");
@@ -6050,10 +6060,16 @@ function getItemMenuRect() {
   const itemDef = getSelectedTransferItemDef();
   if (!state.itemMenuOpen || !itemDef) return null;
   const popupX = CONTROL_X;
-  const popupY = CONTROL_Y - 248;
   const popupW = CONTROL_W;
   const popupH = itemDef?.id === "mystery_bag" ? 236 : 90;
+  const popupY = getOverlayPopupTop(popupH);
   return { x: popupX, y: popupY, w: popupW, h: popupH };
+}
+
+function getItemMenuCloseRect() {
+  const popup = getItemMenuRect();
+  if (!popup) return null;
+  return { x: popup.x + popup.w - 34, y: popup.y + 8, w: 24, h: 24 };
 }
 
 function getShopButtons() {
@@ -6199,6 +6215,7 @@ function drawShopPopup() {
 function getToolsMenuButtons() {
   const selected = getSelectedStructure();
   if (!state.toolsOpen || !selected || selected.kind !== "tower") return [];
+  const popup = getToolsPopupRect();
   return [
     { id: "upgrade", label: "Апгрейд", sub: canUpgradeTower(selected) ? "готов" : "нет пары" },
     { id: "move", label: "Переместить", sub: `${TOOL_MOVE_COST}` },
@@ -6206,21 +6223,23 @@ function getToolsMenuButtons() {
     { id: "sell_tower", label: "Продать башню", sub: `${getTowerSellValue(selected.level)}` }
   ].map((button, index) => ({
     ...button,
-    x: BUTTONS_X - 8,
-    y: CONTROL_Y - 244 + index * 58,
+    x: popup.x + 4,
+    y: popup.y + 44 + index * 58,
     w: BUTTONS_W + 8,
     h: 52
   }));
 }
 
 function getToolsCloseRect() {
-  if (!getToolsMenuButtons().length) return null;
-  return { x: BUTTONS_X + BUTTONS_W - 28, y: CONTROL_Y - 280, w: 24, h: 24 };
+  const popup = getToolsPopupRect();
+  if (!popup) return null;
+  return { x: popup.x + popup.w - 30, y: popup.y + 8, w: 24, h: 24 };
 }
 
 function getToolsPopupRect() {
-  if (!getToolsMenuButtons().length) return null;
-  return { x: BUTTONS_X - 12, y: CONTROL_Y - 288, w: BUTTONS_W + 16, h: 278 };
+  const selected = getSelectedStructure();
+  if (!state.toolsOpen || !selected || selected.kind !== "tower") return null;
+  return { x: BUTTONS_X - 12, y: getOverlayPopupTop(278), w: BUTTONS_W + 16, h: 278 };
 }
 
 function isPointInOverlayPopup(point) {
@@ -6235,13 +6254,13 @@ function isPointInOverlayPopup(point) {
 function drawToolsPopup() {
   const buttons = getToolsMenuButtons();
   if (!buttons.length) return;
-
-  fillRoundedRect(BUTTONS_X - 12, CONTROL_Y - 288, BUTTONS_W + 16, 278, 18, "#173246", "rgba(255,255,255,0.12)");
+  const popup = getToolsPopupRect();
+  fillRoundedRect(popup.x, popup.y, popup.w, popup.h, 18, "#173246", "rgba(255,255,255,0.12)");
   ctx.fillStyle = COLORS.text;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.font = "bold 16px Avenir Next";
-  ctx.fillText("Меню башни", BUTTONS_X, CONTROL_Y - 278);
+  ctx.fillText("Меню башни", popup.x + 12, popup.y + 10);
   const close = getToolsCloseRect();
   drawCloseButton(close);
 
@@ -6944,6 +6963,10 @@ function findActionButtonAt(clientX, clientY) {
 
 function findBuildPickerActionAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
+  const close = getBuildPickerCloseRect();
+  if (pointInRectExpanded(point, close, 2)) {
+    return { id: "close_build_picker" };
+  }
   return getBuildPickerButtons().find((button) => pointInRectExpanded(point, button, 2)) || null;
 }
 
@@ -7017,6 +7040,10 @@ function findTargetPriorityButtonAt(clientX, clientY) {
 
 function findItemMenuActionAt(clientX, clientY) {
   const point = getCanvasPoint(clientX, clientY);
+  const close = getItemMenuCloseRect();
+  if (pointInRectExpanded(point, close, 2)) {
+    return "close_item_menu";
+  }
   for (const button of getItemMenuButtons()) {
     if (pointInRectExpanded(point, button, 2)) {
       return button.id;
@@ -7081,6 +7108,7 @@ function findShopActionAt(clientX, clientY) {
 }
 
 function findToolsActionAt(clientX, clientY) {
+  if (!state.toolsOpen) return null;
   const point = getCanvasPoint(clientX, clientY);
   const close = getToolsCloseRect();
   if (pointInRectExpanded(point, close, 2)) {
@@ -7092,6 +7120,10 @@ function findToolsActionAt(clientX, clientY) {
     }
   }
   return null;
+}
+
+function isAnyOverlayMenuOpen() {
+  return !!(state.buildPickerOpen || state.itemMenuOpen || state.shopOpen || state.toolsOpen);
 }
 
 function findPauseMenuActionAt(clientX, clientY) {
@@ -7397,6 +7429,83 @@ function handleTap(event) {
   }
 
   if (!state.started) {
+    draw();
+    return;
+  }
+
+  if (isAnyOverlayMenuOpen()) {
+    const itemMenuAction = findItemMenuActionAt(event.clientX, event.clientY);
+    if (itemMenuAction) {
+      hideInfoPanel();
+      if (itemMenuAction === "close_item_menu") {
+        state.itemMenuOpen = false;
+      } else if (itemMenuAction === "sell_item") {
+        sellSelectedItem();
+      } else {
+        activateMysteryBagChoice(itemMenuAction);
+      }
+      draw();
+      return;
+    }
+
+    const shopAction = findShopActionAt(event.clientX, event.clientY);
+    if (shopAction) {
+      hideInfoPanel();
+      if (state.pendingItemTransfer) clearItemSelection();
+      if (shopAction === "close_shop") {
+        state.shopOpen = false;
+      } else {
+        state.selectedShopItem = shopAction;
+        if (shopAction === "attr_strength") {
+          buyAttributeUpgrade("Сила");
+        } else if (shopAction === "attr_agility") {
+          buyAttributeUpgrade("Ловкость");
+        } else if (shopAction === "attr_intellect") {
+          buyAttributeUpgrade("Интеллект");
+        } else if (shopAction === "buy_bag") {
+          buyItemBag();
+        } else {
+          const bossDef = BOSS_DEFS.find((boss) => boss.id === shopAction);
+          if (bossDef) buyBoss(bossDef);
+        }
+      }
+      draw();
+      return;
+    }
+
+    const buildPickerAction = findBuildPickerActionAt(event.clientX, event.clientY);
+    if (buildPickerAction) {
+      hideInfoPanel();
+      if (state.pendingItemTransfer) clearItemSelection();
+      if (buildPickerAction.id === "close_build_picker") {
+        state.buildPickerOpen = false;
+      } else if (advanceTutorialFromBuildChoice(buildPickerAction.id)) {
+        if (buildPickerAction.id === "mine") {
+          state.buildMode = "mine";
+        } else {
+          state.towerBuildMode = buildPickerAction.id;
+          state.buildMode = buildPickerAction.id;
+        }
+        state.buildPickerOpen = false;
+      }
+      draw();
+      return;
+    }
+
+    const toolsAction = findToolsActionAt(event.clientX, event.clientY);
+    if (toolsAction) {
+      hideInfoPanel();
+      if (state.pendingItemTransfer) clearItemSelection();
+      if (toolsAction === "close_tools") {
+        state.toolsOpen = false;
+        state.selectedToolAction = null;
+      } else {
+        handleToolsAction(toolsAction);
+      }
+      draw();
+      return;
+    }
+
     draw();
     return;
   }
@@ -7751,7 +7860,7 @@ canvas.addEventListener("pointerdown", (event) => {
     pointerState.lastInfoY = point.y;
     pointerState.infoMoved = false;
   }
-  const board = !isMenuOpen() && isPointInBoard(point) && !insideInfoPanel && !insideOverlayPopup;
+  const board = !isMenuOpen() && !isAnyOverlayMenuOpen() && isPointInBoard(point) && !insideInfoPanel && !insideOverlayPopup;
   pointerState.pointers.set(event.pointerId, {
     x: point.x,
     y: point.y,
