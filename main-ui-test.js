@@ -6270,6 +6270,13 @@ function isPointInOverlayPopup(point) {
   );
 }
 
+function syncOverlayMenuState() {
+  if (state.toolsOpen && !getToolsPopupRect()) {
+    state.toolsOpen = false;
+    state.selectedToolAction = null;
+  }
+}
+
 function drawToolsPopup() {
   const buttons = getToolsMenuButtons();
   if (!buttons.length) return;
@@ -7336,6 +7343,7 @@ function handleToolsAction(action) {
 }
 
 function handleTap(event) {
+  syncOverlayMenuState();
   const point = getCanvasPoint(event.clientX, event.clientY);
   if (state.tutorial.active && state.tutorial.step === "intro" && findTutorialNextButtonAt(event.clientX, event.clientY)) {
     hideInfoPanel();
@@ -7453,6 +7461,7 @@ function handleTap(event) {
   }
 
   if (isAnyOverlayMenuOpen()) {
+    const clickedInsideOverlay = isPointInOverlayPopup(point);
     const overlayActionButton = findActionButtonAt(event.clientX, event.clientY);
     if (overlayActionButton) {
       if (overlayActionButton.id === "build") {
@@ -7545,8 +7554,10 @@ function handleTap(event) {
       return;
     }
 
-    draw();
-    return;
+    if (clickedInsideOverlay) {
+      draw();
+      return;
+    }
   }
 
   const itemMenuAction = findItemMenuActionAt(event.clientX, event.clientY);
